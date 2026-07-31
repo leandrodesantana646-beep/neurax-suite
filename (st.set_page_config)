@@ -1,0 +1,23 @@
+# Customização Visual de Elite via CSS
+st.markdown("""
+    <style>
+    /* Estilização dos botões principais */
+    .stButton>button {
+        background: linear-gradient(90deg, #ff4b4b 0%, #ff8f4b 100%);
+        color: white;
+        border-radius: 10px;
+        font-weight: bold;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        opacity: 0.9;
+        transform: scale(1.02);
+    }
+    /* Arredondamento das caixas de texto */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+        border-radius: 8px;
+    }
+    </style>
+""", unsafe_allow_html=True)
