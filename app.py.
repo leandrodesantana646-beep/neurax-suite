@@ -1,0 +1,256 @@
+import streamlit as st
+from openai import OpenAI
+
+# Configuração da Página
+st.set_page_config(
+    page_title="NeuraX Suite - Painel Inteligente",
+    page_icon="🚀",
+    layout="centered"
+)
+
+# ---------------------------------------------------------
+# CONFIGURAÇÃO DA IA (OPENAI) VIA BARRA LATERAL
+# ---------------------------------------------------------
+st.sidebar.title("⚙️ Configurações & Acesso")
+api_key_input = st.sidebar.text_input("🔑 Chave API OpenAI (sk-...):", type="password")
+
+# Tenta inicializar o cliente OpenAI com a chave da barra lateral ou dos segredos
+client = None
+if api_key_input:
+    client = OpenAI(api_key=api_key_input)
+else:
+    try:
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    except:
+        pass
+
+# Inicializar Histórico na Sessão
+if "historico" not in st.session_state:
+    st.session_state.historico = []
+
+st.title("🚀 NeuraX Suite - SaaS com IA Real")
+st.markdown("O ecossistema definitivo de inteligência e automação para e-commerce.")
+
+# Menu Lateral (Sidebar) para escolher o módulo
+modulo = st.sidebar.selectbox(
+    "Escolha o Módulo do Sistema",
+    [
+        "🤖 Gerador de Copy e SEO (IA)",
+        "📊 Analisador de Preços (IA)",
+        "💬 Assistente de WhatsApp (IA)",
+        "🎬 Gerador de Roteiros (IA)",
+        "🧮 Calculadora de Taxas & Lucro"
+    ]
+)
+
+# Exibir Histórico na Barra Lateral
+st.sidebar.markdown("---")
+st.sidebar.subheader("📜 Histórico da Sessão")
+if st.session_state.historico:
+    for item in st.session_state.historico[-5:]:
+        st.sidebar.text(f"• {item}")
+    if st.sidebar.button("Limpar Histórico"):
+        st.session_state.historico = []
+        st.rerun()
+else:
+    st.sidebar.info("Nenhuma geração recente.")
+
+# Função Auxiliar para Chamadas da OpenAI
+def chamar_ia(sistema, usuario):
+    if not client:
+        return "⚠️ ATENÇÃO: Insira a sua chave da API da OpenAI (sk-...) na barra lateral ao lado para ativar a inteligência real do ChatGPT."
+    try:
+        resposta = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": sistema},
+                {"role": "user", "content": usuario}
+            ],
+            temperature=0.7
+        )
+        return resposta.choices[0].message.content
+    except Exception as e:
+        return f"❌ Erro ao conectar com a IA: {e}"
+
+# ---------------------------------------------------------
+# MÓDULO 1: GERADOR DE COPY E SEO (COM IA REAL)
+# ---------------------------------------------------------
+if modulo == "🤖 Gerador de Copy e SEO (IA)":
+    st.header("🤖 Gerador de Copy e SEO com IA Real")
+    st.write("O ChatGPT cria títulos otimizados, descrições persuasivas e hashtags sob medida.")
+
+    nome_produto = st.text_input("📦 Digite o nome exato do produto:")
+    publico = st.text_input("🎯 Para quem é esse produto? (ex: lojistas, jovens, mães):")
+
+    if st.button("Gerar Copy com IA"):
+        if nome_produto and publico:
+            with st.spinner("✨ A IA está redigindo a copy perfeita..."):
+                prompt_sistema = "Você é um especialista em marketing digital, copywriting de alta conversão e SEO para e-commerce."
+                prompt_usuario = f"Crie uma copy de vendas persuasiva para o produto '{nome_produto}' voltado para o público '{publico}'. Inclua Título Otimizado para SEO, Descrição de Vendas focada em conversão e Hashtags estratégicas."
+                
+                resultado = chamar_ia(prompt_sistema, prompt_usuario)
+
+            st.success("✨ Copy gerada com sucesso pela IA!")
+            st.text_area("Resultado:", resultado, height=220)
+
+            st.session_state.historico.append(f"Copy IA: {nome_produto}")
+
+            st.download_button(
+                label="📥 Baixar Arquivo de Copy (.txt)",
+                data=resultado,
+                file_name=f"copy_{nome_produto.lower().replace(' ', '_')}.txt",
+                mime="text/plain"
+            )
+        else:
+            st.warning("⚠️ Preencha todos os campos.")
+
+# ---------------------------------------------------------
+# MÓDULO 2: ANALISADOR DE PREÇOS (COM IA REAL)
+# ---------------------------------------------------------
+elif modulo == "📊 Analisador de Preços (IA)":
+    st.header("📊 Analisador Inteligente de Preços via IA")
+    st.write("A IA analisa o mercado global e calcula o preço ideal de venda para maximizar seu lucro.")
+
+    produto_preco = st.text_input("📦 Nome do produto:")
+    preco_atual = st.number_input("💰 Preço que você cobra hoje (R$):", min_value=0.0, value=100.0, step=1.0)
+
+    if st.button("Executar Análise de Preços com IA"):
+        if produto_preco:
+            with st.spinner("🔍 A IA está varrendo dados de mercado e calculando margens..."):
+                prompt_sistema = "Você é um consultor financeiro especialista em e-commerce e precificação competitiva."
+                prompt_usuario = f"Faça uma análise de mercado para o produto '{produto_preco}' onde o preço atual do lojista é R$ {preco_atual:.2f}. Estime a média da concorrência, o menor preço do mercado e dê o preço sugerido exato para lucro ótimo, além de recomendações estratégicas."
+                
+                relatorio = chamar_ia(prompt_sistema, prompt_usuario)
+
+            st.success("🎯 Análise de preços concluída pela IA!")
+            st.text_area("Relatório Completo:", relatorio, height=250)
+
+            st.session_state.historico.append(f"Preço IA: {produto_preco}")
+
+            st.download_button(
+                label="📥 Baixar Relatório de Preços (.txt)",
+                data=relatorio,
+                file_name=f"relatorio_preco_{produto_preco.lower().replace(' ', '_')}.txt",
+                mime="text/plain"
+            )
+        else:
+            st.warning("⚠️ Digite o nome do produto.")
+
+# ---------------------------------------------------------
+# MÓDULO 3: ASSISTENTE DE WHATSAPP (COM IA REAL)
+# ---------------------------------------------------------
+elif modulo == "💬 Assistente de WhatsApp (IA)":
+    st.header("💬 Assistente de Atendimento via IA")
+    st.write("Gere respostas profissionais, empáticas e focadas em fechamento para o WhatsApp.")
+
+    duvida_cliente = st.text_input("❓ Dúvida ou objeção do cliente (ex: 'É original?', 'Tem desconto no Pix?'):")
+    nome_loja = st.text_input("🏷️ Nome da sua loja:", value="Nossa Loja")
+
+    if st.button("Gerar Resposta com IA"):
+        if duvida_cliente:
+            with st.spinner("💬 A IA está redigindo a resposta para o WhatsApp..."):
+                prompt_sistema = f"Você é o atendente estrela da loja '{nome_loja}', especializado em suporte humanizado e conversão de vendas no WhatsApp."
+                prompt_usuario = f"Escreva uma resposta de WhatsApp amigável, acolhedora e que feche a venda para a seguinte dúvida/objeção do cliente: '{duvida_cliente}'."
+                
+                resposta_gerada = chamar_ia(prompt_sistema, prompt_usuario)
+
+            st.success("💬 Resposta gerada com sucesso!")
+            st.text_area("Mensagem:", resposta_gerada, height=200)
+
+            st.session_state.historico.append(f"WhatsApp IA: {duvida_cliente[:15]}...")
+
+            st.download_button(
+                label="📥 Baixar Resposta (.txt)",
+                data=resposta_gerada,
+                file_name="resposta_whatsapp.txt",
+                mime="text/plain"
+            )
+        else:
+            st.warning("⚠️ Digite a dúvida do cliente.")
+
+# ---------------------------------------------------------
+# MÓDULO 4: GERADOR DE ROTEIROS (COM IA REAL)
+# ---------------------------------------------------------
+elif modulo == "🎬 Gerador de Roteiros (IA)":
+    st.header("🎬 Gerador de Roteiros Virais para Vídeos Curtos")
+    st.write("Crie estruturas de vídeos altamente engajadoras para Reels, TikTok e Shorts com IA.")
+
+    prod_video = st.text_input("📦 Produto em destaque:")
+    nicho_publico = st.text_input("🎯 Nicho ou dor principal (ex: Emagrecimento, Organização de casa):")
+
+    if st.button("Gerar Roteiro Viral com IA"):
+        if prod_video and nicho_publico:
+            with st.spinner("🎬 Criando roteiro viral..."):
+                prompt_sistema = "Você é um criador de conteúdo especialista em vídeos virais para TikTok e Reels com foco em conversão de e-commerce."
+                prompt_usuario = f"Crie um roteiro de vídeo curto (gancho de 3 segundos, desenvolvimento do problema/solução e chamada para ação clara) para o produto '{prod_video}' focado no nicho/dor '{nicho_publico}'."
+                
+                roteiro = chamar_ia(prompt_sistema, prompt_usuario)
+
+            st.success("🎬 Roteiro gerado com sucesso!")
+            st.text_area("Estrutura do Vídeo:", roteiro, height=240)
+
+            st.session_state.historico.append(f"Roteiro IA: {prod_video}")
+
+            st.download_button(
+                label="📥 Baixar Roteiro (.txt)",
+                data=roteiro,
+                file_name=f"roteiro_{prod_video.lower().replace(' ', '_')}.txt",
+                mime="text/plain"
+            )
+        else:
+            st.warning("⚠️ Preencha os campos.")
+
+# ---------------------------------------------------------
+# MÓDULO 5: CALCULADORA DE TAXAS & LUCRO
+# ---------------------------------------------------------
+elif modulo == "🧮 Calculadora de Taxas & Lucro":
+    st.header("🧮 Calculadora de Custos e Taxas de Marketplace")
+    st.write("Descubra o seu **Lucro Líquido Real** descontando custos e taxas de plataformas.")
+
+    nome_item = st.text_input("📦 Nome do item avaliado:")
+    custo_prod = st.number_input("💸 Preço de Custo / Aquisição (R$):", min_value=0.0, value=50.0, step=1.0)
+    preco_venda = st.number_input("🏷️ Preço de Venda Pretendido (R$):", min_value=0.0, value=120.0, step=1.0)
+    taxa_marketplace_pct = st.number_input("📊 Taxa do Marketplace ou Cartão (%):", min_value=0.0, max_value=100.0, value=16.0, step=0.5)
+    custo_extra = st.number_input("📦 Custos Extras (Embalagem, Frete fixo, etc) (R$):", min_value=0.0, value=5.0, step=1.0)
+
+    if st.button("Calcular Lucro Líquido Real"):
+        if nome_item:
+            valor_taxa = preco_venda * (taxa_marketplace_pct / 100.0)
+            lucro_liquido = preco_venda - custo_prod - valor_taxa - custo_extra
+            
+            if preco_venda > 0:
+                margem_liquida_pct = (lucro_liquido / preco_venda) * 100.0
+            else:
+                margem_liquida_pct = 0.0
+
+            if lucro_liquido > 0:
+                status_lucro = "Lucro Saudável 🟢"
+            else:
+                status_lucro = "Prejuízo ou Margem Negativa 🔴"
+
+            relatorio_lucro = f"""--- 🧮 RELATÓRIO DE LUCRO LÍQUIDO REAL ---
+[Produto]: {nome_item}
+[Preço de Venda]: R$ {preco_venda:.2f}
+[Preço de Custo]: R$ {custo_prod:.2f}
+[Taxa da Plataforma ({taxa_marketplace_pct}%)]: R$ {valor_taxa:.2f}
+[Custos Extras]: R$ {custo_extra:.2f}
+----------------------------------------
+💰 [LUCRO LÍQUIDO FINAL]: R$ {lucro_liquido:.2f}
+📈 [Margem Líquida Percentual]: {margem_liquida_pct:.1f}%
+[Status Financeiro]: {status_lucro}
+"""
+
+            st.success("🧮 Cálculo de lucros realizado com sucesso!")
+            st.metric(label="💰 Lucro Líquido Real", value=f"R$ {lucro_liquido:.2f}", delta=f"{margem_liquida_pct:.1f}% de margem")
+            st.text_area("Relatório Financeiro:", relatorio_lucro, height=220)
+
+            st.session_state.historico.append(f"Lucro: {nome_item}")
+
+            st.download_button(
+                label="📥 Baixar Relatório Financeiro (.txt)",
+                data=relatorio_lucro,
+                file_name=f"lucro_{nome_item.lower().replace(' ', '_')}.txt",
+                mime="text/plain"
+            )
+        else:
+            st.warning("⚠️ Digite o nome do item.")
