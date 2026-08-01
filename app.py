@@ -37,16 +37,8 @@ st.title("🚀 NeuraX Suite - Painel Inteligente")
 st.markdown("O ecossistema definitivo de automação para e-commerce.")
 
 # Menu Lateral (Sidebar) para escolher o módulo
-modulo = st.sidebar.selectbox(
-    "Escolha o Módulo do Sistema",
-    [
-        modulo = st.sidebar.selectbox(
-    "Escolha o Módulo do Sistema",
-    
-)# Menu Lateral (Sidebar) para escolher o módulo
-)
-# Menu Lateral (Sidebar) para escolher o módulo
-modulo = st.sidebar.selectbox(
+
+    modulo = st.sidebar.selectbox(
     "Escolha o Módulo do Sistema",
     [
         "⚡ Campanha Flash Sale Instantânea",
@@ -59,7 +51,7 @@ modulo = st.sidebar.selectbox(
 )
 
 
-)
+
 
 # Exibir Histórico na Barra Lateral
 st.sidebar.markdown("---")
