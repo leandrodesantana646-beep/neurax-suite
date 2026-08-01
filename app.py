@@ -7,17 +7,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# Customização Visual de Elite via CSS
-
-import streamlit as st
-
-# Configuração da Página
-st.set_page_config(
-    page_title="NeuraX Suite - Painel Inteligente",
-    page_icon="🚀",
-    layout="centered"
-)
-
 # Customização Visual de Elite & Efeito Cards
 st.markdown("""
     <style>
@@ -69,49 +58,40 @@ if "historico" not in st.session_state:
 st.title("🚀 NeuraX Suite - Painel Inteligente")
 st.markdown("O ecossistema definitivo de automação para e-commerce.")
 
-# Menu Lateral (Sidebar) para escolher o módulo
-modulo = st.sidebar.selectbox(
-    "Escolha o Módulo do Sistema",
-    [
-        "⚡ Campanha Flash Sale Instantânea",
-        "🤖 Gerador de Copy e SEO",
-        "📊 Analisador de Preços",
-        "💬 Assistente de WhatsApp",
-        "🎬 Gerador de Roteiros (Reels/TikTok)",
-        "🧮 Calculadora de Taxas & Lucro"
-    ]
-)
-
 # Exibir Histórico na Barra Lateral
-st.sidebar.markdown("---")
 st.sidebar.subheader("📜 Histórico da Sessão")
 if st.session_state.historico:
     for item in st.session_state.historico[-5:]:
         st.sidebar.text(f"• {item}")
-    if st.sidebar.button("Limpar Histórico"):
+    if st.sidebar.button("Limpar Histórico", key="btn_limpar"):
         st.session_state.historico = []
         st.rerun()
 else:
     st.sidebar.info("Nenhuma geração recente.")
 
-# ---------------------------------------------------------
-# MÓDULO 0: CAMPANHA FLASH SALE INSTANTÂNEA
-# ---------------------------------------------------------
-if modulo == "⚡ Campanha Flash Sale Instantânea":
-    st.header("⚡ Campanha Flash Sale Instantânea")
-    st.write("Crie uma estratégia relâmpago completa (WhatsApp + Instagram + E-mail) para gerar caixa rápido.")
+# Organização por Abas Principais (st.tabs) para UI limpa e moderna
+tab1, tab2, tab3 = st.tabs(["⚡ Vendas & Conversão", "✍️ Conteúdo & Marketing", "📊 Finanças & Precificação"])
 
-    prod_flash = st.text_input("📦 Nome do produto em promoção:")
-    preco_original = st.number_input("💰 Preço original (R$):", min_value=0.0, value=200.0, step=1.0)
-    preco_flash = st.number_input("🔥 Preço promocional relâmpago (R$):", min_value=0.0, value=149.0, step=1.0)
-    tempo_limite = st.selectbox("⏳ Duração da Oferta", ["Apenas hoje (24 horas)", "48 horas", "Enquanto durar o estoque (Poucas unidades)"])
+# =========================================================
+# ABA 1: VENDAS & CONVERSÃO
+# =========================================================
+with tab1:
+    st.subheader("Ferramentas de Vendas")
+    escolha_tab1 = st.selectbox("Escolha a ferramenta:", ["⚡ Campanha Flash Sale Instantânea", "💬 Assistente de WhatsApp"], key="sub_tab1")
+    
+    if escolha_tab1 == "⚡ Campanha Flash Sale Instantânea":
+        st.write("Crie uma estratégia relâmpago completa (WhatsApp + Instagram + E-mail) para gerar caixa rápido.")
+        prod_flash = st.text_input("📦 Nome do produto em promoção:", key="flash_prod")
+        preco_original = st.number_input("💰 Preço original (R$):", min_value=0.0, value=200.0, step=1.0, key="flash_orig")
+        preco_flash = st.number_input("🔥 Preço promocional relâmpago (R$):", min_value=0.0, value=149.0, step=1.0, key="flash_desc")
+        tempo_limite = st.selectbox("⏳ Duração da Oferta", ["Apenas hoje (24 horas)", "48 horas", "Enquanto durar o estoque (Poucas unidades)"], key="flash_tempo")
 
-    if st.button("Gerar Campanha Multicanal"):
-        if prod_flash:
-            economia = preco_original - preco_flash
-            desconto_calc = int((economia / preco_original) * 100) if preco_original > 0 else 0
+        if st.button("Gerar Campanha Multicanal", key="btn_flash"):
+            if prod_flash:
+                economia = preco_original - preco_flash
+                desconto_calc = int((economia / preco_original) * 100) if preco_original > 0 else 0
 
-            kit_campanha = f"""========================================
+                kit_campanha = f"""========================================
 ⚡ KIT DE CAMPANHA FLASH SALE - {prod_flash.upper()}
 ========================================
 
@@ -166,147 +146,67 @@ Criamos essa condição exclusiva para recompensar quem acompanha a nossa loja, 
 Abraços e boas compras!
 ========================================"""
 
-            st.success("🔥 Campanha relâmpago gerada com sucesso!")
-            st.text_area("Pacote de Campanha Completo:", kit_campanha, height=300)
-
-            st.session_state.historico.append(f"Flash Sale: {prod_flash}")
-
-            st.download_button(
-                label="📥 Baixar Campanha Completa (.txt)",
-                data=kit_campanha,
-                file_name=f"campanha_flash_{prod_flash.lower().replace(' ', '_')}.txt",
-                mime="text/plain"
-            )
-        else:
-            st.warning("⚠️ Digite o nome do produto da promoção.")
-
-# ---------------------------------------------------------
-# MÓDULO 1: GERADOR DE COPY E SEO
-# ---------------------------------------------------------
-elif modulo == "🤖 Gerador de Copy e SEO":
-    st.header("🤖 Gerador Automático de Copy e SEO")
-    st.write("Crie títulos otimizados, descrições de alto impacto e baixe o arquivo em segundos.")
-
-    nome_produto = st.text_input("📦 Digite o nome do produto:")
-    publico = st.text_input("🎯 Para quem é esse produto? (ex: lojistas, jovens, mães):")
-
-    if st.button("Gerar Copy"):
-        if nome_produto and publico:
-            resultado = f"""--- 🎯 RESULTADO GERADO PELO SISTEMA ---
-[Título SEO]: {nome_produto} Original | Oferta Imperdível | Frete Grátis
-[Descrição de Vendas]: Procurando excelência? O novo {nome_produto} foi desenvolvido especialmente para o público {publico}. Unindo tecnologia de ponta, durabilidade e design exclusivo, ele resolve suas necessidades do dia a dia com máxima eficiência. Garanta já o seu com condições especiais!
-[Hashtags]: #{nome_produto.lower().replace(' ', '')} #ecommerce #lancamento #oferta"""
-            
-            st.success("✨ Copy gerada com sucesso!")
-            st.text_area("Resultado:", resultado, height=200)
-
-            st.session_state.historico.append(f"Copy: {nome_produto}")
-
-            st.download_button(
-                label="📥 Baixar Arquivo de Copy (.txt)",
-                data=resultado,
-                file_name=f"copy_{nome_produto.lower().replace(' ', '_')}.txt",
-                mime="text/plain"
-            )
-        else:
-            st.warning("⚠️ Preencha todos os campos.")
-
-# ---------------------------------------------------------
-# MÓDULO 2: ANALISADOR DE PREÇOS
-# ---------------------------------------------------------
-elif modulo == "📊 Analisador de Preços":
-    st.header("📊 Analisador Inteligente de Preços")
-    st.write("Analise o mercado e calcule o preço ideal de venda para maximizar seu lucro.")
-
-    produto_preco = st.text_input("📦 Nome do produto:")
-    preco_atual = st.number_input("💰 Preço que você cobra hoje (R$):", min_value=0.0, value=100.0, step=1.0)
-
-    if st.button("Executar Análise de Preços"):
-        if produto_preco:
-            med = max(preco_atual * 1.15, 100.00)
-            menor = med * 0.85
-            sug = round(med * 0.95, 2)
-            
-            if preco_atual > med:
-                status = "Acima da Média (Risco de baixo giro)"
-                rec = f"Seu preço está alto. Sugerimos fixar em R$ {sug:.2f} para garantir vendas."
-            elif preco_atual < menor:
-                status = "Abaixo do Mercado (Margem baixa)"
-                rec = f"Você está vendendo barato demais! Suba para R$ {sug:.2f} para lucrar mais."
+                st.success("🔥 Campanha relâmpago gerada com sucesso!")
+                st.text_area("Pacote de Campanha Completo:", kit_campanha, height=300, key="txt_flash")
+                st.session_state.historico.append(f"Flash Sale: {prod_flash}")
+                st.download_button(label="📥 Baixar Campanha (.txt)", data=kit_campanha, file_name=f"campanha_{prod_flash.lower().replace(' ', '_')}.txt", mime="text/plain", key="dl_flash")
             else:
-                status = "Posicionamento Estratégico Saudável 🚀"
-                rec = f"Preço competitivo. Para atingir a margem ideal, recomendamos ajustar para R$ {sug:.2f}."
+                st.warning("⚠️ Digite o nome do produto.")
 
-            relatorio = f"""--- 🧠 RELATÓRIO DE INTELIGÊNCIA DE PREÇOS ---
-[Produto Analisado]: {produto_preco}
-[Seu Preço Informado]: R$ {preco_atual:.2f}
-[Média Estimada da Concorrência]: R$ {med:.2f}
-[Menor Preço no Mercado]: R$ {menor:.2f}
-🎯 [PREÇO SUGERIDO PARA LUCRO ÓTIMO]: R$ {sug:.2f}
-[Status Competitivo]: {status}
-[Recomendação]: {rec}"""
+    elif escolha_tab1 == "💬 Assistente de WhatsApp":
+        st.write("Gere respostas profissionais e focadas em fechamento para o WhatsApp.")
+        duvida_cliente = st.text_input("❓ Dúvida ou objeção do cliente (ex: 'É original?'):", key="wpp_duvida")
+        nome_loja = st.text_input("🏷️ Nome da sua loja:", value="Nossa Loja", key="wpp_loja")
 
-            st.success("🎯 Análise de preços concluída!")
-            st.text_area("Relatório Completo:", relatorio, height=230)
-
-            st.session_state.historico.append(f"Preço: {produto_preco}")
-
-            st.download_button(
-                label="📥 Baixar Relatório de Preços (.txt)",
-                data=relatorio,
-                file_name=f"relatorio_preco_{produto_preco.lower().replace(' ', '_')}.txt",
-                mime="text/plain"
-            )
-        else:
-            st.warning("⚠️ Digite o nome do produto.")
-
-# ---------------------------------------------------------
-# MÓDULO 3: ASSISTENTE DE WHATSAPP
-# ---------------------------------------------------------
-elif modulo == "💬 Assistente de WhatsApp":
-    st.header("💬 Assistente de Atendimento")
-    st.write("Gere respostas profissionais e focadas em fechamento para o WhatsApp.")
-
-    duvida_cliente = st.text_input("❓ Dúvida ou objeção do cliente (ex: 'É original?'):")
-    nome_loja = st.text_input("🏷️ Nome da sua loja:", value="Nossa Loja")
-
-    if st.button("Gerar Resposta"):
-        if duvida_cliente:
-            resposta_gerada = f"""Olá! Tudo bem? 😃
+        if st.button("Gerar Resposta", key="btn_wpp"):
+            if duvida_cliente:
+                resposta_gerada = f"""Olá! Tudo bem? 😃
 Obrigado pelo contato com a {nome_loja}!
 
 Referente à sua dúvida ("{duvida_cliente}"):
 Trabalhamos apenas com produtos 100% originais, testados e com garantia de fábrica para garantir a sua total segurança. Além disso, oferecemos envio rápido e suporte dedicado!
 
 Posso separar o seu pedido por aqui para garantirmos o estoque? ✨"""
+                st.success("💬 Resposta gerada com sucesso!")
+                st.text_area("Mensagem:", resposta_gerada, height=180, key="txt_wpp")
+                st.session_state.historico.append(f"WhatsApp: {duvida_cliente[:15]}...")
+                st.download_button(label="📥 Baixar Resposta (.txt)", data=resposta_gerada, file_name="resposta_whatsapp.txt", mime="text/plain", key="dl_wpp")
+            else:
+                st.warning("⚠️ Digite a dúvida do cliente.")
 
-            st.success("💬 Resposta gerada com sucesso!")
-            st.text_area("Mensagem:", resposta_gerada, height=180)
+# =========================================================
+# ABA 2: CONTEÚDO & MARKETING
+# =========================================================
+with tab2:
+    st.subheader("Ferramentas de Conteúdo & Copywriting")
+    escolha_tab2 = st.selectbox("Escolha a ferramenta:", ["🤖 Gerador de Copy e SEO", "🎬 Gerador de Roteiros (Reels/TikTok)"], key="sub_tab2")
 
-            st.session_state.historico.append(f"WhatsApp: {duvida_cliente[:15]}...")
+    if escolha_tab2 == "🤖 Gerador de Copy e SEO":
+        st.write("Crie títulos otimizados, descrições de alto impacto e baixe o arquivo em segundos.")
+        nome_produto = st.text_input("📦 Digite o nome do produto:", key="copy_prod")
+        publico = st.text_input("🎯 Para quem é esse produto? (ex: lojistas, jovens, mães):", key="copy_pub")
 
-            st.download_button(
-                label="📥 Baixar Resposta (.txt)",
-                data=resposta_gerada,
-                file_name="resposta_whatsapp.txt",
-                mime="text/plain"
-            )
-        else:
-            st.warning("⚠️ Digite a dúvida do cliente.")
+        if st.button("Gerar Copy", key="btn_copy"):
+            if nome_produto and publico:
+                resultado = f"""--- 🎯 RESULTADO GERADO PELO SISTEMA ---
+[Título SEO]: {nome_produto} Original | Oferta Imperdível | Frete Grátis
+[Descrição de Vendas]: Procurando excelência? O novo {nome_produto} foi desenvolvido especialmente para o público {publico}. Unindo tecnologia de ponta, durabilidade e design exclusivo, ele resolve suas necessidades do dia a dia com máxima eficiência. Garanta já o seu com condições especiais!
+[Hashtags]: #{nome_produto.lower().replace(' ', '')} #ecommerce #lancamento #oferta"""
+                st.success("✨ Copy gerada com sucesso!")
+                st.text_area("Resultado:", resultado, height=200, key="txt_copy")
+                st.session_state.historico.append(f"Copy: {nome_produto}")
+                st.download_button(label="📥 Baixar Copy (.txt)", data=resultado, file_name=f"copy_{nome_produto.lower().replace(' ', '_')}.txt", mime="text/plain", key="dl_copy")
+            else:
+                st.warning("⚠️ Preencha todos os campos.")
 
-# ---------------------------------------------------------
-# MÓDULO 4: GERADOR DE ROTEIROS
-# ---------------------------------------------------------
-elif modulo == "🎬 Gerador de Roteiros (Reels/TikTok)":
-    st.header("🎬 Gerador de Roteiros para Vídeos Curtos")
-    st.write("Crie roteiros virais e estruturados para engajar no Reels, TikTok e Shorts.")
+    elif escolha_tab2 == "🎬 Gerador de Roteiros (Reels/TikTok)":
+        st.write("Crie roteiros virais e estruturados para engajar no Reels, TikTok e Shorts.")
+        prod_video = st.text_input("📦 Produto em destaque:", key="vid_prod")
+        dor = st.text_input("🎯 Qual dor o produto resolve? (ex: 'Cabelo frizzado'):", key="vid_dor")
 
-    prod_video = st.text_input("📦 Produto em destaque:")
-    dor = st.text_input("🎯 Qual dor o produto resolve? (ex: 'Cabelo frizzado'):")
-
-    if st.button("Gerar Roteiro"):
-        if prod_video and dor:
-            roteiro = f"""--- 🎬 ROTEIRO DE VÍDEO VIRAL (REELS / TIKTOK) ---
+        if st.button("Gerar Roteiro", key="btn_vid"):
+            if prod_video and dor:
+                roteiro = f"""--- 🎬 ROTEIRO DE VÍDEO VIRAL (REELS / TIKTOK) ---
 [Produto]: {prod_video}
 
 1. GANCHO (0 a 3 segundos):
@@ -317,50 +217,72 @@ elif modulo == "🎬 Gerador de Roteiros (Reels/TikTok)":
 
 3. CHAMADA PARA AÇÃO / CTA (15 a 25 segundos):
 - "Não fica de fora dessa! Clica no link da bio ou me manda uma mensagem aqui embaixo para garantir o seu!" """
-
-            st.success("🎬 Roteiro gerado com sucesso!")
-            st.text_area("Estrutura do Vídeo:", roteiro, height=220)
-
-            st.session_state.historico.append(f"Roteiro: {prod_video}")
-
-            st.download_button(
-                label="📥 Baixar Roteiro (.txt)",
-                data=roteiro,
-                file_name=f"roteiro_{prod_video.lower().replace(' ', '_')}.txt",
-                mime="text/plain"
-            )
-        else:
-            st.warning("⚠️ Preencha os campos.")
-
-# ---------------------------------------------------------
-# MÓDULO 5: CALCULADORA DE TAXAS & LUCRO
-# ---------------------------------------------------------
-elif modulo == "🧮 Calculadora de Taxas & Lucro":
-    st.header("🧮 Calculadora de Custos e Taxas de Marketplace")
-    st.write("Descubra o seu **Lucro Líquido Real** descontando custos e taxas de plataformas.")
-
-    nome_item = st.text_input("📦 Nome do item avaliado:")
-    custo_prod = st.number_input("💸 Preço de Custo / Aquisição (R$):", min_value=0.0, value=50.0, step=1.0)
-    preco_venda = st.number_input("🏷️ Preço de Venda Pretendido (R$):", min_value=0.0, value=120.0, step=1.0)
-    taxa_marketplace_pct = st.number_input("📊 Taxa do Marketplace ou Cartão (%):", min_value=0.0, max_value=100.0, value=16.0, step=0.5)
-    custo_extra = st.number_input("📦 Custos Extras (Embalagem, Frete, etc) (R$):", min_value=0.0, value=5.0, step=1.0)
-
-    if st.button("Calcular Lucro Líquido Real"):
-        if nome_item:
-            valor_taxa = preco_venda * (taxa_marketplace_pct / 100.0)
-            lucro_liquido = preco_venda - custo_prod - valor_taxa - custo_extra
-            
-            if preco_venda > 0:
-                margem_liquida_pct = (lucro_liquido / preco_venda) * 100.0
+                st.success("🎬 Roteiro gerado com sucesso!")
+                st.text_area("Estrutura do Vídeo:", roteiro, height=220, key="txt_vid")
+                st.session_state.historico.append(f"Roteiro: {prod_video}")
+                st.download_button(label="📥 Baixar Roteiro (.txt)", data=roteiro, file_name=f"roteiro_{prod_video.lower().replace(' ', '_')}.txt", mime="text/plain", key="dl_vid")
             else:
-                margem_liquida_pct = 0.0
+                st.warning("⚠️ Preencha os campos.")
 
-            if lucro_liquido > 0:
-                status_lucro = "Lucro Saudável 🟢"
+# =========================================================
+# ABA 3: FINANÇAS & PRECIFICAÇÃO
+# =========================================================
+with tab3:
+    st.subheader("Ferramentas Financeiras & Precificação")
+    escolha_tab3 = st.selectbox("Escolha a ferramenta:", ["📊 Analisador de Preços", "🧮 Calculadora de Taxas & Lucro"], key="sub_tab3")
+
+    if escolha_tab3 == "📊 Analisador de Preços":
+        st.write("Analise o mercado e calcule o preço ideal de venda para maximizar seu lucro.")
+        produto_preco = st.text_input("📦 Nome do produto:", key="preco_prod")
+        preco_atual = st.number_input("💰 Preço que você cobra hoje (R$):", min_value=0.0, value=100.0, step=1.0, key="preco_val")
+
+        if st.button("Executar Análise de Preços", key="btn_preco"):
+            if produto_preco:
+                med = max(preco_atual * 1.15, 100.00)
+                menor = med * 0.85
+                sug = round(med * 0.95, 2)
+                
+                if preco_atual > med:
+                    status = "Acima da Média (Risco de baixo giro)"
+                    rec = f"Seu preço está alto. Sugerimos fixar em R$ {sug:.2f} para garantir vendas."
+                elif preco_atual < menor:
+                    status = "Abaixo do Mercado (Margem baixa)"
+                    rec = f"Você está vendendo barato demais! Suba para R$ {sug:.2f} para lucrar mais."
+                else:
+                    status = "Posicionamento Estratégico Saudável 🚀"
+                    rec = f"Preço competitivo. Para atingir a margem ideal, recomendamos ajustar para R$ {sug:.2f}."
+
+                relatorio = f"""--- 🧠 RELATÓRIO DE INTELIGÊNCIA DE PREÇOS ---
+[Produto Analisado]: {produto_preco}
+[Seu Preço Informado]: R$ {preco_atual:.2f}
+[Média Estimada da Concorrência]: R$ {med:.2f}
+[Menor Preço no Mercado]: R$ {menor:.2f}
+🎯 [PREÇO SUGERIDO PARA LUCRO ÓTIMO]: R$ {sug:.2f}
+[Status Competitivo]: {status}
+[Recomendação]: {rec}"""
+                st.success("🎯 Análise de preços concluída!")
+                st.text_area("Relatório Completo:", relatorio, height=230, key="txt_preco")
+                st.session_state.historico.append(f"Preço: {produto_preco}")
+                st.download_button(label="📥 Baixar Relatório (.txt)", data=relatorio, file_name=f"relatorio_preco_{produto_preco.lower().replace(' ', '_')}.txt", mime="text/plain", key="dl_preco")
             else:
-                status_lucro = "Prejuízo ou Margem Negativa 🔴"
+                st.warning("⚠️ Digite o nome do produto.")
 
-            relatorio_lucro = f"""--- 🧮 RELATÓRIO DE LUCRO LÍQUIDO REAL ---
+    elif escolha_tab3 == "🧮 Calculadora de Taxas & Lucro":
+        st.write("Descubra o seu **Lucro Líquido Real** descontando custos e taxas de plataformas.")
+        nome_item = st.text_input("📦 Nome do item avaliado:", key="lucro_item")
+        custo_prod = st.number_input("💸 Preço de Custo / Aquisição (R$):", min_value=0.0, value=50.0, step=1.0, key="lucro_custo")
+        preco_venda = st.number_input("🏷️ Preço de Venda Pretendido (R$):", min_value=0.0, value=120.0, step=1.0, key="lucro_venda")
+        taxa_marketplace_pct = st.number_input("📊 Taxa do Marketplace ou Cartão (%):", min_value=0.0, max_value=100.0, value=16.0, step=0.5, key="lucro_taxa")
+        custo_extra = st.number_input("📦 Custos Extras (Embalagem, Frete, etc) (R$):", min_value=0.0, value=5.0, step=1.0, key="lucro_extra")
+
+        if st.button("Calcular Lucro Líquido Real", key="btn_lucro"):
+            if nome_item:
+                valor_taxa = preco_venda * (taxa_marketplace_pct / 100.0)
+                lucro_liquido = preco_venda - custo_prod - valor_taxa - custo_extra
+                margem_liquida_pct = (lucro_liquido / preco_venda) * 100.0 if preco_venda > 0 else 0.0
+                status_lucro = "Lucro Saudável 🟢" if lucro_liquido > 0 else "Prejuízo ou Margem Negativa 🔴"
+
+                relatorio_lucro = f"""--- 🧮 RELATÓRIO DE LUCRO LÍQUIDO REAL ---
 [Produto]: {nome_item}
 [Preço de Venda]: R$ {preco_venda:.2f}
 [Preço de Custo]: R$ {custo_prod:.2f}
@@ -369,20 +291,11 @@ elif modulo == "🧮 Calculadora de Taxas & Lucro":
 ----------------------------------------
 💰 [LUCRO LÍQUIDO FINAL]: R$ {lucro_liquido:.2f}
 📈 [Margem Líquida Percentual]: {margem_liquida_pct:.1f}%
-[Status Financeiro]: {status_lucro}
-"""
-
-            st.success("🧮 Cálculo de lucros realizado com sucesso!")
-            st.metric(label="💰 Lucro Líquido Real", value=f"R$ {lucro_liquido:.2f}", delta=f"{margem_liquida_pct:.1f}% de margem")
-            st.text_area("Relatório Financeiro:", relatorio_lucro, height=200)
-
-            st.session_state.historico.append(f"Lucro: {nome_item}")
-
-            st.download_button(
-                label="📥 Baixar Relatório Financeiro (.txt)",
-                data=relatorio_lucro,
-                file_name=f"lucro_{nome_item.lower().replace(' ', '_')}.txt",
-                mime="text/plain"
-            )
-        else:
-            st.warning("⚠️ Digite o nome do item.")
+[Status Financeiro]: {status_lucro}"""
+                st.success("🧮 Cálculo de lucros realizado com sucesso!")
+                st.metric(label="💰 Lucro Líquido Real", value=f"R$ {lucro_liquido:.2f}", delta=f"{margem_liquida_pct:.1f}% de margem")
+                st.text_area("Relatório Financeiro:", relatorio_lucro, height=200, key="txt_lucro")
+                st.session_state.historico.append(f"Lucro: {nome_item}")
+                st.download_button(label="📥 Baixar Relatório Financeiro (.txt)", data=relatorio_lucro, file_name=f"lucro_{nome_item.lower().replace(' ', '_')}.txt", mime="text/plain", key="dl_lucro")
+            else:
+                st.warning("⚠️ Digite o nome do item.")
