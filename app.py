@@ -21,10 +21,20 @@ st.set_page_config(
 # =========================================================
 # BANCO DE DADOS & AUTENTICAÇÃO (SQLITE)
 # =========================================================
+
 def init_db():
     conn = sqlite3.connect('neurax_suite.db', check_same_thread=False)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT, plan TEXT DEFAULT 'Free')''')
+    
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
+    
+    
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'Free'")
+    except sqlite3.OperationalError:
+        pass 
+        
     c.execute('''CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, item TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     return conn
