@@ -44,6 +44,8 @@ modulo = st.sidebar.selectbox(
     "Escolha o Módulo do Sistema",
     
 )# Menu Lateral (Sidebar) para escolher o módulo
+)
+# Menu Lateral (Sidebar) para escolher o módulo
 modulo = st.sidebar.selectbox(
     "Escolha o Módulo do Sistema",
     [
