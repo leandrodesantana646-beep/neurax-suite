@@ -11,7 +11,7 @@ except ImportError:
 
 # Configuração da Página
 st.set_page_config(
-    page_title="NeuraX Suite - Painel SaaS",
+    page_title="NeuraX Suite - SaaS Intelligence",
     page_icon="🚀",
     layout="centered"
 )
@@ -71,72 +71,117 @@ if "logged_in" not in st.session_state:
 
 # Tela de Login e Cadastro se não estiver logado
 if not st.session_state.logged_in:
-    st.title("🔐 NeuraX Suite - Acesso ao Sistema")
-    st.markdown("Faça login ou crie sua conta para acessar o painel inteligente de e-commerce.")
+    st.markdown("""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .stButton>button {
+            background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%);
+            color: white; border-radius: 10px; font-weight: 600; padding: 0.6rem 1.2rem;
+            border: none; box-shadow: 0 4px 14px rgba(255, 75, 75, 0.25); transition: all 0.2s ease-in-out; width: 100%;
+        }
+        .stButton>button:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 75, 75, 0.4); }
+        .stTextInput>div>div>input { border-radius: 8px; border: 1px solid #1f2937; background-color: #111827; color: #f3f4f6; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<h1 style='text-align: center; color: #f3f4f6;'>🚀 NeuraX Suite</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #9ca3af;'>Plataforma Inteligente de Automação para E-commerce</p>", unsafe_allow_html=True)
     
-    tab_login, tab_reg = st.tabs(["🔑 Entrar", "📝 Criar Conta"])
-    
-    with tab_login:
-        l_user = st.text_input("Usuário", key="l_user")
-        l_pass = st.text_input("Senha", type="password", key="l_pass")
-        if st.button("Entrar no Sistema", key="btn_login"):
-            if check_login(l_user, l_pass):
-                st.session_state.logged_in = True
-                st.session_state.username = l_user
-                st.success("Login realizado com sucesso! Carregando painel...")
-                st.rerun()
-            else:
-                st.error("Usuário ou senha incorretos.")
-                
-    with tab_reg:
-        r_user = st.text_input("Escolha um Usuário", key="r_user")
-        r_pass = st.text_input("Escolha uma Senha", type="password", key="r_pass")
-        if st.button("Cadastrar Conta", key="btn_reg"):
-            if r_user and r_pass:
-                if register_user(r_user, r_pass):
-                    st.success("Conta criada com sucesso! Vá para a aba 'Entrar'.")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        tab_login, tab_reg = st.tabs(["🔑 Entrar", "📝 Criar Conta"])
+        
+        with tab_login:
+            l_user = st.text_input("Usuário", key="l_user")
+            l_pass = st.text_input("Senha", type="password", key="l_pass")
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+            if st.button("Acessar Painel", key="btn_login"):
+                if check_login(l_user, l_pass):
+                    st.session_state.logged_in = True
+                    st.session_state.username = l_user
+                    st.success("Autenticado com sucesso!")
+                    st.rerun()
                 else:
-                    st.error("Este nome de usuário já existe.")
-            else:
-                st.warning("Preencha todos os campos.")
+                    st.error("Usuário ou senha incorretos.")
+                    
+        with tab_reg:
+            r_user = st.text_input("Novo Usuário", key="r_user")
+            r_pass = st.text_input("Nova Senha", type="password", key="r_pass")
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+            if st.button("Cadastrar Conta", key="btn_reg"):
+                if r_user and r_pass:
+                    if register_user(r_user, r_pass):
+                        st.success("Conta criada! Vá para a aba 'Entrar'.")
+                    else:
+                        st.error("Usuário já existe.")
+                else:
+                    st.warning("Preencha todos os campos.")
     st.stop()
 
 # =========================================================
-# PAINEL PRINCIPAL (APÓS O LOGIN)
+# PAINEL PRINCIPAL DE ELITE (APÓS O LOGIN)
 # =========================================================
 
-# Customização Visual de Elite & Efeito Cards
+# Customização Visual SaaS Avançada
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* Abas Superiores Modernas */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 6px;
+        background-color: #111827;
+        padding: 6px;
+        border-radius: 12px;
+        border: 1px solid #1f2937;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px;
+        color: #9ca3af;
+        font-weight: 600;
+        padding: 8px 16px;
+    }
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%) !important;
+        color: white !important;
+    }
+
+    /* Botões Modernos */
     .stButton>button {
         background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%);
-        color: white; border-radius: 12px; font-weight: 600; padding: 0.6rem 1.2rem;
-        border: none; box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3); transition: all 0.3s ease; width: 100%;
+        color: white; border-radius: 10px; font-weight: 600; padding: 0.6rem 1.2rem;
+        border: none; box-shadow: 0 4px 14px rgba(255, 75, 75, 0.25); transition: all 0.2s ease-in-out; width: 100%;
     }
-    .stButton>button:hover { opacity: 0.95; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255, 75, 75, 0.4); }
+    .stButton>button:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 75, 75, 0.4); }
+
+    /* Campos de Entrada Estilizados */
     .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>div {
-        border-radius: 10px; border: 1px solid #30363d; background-color: #0d1117;
+        border-radius: 8px; border: 1px solid #1f2937; background-color: #111827; color: #f3f4f6;
     }
-    .stTextArea textarea { border-radius: 10px; border: 1px solid #30363d; background-color: #0d1117; color: #58a6ff; }
+    
+    /* Textareas de Resultado com Destaque Clean */
+    .stTextArea textarea {
+        border-radius: 8px; border: 1px solid #1f2937; background-color: #0b0f19; color: #60a5fa; font-family: monospace;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.title(f"🚀 NeuraX Suite - Bem-vindo, {st.session_state.username}!")
-st.markdown("O ecossistema definitivo de automação para e-commerce com IA e Banco de Dados.")
+st.title(f"🚀 NeuraX Suite")
+st.markdown(f"Painel de Inteligência Comercial • **{st.session_state.username}**")
 
-# Barra Lateral Avançada
-st.sidebar.subheader("🔑 Configuração de IA")
-groq_key_input = st.sidebar.text_input("Chave Groq API (Opcional):", type="password", help="Cole sua chave gratuita para ativar IA avançada.")
+# Barra Lateral de Configurações
+st.sidebar.subheader("⚙️ Configurações")
+groq_key_input = st.sidebar.text_input("Chave Groq API (IA):", type="password", help="Insira sua chave para ativar geração por IA real.")
 
 if groq_key_input:
-    st.sidebar.success("⚡ IA Real Ativada!")
+    st.sidebar.success("⚡ IA Real Conectada")
 else:
-    st.sidebar.info("💡 Modo Inteligente Padrão Ativo.")
+    st.sidebar.info("💡 Modo Inteligente Padrão Ativo")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📜 Histórico Salvo (Banco de Dados)")
+st.sidebar.subheader("📜 Histórico Recente")
 historico_usuario = carregar_historico_db(st.session_state.username)
 if historico_usuario:
     for item in historico_usuario:
@@ -145,10 +190,10 @@ if historico_usuario:
         limpar_historico_db(st.session_state.username)
         st.rerun()
 else:
-    st.sidebar.info("Nenhum histórico recente salvo.")
+    st.sidebar.info("Nenhum histórico registrado.")
 
 st.sidebar.markdown("---")
-if st.sidebar.button("🚪 Sair da Conta (Logout)", key="btn_logout"):
+if st.sidebar.button("🚪 Sair da Conta", key="btn_logout"):
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.rerun()
@@ -166,23 +211,26 @@ def gerar_resposta_ia(prompt_sistema, prompt_usuario):
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
-        st.error(f"Erro ao conectar com a IA: {e}")
+        st.error(f"Erro na IA: {e}")
         return None
 
-# Organização por Abas Principais (4 abas profissionais)
-tab1, tab2, tab3, tab4 = st.tabs(["⚡ Vendas & Conversão", "✍️ Conteúdo & Marketing", "📊 Finanças & Precificação", "🎯 Tráfego Pago (Novo!)"])
+# Abas Principais Estilizadas
+tab1, tab2, tab3, tab4 = st.tabs(["⚡ Vendas & Conversão", "✍️ Conteúdo & Marketing", "📊 Finanças & Precificação", "🎯 Tráfego Pago"])
 
 # =========================================================
 # ABA 1: VENDAS & CONVERSÃO
 # =========================================================
 with tab1:
-    st.subheader("Ferramentas de Vendas")
-    escolha_tab1 = st.selectbox("Escolha a ferramenta:", ["⚡ Campanha Flash Sale Instantânea", "💬 Assistente de WhatsApp"], key="sub_tab1")
+    st.markdown("### Ferramentas de Alta Conversão")
+    escolha_tab1 = st.selectbox("Selecione a ferramenta:", ["⚡ Campanha Flash Sale Instantânea", "💬 Assistente de WhatsApp"], key="sub_tab1")
     
     if escolha_tab1 == "⚡ Campanha Flash Sale Instantânea":
         prod_flash = st.text_input("📦 Nome do produto em promoção:", key="flash_prod")
-        preco_original = st.number_input("💰 Preço original (R$):", min_value=0.0, value=200.0, step=1.0, key="flash_orig")
-        preco_flash = st.number_input("🔥 Preço promocional relâmpago (R$):", min_value=0.0, value=149.0, step=1.0, key="flash_desc")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            preco_original = st.number_input("💰 Preço original (R$):", min_value=0.0, value=200.0, step=1.0, key="flash_orig")
+        with col_b:
+            preco_flash = st.number_input("🔥 Preço promocional (R$):", min_value=0.0, value=149.0, step=1.0, key="flash_desc")
         tempo_limite = st.selectbox("⏳ Duração da Oferta", ["Apenas hoje (24 horas)", "48 horas", "Enquanto durar o estoque"], key="flash_tempo")
 
         if st.button("Gerar Campanha Multicanal", key="btn_flash"):
@@ -190,27 +238,27 @@ with tab1:
                 economia = preco_original - preco_flash
                 desconto_calc = int((economia / preco_original) * 100) if preco_original > 0 else 0
 
-                prompt_ia = f"Crie uma campanha flash sale completa (WhatsApp, 3 Stories de Instagram e E-mail) para o produto '{prod_flash}', vendido de R$ {preco_original:.2f} por R$ {preco_flash:.2f} ({desconto_calc}% de desconto), duração: {tempo_limite}."
-                kit_campanha = gerar_resposta_ia("Você é um especialista em copywriting e vendas.", prompt_ia)
+                prompt_ia = f"Crie uma campanha flash sale completa (WhatsApp, 3 Stories de Instagram e E-mail) para o produto '{prod_flash}', de R$ {preco_original:.2f} por R$ {preco_flash:.2f} ({desconto_calc}% de desconto), duração: {tempo_limite}."
+                kit_campanha = gerar_resposta_ia("Especialista em copywriting e conversão.", prompt_ia)
 
                 if not kit_campanha:
-                    kit_campanha = f"⚡ KIT FLASH SALE: {prod_flash.upper()}\nDe: R$ {preco_original:.2f} Por: R$ {preco_flash:.2f} ({desconto_calc}% OFF). Corre no link!"
+                    kit_campanha = f"⚡ KIT FLASH SALE: {prod_flash.upper()}\nDe: R$ {preco_original:.2f} Por: R$ {preco_flash:.2f} ({desconto_calc}% OFF)."
 
                 st.success("🔥 Campanha gerada com sucesso!")
-                st.text_area("Resultado:", kit_campanha, height=300, key="txt_flash")
+                st.text_area("Resultado:", kit_campanha, height=280, key="txt_flash")
                 salvar_historico_db(st.session_state.username, f"Flash: {prod_flash}")
                 st.download_button("📥 Baixar Campanha (.txt)", kit_campanha, file_name=f"campanha_{prod_flash}.txt", mime="text/plain", key="dl_flash")
             else:
-                st.warning("⚠️ Digite o nome do produto.")
+                st.warning("⚠️ Informe o nome do produto.")
 
     elif escolha_tab1 == "💬 Assistente de WhatsApp":
         duvida_cliente = st.text_input("❓ Dúvida ou objeção do cliente:", key="wpp_duvida")
         nome_loja = st.text_input("🏷️ Nome da sua loja:", value="Nossa Loja", key="wpp_loja")
 
-        if st.button("Gerar Resposta", key="btn_wpp"):
+        if st.button("Gerar Resposta Comercial", key="btn_wpp"):
             if duvida_cliente:
                 prompt_ia = f"Escreva uma resposta de WhatsApp amigável para a loja '{nome_loja}', respondendo: '{duvida_cliente}'."
-                resposta_gerada = gerar_resposta_ia("Você é um assistente de atendimento de alta conversão.", prompt_ia)
+                resposta_gerada = gerar_resposta_ia("Assistente de atendimento focado em fechamento.", prompt_ia)
 
                 if not resposta_gerada:
                     resposta_gerada = f"Olá! Obrigado pelo contato com a {nome_loja}! Sobre '{duvida_cliente}': Garantimos total qualidade. Posso separar seu pedido?"
@@ -220,20 +268,20 @@ with tab1:
                 salvar_historico_db(st.session_state.username, f"WhatsApp: {duvida_cliente[:12]}...")
                 st.download_button("📥 Baixar Resposta (.txt)", resposta_gerada, file_name="wpp.txt", mime="text/plain", key="dl_wpp")
             else:
-                st.warning("⚠️ Digite a dúvida.")
+                st.warning("⚠️ Informe a dúvida do cliente.")
 
 # =========================================================
 # ABA 2: CONTEÚDO & MARKETING
 # =========================================================
 with tab2:
-    st.subheader("Ferramentas de Conteúdo & Copy")
-    escolha_tab2 = st.selectbox("Escolha a ferramenta:", ["🤖 Gerador de Copy e SEO", "🎬 Gerador de Roteiros (Reels/TikTok)"], key="sub_tab2")
+    st.markdown("### Estratégias de Conteúdo & SEO")
+    escolha_tab2 = st.selectbox("Selecione a ferramenta:", ["🤖 Gerador de Copy e SEO", "🎬 Gerador de Roteiros (Reels/TikTok)"], key="sub_tab2")
 
     if escolha_tab2 == "🤖 Gerador de Copy e SEO":
         nome_produto = st.text_input("📦 Nome do produto:", key="copy_prod")
         publico = st.text_input("🎯 Público-alvo:", key="copy_pub")
 
-        if st.button("Gerar Copy", key="btn_copy"):
+        if st.button("Gerar Copy e SEO", key="btn_copy"):
             if nome_produto and publico:
                 prompt_ia = f"Crie título SEO, descrição persuasiva e hashtags para '{nome_produto}' focado em '{publico}'."
                 resultado = gerar_resposta_ia("Especialista em SEO e Copywriting.", prompt_ia)
@@ -246,13 +294,13 @@ with tab2:
                 salvar_historico_db(st.session_state.username, f"Copy: {nome_produto}")
                 st.download_button("📥 Baixar Copy (.txt)", resultado, file_name="copy.txt", mime="text/plain", key="dl_copy")
             else:
-                st.warning("⚠️ Preencha os campos.")
+                st.warning("⚠️ Preencha todos os campos.")
 
     elif escolha_tab2 == "🎬 Gerador de Roteiros (Reels/TikTok)":
         prod_video = st.text_input("📦 Produto em destaque:", key="vid_prod")
         dor = st.text_input("🎯 Dor que o produto resolve:", key="vid_dor")
 
-        if st.button("Gerar Roteiro", key="btn_vid"):
+        if st.button("Gerar Roteiro Viral", key="btn_vid"):
             if prod_video and dor:
                 prompt_ia = f"Crie um roteiro viral (Gancho, Desenvolvimento, CTA) para '{prod_video}' resolvendo '{dor}'."
                 roteiro = gerar_resposta_ia("Especialista em vídeos curtos virais.", prompt_ia)
@@ -265,20 +313,20 @@ with tab2:
                 salvar_historico_db(st.session_state.username, f"Roteiro: {prod_video}")
                 st.download_button("📥 Baixar Roteiro (.txt)", roteiro, file_name="roteiro.txt", mime="text/plain", key="dl_vid")
             else:
-                st.warning("⚠️ Preencha os campos.")
+                st.warning("⚠️ Preencha todos os campos.")
 
 # =========================================================
 # ABA 3: FINANÇAS & PRECIFICAÇÃO
 # =========================================================
 with tab3:
-    st.subheader("Ferramentas Financeiras")
-    escolha_tab3 = st.selectbox("Escolha a ferramenta:", ["📊 Analisador de Preços", "🧮 Calculadora de Taxas & Lucro"], key="sub_tab3")
+    st.markdown("### Inteligência Financeira")
+    escolha_tab3 = st.selectbox("Selecione a ferramenta:", ["📊 Analisador de Preços", "🧮 Calculadora de Taxas & Lucro"], key="sub_tab3")
 
     if escolha_tab3 == "📊 Analisador de Preços":
         produto_preco = st.text_input("📦 Nome do produto:", key="preco_prod")
         preco_atual = st.number_input("💰 Preço de venda atual (R$):", min_value=0.0, value=100.0, step=1.0, key="preco_val")
 
-        if st.button("Executar Análise", key="btn_preco"):
+        if st.button("Executar Análise de Mercado", key="btn_preco"):
             if produto_preco:
                 med = max(preco_atual * 1.15, 100.00)
                 sug = round(med * 0.95, 2)
@@ -288,15 +336,18 @@ with tab3:
                 salvar_historico_db(st.session_state.username, f"Preço: {produto_preco}")
                 st.download_button("📥 Baixar Relatório (.txt)", relatorio, file_name="preco.txt", mime="text/plain", key="dl_preco")
             else:
-                st.warning("⚠️ Digite o produto.")
+                st.warning("⚠️ Informe o produto.")
 
     elif escolha_tab3 == "🧮 Calculadora de Taxas & Lucro":
         nome_item = st.text_input("📦 Nome do item:", key="lucro_item")
-        custo_prod = st.number_input("💸 Custo (R$):", min_value=0.0, value=50.0, step=1.0, key="lucro_custo")
-        preco_venda = st.number_input("🏷️ Venda (R$):", min_value=0.0, value=120.0, step=1.0, key="lucro_venda")
+        col_c, col_d = st.columns(2)
+        with col_c:
+            custo_prod = st.number_input("💸 Custo (R$):", min_value=0.0, value=50.0, step=1.0, key="lucro_custo")
+        with col_d:
+            preco_venda = st.number_input("🏷️ Venda (R$):", min_value=0.0, value=120.0, step=1.0, key="lucro_venda")
         taxa_mkt = st.number_input("📊 Taxa plataforma (%):", min_value=0.0, value=16.0, step=0.5, key="lucro_taxa")
 
-        if st.button("Calcular Lucro", key="btn_lucro"):
+        if st.button("Calcular Lucro Líquido", key="btn_lucro"):
             if nome_item:
                 val_taxa = preco_venda * (taxa_mkt / 100.0)
                 lucro = preco_venda - custo_prod - val_taxa
@@ -308,35 +359,30 @@ with tab3:
                 salvar_historico_db(st.session_state.username, f"Lucro: {nome_item}")
                 st.download_button("📥 Baixar Relatório (.txt)", rel_lucro, file_name="lucro.txt", mime="text/plain", key="dl_lucro")
             else:
-                st.warning("⚠️ Digite o item.")
+                st.warning("⚠️ Informe o nome do item.")
 
 # =========================================================
-# ABA 4: TRÁFEGO PAGO (NOVO MÓDULO DE ALTO IMPACTO)
+# ABA 4: TRÁFEGO PAGO
 # =========================================================
 with tab4:
-    st.subheader("🎯 Planejador de Tráfego Pago (Meta & Google Ads)")
-    st.write("Estruture campanhas de anúncios profissionais focadas em ROI e conversão.")
+    st.markdown("### Planejamento de Tráfego Pago")
+    st.write("Estruture campanhas profissionais focadas em ROI.")
 
     produto_trafego = st.text_input("📦 Produto a ser anunciado:", key="tr_prod")
-    orcamento_diario = st.number_input("💵 Orçamento Diário Disponível (R$):", min_value=10.0, value=50.0, step=5.0, key="tr_orc")
-    nicho = st.text_input("🏷️ Nicho de mercado (ex: Moda Fitness, Eletrônicos):", key="tr_nicho")
+    orcamento_diario = st.number_input("💵 Orçamento Diário (R$):", min_value=10.0, value=50.0, step=5.0, key="tr_orc")
+    nicho = st.text_input("🏷️ Nicho de mercado (ex: Moda Fitness):", key="tr_nicho")
 
-    if st.button("Gerar Estratégia de Tráfego", key="btn_trafego"):
+    if st.button("Gerar Estratégia de Anúncios", key="btn_trafego"):
         if produto_trafego and nicho:
-            prompt_ia = f"Crie uma estratégia de tráfego pago completa (Meta Ads / Google Ads) para o produto '{produto_trafego}' no nicho '{nicho}' com orçamento diário de R$ {orcamento_diario:.2f}. Inclua: 1. Objetivo de campanha recomendado, 2. Segmentação de público detalhada e 3. Sugestão de criativo/copy para os anúncios."
-            estrategia_trafego = gerar_resposta_ia("Você é um gestor de tráfego pago especialista em alta escala e ROAS positivo.", prompt_ia)
+            prompt_ia = f"Crie uma estratégia de tráfego pago completa (Meta Ads / Google Ads) para o produto '{produto_trafego}' no nicho '{nicho}' com orçamento diário de R$ {orcamento_diario:.2f}. Inclua objetivos, segmentação e sugestão de criativo."
+            estrategia_trafego = gerar_resposta_ia("Gestor de tráfego pago especialista em alta escala e ROAS positivo.", prompt_ia)
 
             if not estrategia_trafego:
-                estrategia_trafego = f"""--- 🎯 ESTRATÉGIA DE TRÁFEGO PAGO ---
-[Produto]: {produto_trafego} | [Nicho]: {nicho}
-[Orçamento Diário]: R$ {orcamento_diario:.2f}
-1. Objetivo: Conversão / Vendas diretas no site.
-2. Público-Alvo: Interessados em {nicho}, idade 21-45 anos, compradores online.
-3. Anúncio: Vídeo demonstrativo do {produto_trafego} com foco em benefício imediato."""
+                estrategia_trafego = f"[Produto]: {produto_trafego} | [Orçamento]: R$ {orcamento_diario:.2f}\n1. Objetivo: Conversão.\n2. Público: Interessados em {nicho}."
 
-            st.success("🎯 Estratégia de tráfego gerada com sucesso!")
+            st.success("🎯 Estratégia gerada com sucesso!")
             st.text_area("Plano de Anúncios:", estrategia_trafego, height=280, key="txt_tr")
             salvar_historico_db(st.session_state.username, f"Tráfego: {produto_trafego}")
-            st.download_button("📥 Baixar Plano de Tráfego (.txt)", estrategia_trafego, file_name=f"trafego_{produto_trafego}.txt", mime="text/plain", key="dl_tr")
+            st.download_button("📥 Baixar Plano (.txt)", estrategia_trafego, file_name=f"trafego_{produto_trafego}.txt", mime="text/plain", key="dl_tr")
         else:
             st.warning("⚠️ Preencha o produto e o nicho.")
