@@ -42,6 +42,10 @@ modulo = st.sidebar.selectbox(
     [
         modulo = st.sidebar.selectbox(
     "Escolha o Módulo do Sistema",
+    
+)# Menu Lateral (Sidebar) para escolher o módulo
+modulo = st.sidebar.selectbox(
+    "Escolha o Módulo do Sistema",
     [
         "⚡ Campanha Flash Sale Instantânea",
         "🤖 Gerador de Copy e SEO",
@@ -51,6 +55,7 @@ modulo = st.sidebar.selectbox(
         "🧮 Calculadora de Taxas & Lucro"
     ]
 )
+
 
 )
 
