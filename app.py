@@ -1,6 +1,8 @@
 import streamlit as st
 import sqlite3
 import hashlib
+import plotly.express as px
+import pandas as pd
 
 # Tenta importar o cliente Groq
 try:
@@ -22,7 +24,7 @@ st.set_page_config(
 def init_db():
     conn = sqlite3.connect('neurax_suite.db', check_same_thread=False)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT, plan TEXT DEFAULT 'Free')''')
     c.execute('''CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, item TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     return conn
@@ -43,7 +45,7 @@ def check_login(username, password):
 def register_user(username, password):
     try:
         c = conn.cursor()
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, make_hash(password)))
+        c.execute("INSERT INTO users (username, password, plan) VALUES (?, ?, ?)", (username, make_hash(password), 'Free'))
         conn.commit()
         return True
     except:
@@ -129,39 +131,24 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
     
-    /* Abas Superiores Modernas */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
-        background-color: #111827;
-        padding: 6px;
-        border-radius: 12px;
-        border: 1px solid #1f2937;
+        gap: 6px; background-color: #111827; padding: 6px; border-radius: 12px; border: 1px solid #1f2937;
     }
     .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        color: #9ca3af;
-        font-weight: 600;
-        padding: 8px 16px;
+        border-radius: 8px; color: #9ca3af; font-weight: 600; padding: 8px 12px; font-size: 13px;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%) !important;
-        color: white !important;
+        background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%) !important; color: white !important;
     }
-
-    /* Botões Modernos */
     .stButton>button {
         background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%);
         color: white; border-radius: 10px; font-weight: 600; padding: 0.6rem 1.2rem;
         border: none; box-shadow: 0 4px 14px rgba(255, 75, 75, 0.25); transition: all 0.2s ease-in-out; width: 100%;
     }
     .stButton>button:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255, 75, 75, 0.4); }
-
-    /* Campos de Entrada Estilizados */
     .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>div {
         border-radius: 8px; border: 1px solid #1f2937; background-color: #111827; color: #f3f4f6;
     }
-    
-    /* Textareas de Resultado com Destaque Clean */
     .stTextArea textarea {
         border-radius: 8px; border: 1px solid #1f2937; background-color: #0b0f19; color: #60a5fa; font-family: monospace;
     }
@@ -169,16 +156,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title(f"🚀 NeuraX Suite")
-st.markdown(f"Painel de Inteligência Comercial • **{st.session_state.username}**")
 
-# Barra Lateral de Configurações
-st.sidebar.subheader("⚙️ Configurações")
-groq_key_input = st.sidebar.text_input("Chave Groq API (IA):", type="password", help="Insira sua chave para ativar geração por IA real.")
+# Buscar plano do usuário para exibir na barra superior
+c_db = conn.cursor()
+c_db.execute("SELECT plan FROM users WHERE username = ?", (st.session_state.username,))
+u_plan_res = c_db.fetchone()
+plano_atual_usuario = u_plan_res[0] if u_plan_res else "Free"
 
-if groq_key_input:
-    st.sidebar.success("⚡ IA Real Conectada")
+st.markdown(f"Painel Comercial • **{st.session_state.username}** | Plano Ativo: `{plano_atual_usuario}`")
+
+# Configuração da Chave Groq (Suporta Streamlit Secrets ou Entrada Manual)
+groq_key_input = ""
+if "GROQ_API_KEY" in st.secrets:
+    groq_key_input = st.secrets["GROQ_API_KEY"]
+    st.sidebar.success("⚡ IA Global Ativa (Secrets)")
 else:
-    st.sidebar.info("💡 Modo Inteligente Padrão Ativo")
+    st.sidebar.subheader("⚙️ Configurações")
+    groq_key_input = st.sidebar.text_input("Chave Groq API (IA):", type="password", help="Insira sua chave para ativar IA real.")
+    if groq_key_input:
+        st.sidebar.success("⚡ IA Manual Conectada")
+    else:
+        st.sidebar.info("💡 Modo Inteligente Padrão Ativo")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📜 Histórico Recente")
@@ -214,8 +212,8 @@ def gerar_resposta_ia(prompt_sistema, prompt_usuario):
         st.error(f"Erro na IA: {e}")
         return None
 
-# Abas Principais Estilizadas
-tab1, tab2, tab3, tab4 = st.tabs(["⚡ Vendas & Conversão", "✍️ Conteúdo & Marketing", "📊 Finanças & Precificação", "🎯 Tráfego Pago"])
+# Abas Principais (Incluindo Monetização)
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["⚡ Vendas", "✍️ Marketing", "📊 Finanças", "🎯 Tráfego", "💎 Planos"])
 
 # =========================================================
 # ABA 1: VENDAS & CONVERSÃO
@@ -245,7 +243,7 @@ with tab1:
                     kit_campanha = f"⚡ KIT FLASH SALE: {prod_flash.upper()}\nDe: R$ {preco_original:.2f} Por: R$ {preco_flash:.2f} ({desconto_calc}% OFF)."
 
                 st.success("🔥 Campanha gerada com sucesso!")
-                st.text_area("Resultado:", kit_campanha, height=280, key="txt_flash")
+                st.text_area("Resultado:", kit_campanha, height=250, key="txt_flash")
                 salvar_historico_db(st.session_state.username, f"Flash: {prod_flash}")
                 st.download_button("📥 Baixar Campanha (.txt)", kit_campanha, file_name=f"campanha_{prod_flash}.txt", mime="text/plain", key="dl_flash")
             else:
@@ -309,18 +307,18 @@ with tab2:
                     roteiro = f"1. GANCHO: Cansado de {dor}?\n2. SOLUÇÃO: Use {prod_video}.\n3. CTA: Compre no link!"
 
                 st.success("🎬 Roteiro gerado!")
-                st.text_area("Roteiro:", roteiro, height=220, key="txt_vid")
+                st.text_area("Roteiro:", roteiro, height=200, key="txt_vid")
                 salvar_historico_db(st.session_state.username, f"Roteiro: {prod_video}")
                 st.download_button("📥 Baixar Roteiro (.txt)", roteiro, file_name="roteiro.txt", mime="text/plain", key="dl_vid")
             else:
                 st.warning("⚠️ Preencha todos os campos.")
 
 # =========================================================
-# ABA 3: FINANÇAS & PRECIFICAÇÃO
+# ABA 3: FINANÇAS & PRECIFICAÇÃO (COM GRÁFICO PLOTLY)
 # =========================================================
 with tab3:
-    st.markdown("### Inteligência Financeira")
-    escolha_tab3 = st.selectbox("Selecione a ferramenta:", ["📊 Analisador de Preços", "🧮 Calculadora de Taxas & Lucro"], key="sub_tab3")
+    st.markdown("### Inteligência Financeira & Gráficos")
+    escolha_tab3 = st.selectbox("Selecione a ferramenta:", ["📊 Analisador de Preços", "🧮 Calculadora de Taxas & Lucro Visual"], key="sub_tab3")
 
     if escolha_tab3 == "📊 Analisador de Preços":
         produto_preco = st.text_input("📦 Nome do produto:", key="preco_prod")
@@ -332,57 +330,137 @@ with tab3:
                 sug = round(med * 0.95, 2)
                 relatorio = f"[Produto]: {produto_preco}\n[Preço Atual]: R$ {preco_atual:.2f}\n[Preço Sugerido Ideal]: R$ {sug:.2f}"
                 st.success("🎯 Análise concluída!")
-                st.text_area("Relatório:", relatorio, height=200, key="txt_preco")
+                st.text_area("Relatório:", relatorio, height=180, key="txt_preco")
                 salvar_historico_db(st.session_state.username, f"Preço: {produto_preco}")
                 st.download_button("📥 Baixar Relatório (.txt)", relatorio, file_name="preco.txt", mime="text/plain", key="dl_preco")
             else:
                 st.warning("⚠️ Informe o produto.")
 
-    elif escolha_tab3 == "🧮 Calculadora de Taxas & Lucro":
+    elif escolha_tab3 == "🧮 Calculadora de Taxas & Lucro Visual":
         nome_item = st.text_input("📦 Nome do item:", key="lucro_item")
         col_c, col_d = st.columns(2)
         with col_c:
-            custo_prod = st.number_input("💸 Custo (R$):", min_value=0.0, value=50.0, step=1.0, key="lucro_custo")
+            custo_prod = st.number_input("💸 Custo de Produção/Aquisição (R$):", min_value=0.0, value=50.0, step=1.0, key="lucro_custo")
         with col_d:
-            preco_venda = st.number_input("🏷️ Venda (R$):", min_value=0.0, value=120.0, step=1.0, key="lucro_venda")
-        taxa_mkt = st.number_input("📊 Taxa plataforma (%):", min_value=0.0, value=16.0, step=0.5, key="lucro_taxa")
+            preco_venda = st.number_input("🏷️ Preço de Venda (R$):", min_value=0.0, value=120.0, step=1.0, key="lucro_venda")
+        taxa_mkt = st.number_input("📊 Taxa da Plataforma/Gateway (%):", min_value=0.0, value=16.0, step=0.5, key="lucro_taxa")
 
-        if st.button("Calcular Lucro Líquido", key="btn_lucro"):
+        if st.button("Calcular e Plotar Gráfico", key="btn_lucro"):
             if nome_item:
                 val_taxa = preco_venda * (taxa_mkt / 100.0)
                 lucro = preco_venda - custo_prod - val_taxa
                 margem = (lucro / preco_venda) * 100 if preco_venda > 0 else 0
-                rel_lucro = f"[Item]: {nome_item}\n[Lucro Líquido]: R$ {lucro:.2f}\n[Margem]: {margem:.1f}%"
-                st.success("🧮 Cálculo realizado!")
-                st.metric("Lucro Líquido Real", f"R$ {lucro:.2f}", f"{margem:.1f}% margem")
-                st.text_area("Relatório:", rel_lucro, height=180, key="txt_lucro")
+                
+                st.metric("Lucro Líquido Real", f"R$ {lucro:.2f}", f"{margem:.1f}% de margem")
+                
+                # Gráfico Plotly de Composição de Preço
+                df_lucro = pd.DataFrame({
+                    'Componente': ['Custo', 'Taxas', 'Lucro Líquido'],
+                    'Valor (R$)': [custo_prod, val_taxa, max(0.0, lucro)]
+                })
+                fig_lucro = px.bar(df_lucro, x='Componente', y='Valor (R$)', color='Componente',
+                                   color_discrete_sequence=['#ef4444', '#f59e0b', '#10b981'],
+                                   title=f"Composição de Custos e Margem: {nome_item}")
+                fig_lucro.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='#f3f4f6')
+                st.plotly_chart(fig_lucro, use_container_width=True)
+                
                 salvar_historico_db(st.session_state.username, f"Lucro: {nome_item}")
-                st.download_button("📥 Baixar Relatório (.txt)", rel_lucro, file_name="lucro.txt", mime="text/plain", key="dl_lucro")
             else:
                 st.warning("⚠️ Informe o nome do item.")
 
 # =========================================================
-# ABA 4: TRÁFEGO PAGO
+# ABA 4: TRÁFEGO PAGO (COM PROJEÇÃO PLOTLY)
 # =========================================================
 with tab4:
-    st.markdown("### Planejamento de Tráfego Pago")
-    st.write("Estruture campanhas profissionais focadas em ROI.")
+    st.markdown("### Planejamento de Tráfego Pago & Projeção")
+    st.write("Estruture campanhas e visualize projeções de retorno em 30 dias.")
 
     produto_trafego = st.text_input("📦 Produto a ser anunciado:", key="tr_prod")
     orcamento_diario = st.number_input("💵 Orçamento Diário (R$):", min_value=10.0, value=50.0, step=5.0, key="tr_orc")
-    nicho = st.text_input("🏷️ Nicho de mercado (ex: Moda Fitness):", key="tr_nicho")
+    nicho = st.text_input("🏷️ Nicho de mercado:", key="tr_nicho")
 
-    if st.button("Gerar Estratégia de Anúncios", key="btn_trafego"):
+    if st.button("Gerar Estratégia e Gráfico de Projeção", key="btn_trafego"):
         if produto_trafego and nicho:
-            prompt_ia = f"Crie uma estratégia de tráfego pago completa (Meta Ads / Google Ads) para o produto '{produto_trafego}' no nicho '{nicho}' com orçamento diário de R$ {orcamento_diario:.2f}. Inclua objetivos, segmentação e sugestão de criativo."
+            prompt_ia = f"Crie uma estratégia de tráfego pago completa (Meta Ads / Google Ads) para '{produto_trafego}' no nicho '{nicho}' com orçamento diário de R$ {orcamento_diario:.2f}."
             estrategia_trafego = gerar_resposta_ia("Gestor de tráfego pago especialista em alta escala e ROAS positivo.", prompt_ia)
 
             if not estrategia_trafego:
-                estrategia_trafego = f"[Produto]: {produto_trafego} | [Orçamento]: R$ {orcamento_diario:.2f}\n1. Objetivo: Conversão.\n2. Público: Interessados em {nicho}."
+                estrategia_trafego = f"[Produto]: {produto_trafego} | [Orçamento Diário]: R$ {orcamento_diario:.2f}\nEstratégia focada em conversão direta."
 
-            st.success("🎯 Estratégia gerada com sucesso!")
-            st.text_area("Plano de Anúncios:", estrategia_trafego, height=280, key="txt_tr")
+            st.success("🎯 Estratégia gerada!")
+            st.text_area("Plano de Anúncios:", estrategia_trafego, height=220, key="txt_tr")
+            
+            # Gráfico de Projeção Plotly (30 dias)
+            dias = list(range(1, 31))
+            gasto_acumulado = [orcamento_diario * d for d in dias]
+            receita_estimada = [g * 2.5 for g in gasto_acumulado] # Simulação de ROAS 2.5x
+            
+            df_trafego = pd.DataFrame({
+                'Dia': dias * 2,
+                'Valor (R$)': gasto_acumulado + receita_estimada,
+                'Métrica': ['Investimento Acumulado']*30 + ['Retorno Estimado (ROAS 2.5x)']*30
+            })
+            fig_tr = px.line(df_trafego, x='Dia', y='Valor (R$)', color='Métrica',
+                             color_discrete_sequence=['#ef4444', '#3b82f6'],
+                             title="Projeção de Escala de Tráfego (30 Dias)")
+            fig_tr.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color='#f3f4f6')
+            st.plotly_chart(fig_tr, use_container_width=True)
+
             salvar_historico_db(st.session_state.username, f"Tráfego: {produto_trafego}")
             st.download_button("📥 Baixar Plano (.txt)", estrategia_trafego, file_name=f"trafego_{produto_trafego}.txt", mime="text/plain", key="dl_tr")
         else:
             st.warning("⚠️ Preencha o produto e o nicho.")
+
+# =========================================================
+# ABA 5: PLANOS & MONETIZAÇÃO
+# =========================================================
+with tab5:
+    st.markdown("### 💎 Gestão de Planos & Assinatura")
+    st.write("Evolua sua conta para liberar recursos avançados e maior capacidade de automação.")
+    
+    c_plan = conn.cursor()
+    c_plan.execute("SELECT plan FROM users WHERE username = ?", (st.session_state.username,))
+    row_p = c_plan.fetchone()
+    current_plan = row_p[0] if row_p else "Free"
+    
+    st.info(f"Status atual da sua assinatura: **{current_plan}**")
+    
+    col_p1, col_p2, col_p3 = st.columns(3)
+    
+    with col_p1:
+        st.markdown("#### 🟢 Free")
+        st.markdown("• Recursos básicos\n• Histórico limitado\n• Suporte padrão")
+        if current_plan == "Free":
+            st.button("Plano Atual", disabled=True, key="btn_f1")
+        else:
+            if st.button("Mudar para Free", key="btn_s_free"):
+                c_plan.execute("UPDATE users SET plan = 'Free' WHERE username = ?", (st.session_state.username,))
+                conn.commit()
+                st.success("Plano alterado para Free!")
+                st.rerun()
+                
+    with col_p2:
+        st.markdown("#### ⚡ Pro (R$ 49/mês)")
+        st.markdown("• IA Ilimitada (Groq Llama 3)\n• Gráficos Avançados\n• Prioridade de Processamento")
+        if current_plan == "Pro":
+            st.button("Plano Atual", disabled=True, key="btn_f2")
+        else:
+            if st.button("Assinar Pro (Checkout Pix/Stripe)", key="btn_s_pro"):
+                c_plan.execute("UPDATE users SET plan = 'Pro' WHERE username = ?", (st.session_state.username,))
+                conn.commit()
+                st.balloons()
+                st.success("🎉 Pagamento simulado com sucesso! Plano Pro ativado!")
+                st.rerun()
+                
+    with col_p3:
+        st.markdown("#### 🚀 Enterprise")
+        st.markdown("• Múltiplas Contas\n• API Dedicada\n• Suporte VIP 24/7")
+        if current_plan == "Enterprise":
+            st.button("Plano Atual", disabled=True, key="btn_f3")
+        else:
+            if st.button("Assinar Enterprise", key="btn_s_ent"):
+                c_plan.execute("UPDATE users SET plan = 'Enterprise' WHERE username = ?", (st.session_state.username,))
+                conn.commit()
+                st.balloons()
+                st.success("🎉 Plano Enterprise ativado!")
+                st.rerun()
