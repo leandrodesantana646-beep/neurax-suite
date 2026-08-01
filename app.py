@@ -8,23 +8,56 @@ st.set_page_config(
 )
 
 # Customização Visual de Elite via CSS
+
+import streamlit as st
+
+# Configuração da Página
+st.set_page_config(
+    page_title="NeuraX Suite - Painel Inteligente",
+    page_icon="🚀",
+    layout="centered"
+)
+
+# Customização Visual de Elite & Efeito Cards
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Estilização dos botões principais com gradiente moderno */
     .stButton>button {
-        background: linear-gradient(90deg, #ff4b4b 0%, #ff8f4b 100%);
+        background: linear-gradient(135deg, #ff4b4b 0%, #ff8f4b 100%);
         color: white;
-        border-radius: 10px;
-        font-weight: bold;
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 0.6rem 1.2rem;
         border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        transition: 0.3s;
+        box-shadow: 0 4px 12px rgba(255, 75, 75, 0.3);
+        transition: all 0.3s ease;
+        width: 100%;
     }
     .stButton>button:hover {
-        opacity: 0.9;
-        transform: scale(1.02);
+        opacity: 0.95;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255, 75, 75, 0.4);
     }
-    .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        border-radius: 8px;
+
+    /* Campos de entrada com bordas refinadas */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div>div {
+        border-radius: 10px;
+        border: 1px solid #30363d;
+        background-color: #0d1117;
+    }
+    
+    /* Efeito de destaque nas caixas de texto de resultado */
+    .stTextArea textarea {
+        border-radius: 10px;
+        border: 1px solid #30363d;
+        background-color: #0d1117;
+        color: #58a6ff;
     }
     </style>
 """, unsafe_allow_html=True)
