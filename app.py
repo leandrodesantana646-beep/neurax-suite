@@ -1,5 +1,12 @@
 import streamlit as st
 
+# Tenta importar o cliente Groq
+try:
+    from groq import Groq
+    TEM_GROQ = True
+except ImportError:
+    TEM_GROQ = False
+
 # Configuração da Página
 st.set_page_config(
     page_title="NeuraX Suite - Painel Inteligente",
@@ -56,9 +63,19 @@ if "historico" not in st.session_state:
     st.session_state.historico = []
 
 st.title("🚀 NeuraX Suite - Painel Inteligente")
-st.markdown("O ecossistema definitivo de automação para e-commerce.")
+st.markdown("O ecossistema definitivo de automação para e-commerce com Inteligência Artificial.")
+
+# Configuração da Chave da API na Barra Lateral
+st.sidebar.subheader("🔑 Configuração de IA")
+groq_key_input = st.sidebar.text_input("Chave Groq API (Opcional):", type="password", help="Cole sua chave gratuita de console.groq.com para ativar IA real.")
+
+if groq_key_input:
+    st.sidebar.success("⚡ IA Real Ativada!")
+else:
+    st.sidebar.info("💡 Usando Modo Inteligente Padrão (Cole sua chave Groq para ativar IA completa).")
 
 # Exibir Histórico na Barra Lateral
+st.sidebar.markdown("---")
 st.sidebar.subheader("📜 Histórico da Sessão")
 if st.session_state.historico:
     for item in st.session_state.historico[-5:]:
@@ -69,7 +86,26 @@ if st.session_state.historico:
 else:
     st.sidebar.info("Nenhuma geração recente.")
 
-# Organização por Abas Principais (st.tabs) para UI limpa e moderna
+# Função central para chamar a IA do Groq
+def gerar_resposta_ia(prompt_sistema, prompt_usuario):
+    if not groq_key_input or not TEM_GROQ:
+        return None
+    try:
+        client = Groq(api_key=groq_key_input)
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.7,
+        )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        st.error(f"Erro ao conectar com a IA: {e}")
+        return None
+
+# Organização por Abas Principais (st.tabs)
 tab1, tab2, tab3 = st.tabs(["⚡ Vendas & Conversão", "✍️ Conteúdo & Marketing", "📊 Finanças & Precificação"])
 
 # =========================================================
@@ -80,7 +116,7 @@ with tab1:
     escolha_tab1 = st.selectbox("Escolha a ferramenta:", ["⚡ Campanha Flash Sale Instantânea", "💬 Assistente de WhatsApp"], key="sub_tab1")
     
     if escolha_tab1 == "⚡ Campanha Flash Sale Instantânea":
-        st.write("Crie uma estratégia relâmpago completa (WhatsApp + Instagram + E-mail) para gerar caixa rápido.")
+        st.write("Crie uma estratégia relâmpago completa (WhatsApp + Instagram + E-mail) gerada por IA.")
         prod_flash = st.text_input("📦 Nome do produto em promoção:", key="flash_prod")
         preco_original = st.number_input("💰 Preço original (R$):", min_value=0.0, value=200.0, step=1.0, key="flash_orig")
         preco_flash = st.number_input("🔥 Preço promocional relâmpago (R$):", min_value=0.0, value=149.0, step=1.0, key="flash_desc")
@@ -91,59 +127,31 @@ with tab1:
                 economia = preco_original - preco_flash
                 desconto_calc = int((economia / preco_original) * 100) if preco_original > 0 else 0
 
-                kit_campanha = f"""========================================
+                # Tenta usar IA se houver chave
+                prompt_ia = f"Crie uma campanha flash sale completa contendo: 1. Mensagem de WhatsApp persuasiva, 2. Sequência de 3 Stories para Instagram e 3. E-mail de vendas para o produto '{prod_flash}', vendido de R$ {preco_original:.2f} por R$ {preco_flash:.2f} ({desconto_calc}% de desconto), com duração de {tempo_limite}."
+                kit_campanha = gerar_resposta_ia("Você é um especialista em copywriting e estratégias de vendas para e-commerce.", prompt_ia)
+
+                # Fallback se não tiver chave
+                if not kit_campanha:
+                    kit_campanha = f"""========================================
 ⚡ KIT DE CAMPANHA FLASH SALE - {prod_flash.upper()}
 ========================================
 
 1. 📱 MENSAGEM PARA GRUPO / VIP DO WHATSAPP:
 ----------------------------------------
 🚨 ALERTA DE OFERTA RELÂMPAGO! 🚨
-
 Galera, conseguimos liberar uma condição absurda para o {prod_flash} por tempo limitado ({tempo_limite})!
-
-De: R$ {preco_original:.2f}
-Por apenas: R$ {preco_flash:.2f} 😱 ({desconto_calc}% de desconto)
-
-⚠️ ATENÇÃO: Estoque extremamente limitado e o preço volta ao normal daqui a pouco. 
-
-Clica aqui para garantir o seu antes que acabe: [INSERIR_LINK_DE_PAGAMENTO] 🛒✨
-
----
+De: R$ {preco_original:.2f} | Por apenas: R$ {preco_flash:.2f} 😱 ({desconto_calc}% de desconto)
+Clica aqui para garantir o seu antes que acabe: [INSERIR_LINK] 🛒✨
 
 2. 📸 SEQUÊNCIA DE STORIES (INSTAGRAM):
-----------------------------------------
-• Story 1 (Abertura/Alerta):
-  - Fundo: Foto bonita do produto com efeito de alarme ou cor chamativa.
-  - Texto na tela: "ALERTA DE QUEDA DE PREÇO! 🚨"
-  - Fala: "Gente, muita gente pediu e conseguimos um lote promocional do {prod_flash} com desconto histórico!"
+- Story 1: "ALERTA DE QUEDA DE PREÇO! 🚨"
+- Story 2: De R$ {preco_original:.2f} por R$ {preco_flash:.2f}! ({desconto_calc}% OFF)
+- Story 3: "Últimas unidades! Corre no link."
 
-• Story 2 (A Oportunidade):
-  - Fundo: Print do valor de R$ {preco_original} riscado indo para R$ {preco_flash}.
-  - Texto na tela: "De R$ {preco_original:.2f} por R$ {preco_flash:.2f}!"
-  - Fala: "Olha isso aqui. São {desconto_calc}% de economia real. Mas ó, é válido {tempo_limite.lower()}."
-
-• Story 3 (Fechamento/CTA):
-  - Fundo: Link direto para a compra com o botão "EU QUERO".
-  - Texto na tela: "Últimas unidades! Corre no link."
-  - Fala: "O link tá aqui embaixo nos Stories ou na bio. Acabou o lote, o preço sobe. Garante o seu!"
-
----
-
-3. 📧 E-MAIL MARKETING / DISPARO RÁPIDO:
-----------------------------------------
+3. 📧 E-MAIL MARKETING:
 Assunto: ⏰ Corre! {prod_flash} com {desconto_calc}% de desconto ({tempo_limite})
-
-Olá, tudo bem?
-
-Se você estava esperando o momento certo para garantir o seu {prod_flash}, ele chegou.
-
-A partir de agora e por {tempo_limite.lower()}, o {prod_flash} sai de R$ {preco_original:.2f} por apenas **R$ {preco_flash:.2f}**.
-
-Criamos essa condição exclusiva para recompensar quem acompanha a nossa loja, mas as unidades são limitadas e o sistema vai encerrar a oferta automaticamente.
-
-👉 [CLIQUE AQUI PARA GARANTIR SEU {prod_flash.upper()} COM DESCONTO]
-
-Abraços e boas compras!
+Olá! O {prod_flash} saiu de R$ {preco_original:.2f} por R$ {preco_flash:.2f} por tempo limitado. Garanta o seu!
 ========================================"""
 
                 st.success("🔥 Campanha relâmpago gerada com sucesso!")
@@ -160,13 +168,13 @@ Abraços e boas compras!
 
         if st.button("Gerar Resposta", key="btn_wpp"):
             if duvida_cliente:
-                resposta_gerada = f"""Olá! Tudo bem? 😃
-Obrigado pelo contato com a {nome_loja}!
+                prompt_ia = f"Escreva uma resposta de WhatsApp amigável e persuasiva para uma loja chamada '{nome_loja}', respondendo à seguinte dúvida do cliente: '{duvida_cliente}'. A resposta deve gerar confiança e incentivar o fechamento da compra."
+                resposta_gerada = gerar_resposta_ia("Você é um assistente de atendimento ao cliente de alta conversão para e-commerce.", prompt_ia)
 
-Referente à sua dúvida ("{duvida_cliente}"):
-Trabalhamos apenas com produtos 100% originais, testados e com garantia de fábrica para garantir a sua total segurança. Além disso, oferecemos envio rápido e suporte dedicado!
+                if not resposta_gerada:
+                    resposta_gerada = f"""Olá! Tudo bem? 😃 Obrigado pelo contato com a {nome_loja}!
+Referente à sua dúvida ("{duvida_cliente}"): Trabalhamos apenas com produtos originais e com garantia. Posso separar o seu pedido por aqui? ✨"""
 
-Posso separar o seu pedido por aqui para garantirmos o estoque? ✨"""
                 st.success("💬 Resposta gerada com sucesso!")
                 st.text_area("Mensagem:", resposta_gerada, height=180, key="txt_wpp")
                 st.session_state.historico.append(f"WhatsApp: {duvida_cliente[:15]}...")
@@ -182,16 +190,21 @@ with tab2:
     escolha_tab2 = st.selectbox("Escolha a ferramenta:", ["🤖 Gerador de Copy e SEO", "🎬 Gerador de Roteiros (Reels/TikTok)"], key="sub_tab2")
 
     if escolha_tab2 == "🤖 Gerador de Copy e SEO":
-        st.write("Crie títulos otimizados, descrições de alto impacto e baixe o arquivo em segundos.")
+        st.write("Crie títulos otimizados, descrições de alto impacto e hashtags.")
         nome_produto = st.text_input("📦 Digite o nome do produto:", key="copy_prod")
         publico = st.text_input("🎯 Para quem é esse produto? (ex: lojistas, jovens, mães):", key="copy_pub")
 
         if st.button("Gerar Copy", key="btn_copy"):
             if nome_produto and publico:
-                resultado = f"""--- 🎯 RESULTADO GERADO PELO SISTEMA ---
+                prompt_ia = f"Crie um título otimizado para SEO, uma descrição de vendas persuasiva e hashtags relevantes para o produto '{nome_produto}' voltado para o público '{publico}'."
+                resultado = gerar_resposta_ia("Você é um especialista em copywriting e SEO para e-commerce.", prompt_ia)
+
+                if not resultado:
+                    resultado = f"""--- 🎯 RESULTADO GERADO PELO SISTEMA ---
 [Título SEO]: {nome_produto} Original | Oferta Imperdível | Frete Grátis
-[Descrição de Vendas]: Procurando excelência? O novo {nome_produto} foi desenvolvido especialmente para o público {publico}. Unindo tecnologia de ponta, durabilidade e design exclusivo, ele resolve suas necessidades do dia a dia com máxima eficiência. Garanta já o seu com condições especiais!
-[Hashtags]: #{nome_produto.lower().replace(' ', '')} #ecommerce #lancamento #oferta"""
+[Descrição de Vendas]: O novo {nome_produto} foi desenvolvido especialmente para o público {publico}. Alta qualidade e durabilidade para o seu dia a dia.
+[Hashtags]: #{nome_produto.lower().replace(' ', '')} #ecommerce #oferta"""
+
                 st.success("✨ Copy gerada com sucesso!")
                 st.text_area("Resultado:", resultado, height=200, key="txt_copy")
                 st.session_state.historico.append(f"Copy: {nome_produto}")
@@ -206,17 +219,16 @@ with tab2:
 
         if st.button("Gerar Roteiro", key="btn_vid"):
             if prod_video and dor:
-                roteiro = f"""--- 🎬 ROTEIRO DE VÍDEO VIRAL (REELS / TIKTOK) ---
+                prompt_ia = f"Crie um roteiro de vídeo curto (Reels/TikTok) dividido em Gancho (0-3s), Desenvolvimento/Solução (3-15s) e Chamada para Ação/CTA (15-25s) para o produto '{prod_video}' que resolve a dor: '{dor}'."
+                roteiro = gerar_resposta_ia("Você é um criador de conteúdo especialista em vídeos virais e retenção.", prompt_ia)
+
+                if not roteiro:
+                    roteiro = f"""--- 🎬 ROTEIRO DE VÍDEO VIRAL ---
 [Produto]: {prod_video}
+1. GANCHO: "Cansado de sofrer com {dor}? Olha o que acabou de chegar!"
+2. SOLUÇÃO: "O novo {prod_video} resolve isso de forma prática e rápida."
+3. CTA: "Clica no link da bio para garantir o seu!" """
 
-1. GANCHO (0 a 3 segundos):
-- "Cansado de sofrer com {dor}? Olha o que acabou de chegar!"
-
-2. DESENVOLVIMENTO / SOLUÇÃO (3 a 15 segundos):
-- "A gente sabe como isso é chato no dia a dia. Mas o novo {prod_video} resolve isso de forma prática, rápida e com qualidade premium."
-
-3. CHAMADA PARA AÇÃO / CTA (15 a 25 segundos):
-- "Não fica de fora dessa! Clica no link da bio ou me manda uma mensagem aqui embaixo para garantir o seu!" """
                 st.success("🎬 Roteiro gerado com sucesso!")
                 st.text_area("Estrutura do Vídeo:", roteiro, height=220, key="txt_vid")
                 st.session_state.historico.append(f"Roteiro: {prod_video}")
@@ -232,7 +244,7 @@ with tab3:
     escolha_tab3 = st.selectbox("Escolha a ferramenta:", ["📊 Analisador de Preços", "🧮 Calculadora de Taxas & Lucro"], key="sub_tab3")
 
     if escolha_tab3 == "📊 Analisador de Preços":
-        st.write("Analise o mercado e calcule o preço ideal de venda para maximizar seu lucro.")
+        st.write("Analise o mercado e calcule o preço ideal de venda.")
         produto_preco = st.text_input("📦 Nome do produto:", key="preco_prod")
         preco_atual = st.number_input("💰 Preço que você cobra hoje (R$):", min_value=0.0, value=100.0, step=1.0, key="preco_val")
 
@@ -241,25 +253,14 @@ with tab3:
                 med = max(preco_atual * 1.15, 100.00)
                 menor = med * 0.85
                 sug = round(med * 0.95, 2)
+                status = "Acima da Média" if preco_atual > med else ("Abaixo do Mercado" if preco_atual < menor else "Saudável 🚀")
                 
-                if preco_atual > med:
-                    status = "Acima da Média (Risco de baixo giro)"
-                    rec = f"Seu preço está alto. Sugerimos fixar em R$ {sug:.2f} para garantir vendas."
-                elif preco_atual < menor:
-                    status = "Abaixo do Mercado (Margem baixa)"
-                    rec = f"Você está vendendo barato demais! Suba para R$ {sug:.2f} para lucrar mais."
-                else:
-                    status = "Posicionamento Estratégico Saudável 🚀"
-                    rec = f"Preço competitivo. Para atingir a margem ideal, recomendamos ajustar para R$ {sug:.2f}."
-
                 relatorio = f"""--- 🧠 RELATÓRIO DE INTELIGÊNCIA DE PREÇOS ---
 [Produto Analisado]: {produto_preco}
 [Seu Preço Informado]: R$ {preco_atual:.2f}
 [Média Estimada da Concorrência]: R$ {med:.2f}
-[Menor Preço no Mercado]: R$ {menor:.2f}
 🎯 [PREÇO SUGERIDO PARA LUCRO ÓTIMO]: R$ {sug:.2f}
-[Status Competitivo]: {status}
-[Recomendação]: {rec}"""
+[Status Competitivo]: {status}"""
                 st.success("🎯 Análise de preços concluída!")
                 st.text_area("Relatório Completo:", relatorio, height=230, key="txt_preco")
                 st.session_state.historico.append(f"Preço: {produto_preco}")
@@ -268,7 +269,7 @@ with tab3:
                 st.warning("⚠️ Digite o nome do produto.")
 
     elif escolha_tab3 == "🧮 Calculadora de Taxas & Lucro":
-        st.write("Descubra o seu **Lucro Líquido Real** descontando custos e taxas de plataformas.")
+        st.write("Descubra o seu **Lucro Líquido Real** descontando custos e taxas.")
         nome_item = st.text_input("📦 Nome do item avaliado:", key="lucro_item")
         custo_prod = st.number_input("💸 Preço de Custo / Aquisição (R$):", min_value=0.0, value=50.0, step=1.0, key="lucro_custo")
         preco_venda = st.number_input("🏷️ Preço de Venda Pretendido (R$):", min_value=0.0, value=120.0, step=1.0, key="lucro_venda")
