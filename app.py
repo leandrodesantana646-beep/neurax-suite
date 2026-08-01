@@ -40,12 +40,18 @@ st.markdown("O ecossistema definitivo de automação para e-commerce.")
 modulo = st.sidebar.selectbox(
     "Escolha o Módulo do Sistema",
     [
+        modulo = st.sidebar.selectbox(
+    "Escolha o Módulo do Sistema",
+    [
+        "⚡ Campanha Flash Sale Instantânea",
         "🤖 Gerador de Copy e SEO",
         "📊 Analisador de Preços",
         "💬 Assistente de WhatsApp",
         "🎬 Gerador de Roteiros (Reels/TikTok)",
         "🧮 Calculadora de Taxas & Lucro"
     ]
+)
+
 )
 
 # Exibir Histórico na Barra Lateral
