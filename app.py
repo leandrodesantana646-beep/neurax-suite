@@ -473,4 +473,60 @@ with tab5:
                 conn.commit()
                 st.balloons()
                 st.success("🎉 Plano Enterprise ativado!")
+  
+                
                 st.rerun()
+
+
+def gerar_com_groq(prompt, system_prompt, api_key):
+    # Se tiver uma chave e ela parecer válida, tenta chamar a IA
+    if api_key and api_key.startswith("gsk_"):
+        try:
+            from groq import Groq
+            client = Groq(api_key=api_key)
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1024,
+            )
+            return completion.choices[0].message.content
+        except Exception:
+            pass  # Se a API falhar (ex: erro 401), cai suavemente no Modo Simulação
+
+    # --- MODO DE SIMULAÇÃO INTELIGENTE (Fallback/Backup) ---
+    st.info("ℹ️ *Modo de Demonstração Ativo: Gerando resposta pré-formatada do NeuraX Suite.*")
+    
+    # Simulações personalizadas baseadas no tipo de solicitação
+    if "WhatsApp" in system_prompt or "whatsapp" in prompt.lower():
+        return (
+            "🚀 **Copy Mágica para WhatsApp**\n\n"
+            "Olá! Se você quer escalar seu negócio e automatizar suas vendas sem perder tempo, "
+            "o **NeuraX Suite** é a solução perfeita para você.\n\n"
+            "✅ Atendimento Inteligente 24/7\n"
+            "✅ Geração de Scripts em segundos\n"
+            "✅ Dashboards e Relatórios completos\n\n"
+            "👉 *Clique no link abaixo e garanta seu acesso com desconto exclusivo:* [Link do Seu Produto]"
+        )
+    elif "Instagram" in system_prompt or "post" in prompt.lower() or "carrossel" in prompt.lower():
+        return (
+            "📸 **Plano de Conteúdo para Instagram**\n\n"
+            "**Post 1: Carrossel Educativo**\n"
+            "- *Título:* 3 Erros que te impedem de faturar mais este mês.\n"
+            "- *Slide 1:* Não automatizar tarefas repetitivas.\n"
+            "- *Slide 2:* Fazer anúncios sem uma oferta clara.\n"
+            "- *Slide 3:* Não acompanhar as métricas do seu negócio.\n\n"
+            "**Legenda:** Qual desses erros você mais comete hoje? Comente 'AUTOMATIZAR' para receber nossa solução no Direct!"
+        )
+    else:
+        return (
+            "🎯 **Plano Estratégico Gerado pelo NeuraX IA**\n\n"
+            "1. **Análise de Cenário:** Identifique o seu público-alvo principal e otimize a oferta.\n"
+            "2. **Ação Rápida:** Crie uma página de vendas direta com gatilhos de urgência e escassez.\n"
+            "3. **Retenção:** Utilize e-mail marketing e sequências de mensagens para converter leads frios.\n\n"
+            "💡 *Dica Bônus:* Teste novos criativos a cada 7 dias para manter o custo por clique (CPC) baixo."
+        )
+
