@@ -1,5 +1,2 @@
-
 streamlit
-plotly
-pandas
-groq
+google-genai
