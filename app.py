@@ -6,11 +6,38 @@ from datetime import datetime
 import pandas as pd
 
 # Configuração inicial da página
-st.set_page_config(
-    page_title="NeuraX Suite",
-    page_icon="🚀",
-    layout="wide"
-)
+
+# Estilização visual customizada (Tema NeuraX Dark Pro)
+st.markdown("""
+    <style>
+    /* Ajuste de fontes e cores principais */
+    h1, h2, h3 {
+        color: #58a6ff !important;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Customização dos botões principais */
+    .stButton>button {
+        background: linear-gradient(90deg, #1f6feb 0%, #388bfd 100%);
+        color: white;
+        border-radius: 8px;
+        font-weight: bold;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(90deg, #388bfd 0%, #58a6ff 100%);
+        color: #ffffff;
+    }
+    
+    /* Estilização dos blocos de expansão e métricas */
+    .streamlit-expanderHeader {
+        background-color: #161b22;
+        border-radius: 6px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # Funções de Criptografia e Banco de Dados SQLite
 def make_hash(password):
