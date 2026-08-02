@@ -277,9 +277,101 @@ else:
             if st.button("Gerar Estratégia e Fluxograma"):
                 if funil_produto and funil_publico:
                     with st.spinner("Desenhando a arquitetura do funil e o fluxograma visual..."):
-                        prompt = f"""
-                        Atue como um Estrategista de Marketing Digital sênior. 
-                        Crie um funil de vendas estratégico completo para o produto: '{funil_produto}', com ticket '{funil_ticket}', voltado para o público: '{funil_publico}'.
-                        Sua resposta deve conter obrigatoriamente:
-                        1. A estratégia detalhada por etapas (Tráfego/Atração, Página de Captura/Conversão, Oferta/Checkout, Recuperação/Upsell).
-                        2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (começando obrigatoriamente com um bloco de código ```mermaid e terminando com 
+                        prompt = (
+                            f"Atue como um Estrategista de Marketing Digital sênior. "
+                            f"Crie um funil de vendas estratégico completo para o produto: '{funil_produto}', "
+                            f"com ticket '{funil_ticket}', voltado para o público: '{funil_publico}'.\n"
+                            "Sua resposta deve conter obrigatoriamente:\n"
+                            "1. A estratégia detalhada por etapas (Tráfego/Atração, Página de Captura/Conversão, Oferta/Checkout, Recuperação/Upsell).\n"
+                            "2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (começando obrigatoriamente com um bloco de código ```mermaid e terminando com ```) para que o Streamlit possa renderizar o fluxograma visual do funil passo a passo."
+                        )
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
+                        st.success("Arquitetura e Fluxograma gerados com sucesso!")
+                        st.markdown(resultado)
+
+        elif escolha == "💰 Precificação Inteligente":
+            st.header("💰 Calculadora de Precificação Inteligente com IA")
+            produto = st.text_input("Nome do Produto ou Serviço")
+            custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
+            margem = st.slider("Margem de Lucro (%)", min_value=10, max_value=500, value=100)
+            
+            if st.button("Calcular Preço Ideal"):
+                if produto and custo > 0:
+                    with st.spinner("Analisando..."):
+                        prompt = f"Analise a precificação de: {produto} com custo R${custo} e margem de {margem}%."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                        st.success("Análise concluída!")
+                        st.markdown(resultado)
+
+        elif escolha == "💬 Gerador de Copy WhatsApp":
+            st.header("💬 Gerador de Copy para WhatsApp")
+            nicho = st.text_input("Seu nicho/produto")
+            publico = st.text_input("Público-alvo")
+            oferta = st.text_area("Oferta")
+            
+            if st.button("Gerar Copy"):
+                if nicho and oferta:
+                    with st.spinner("Criando..."):
+                        prompt = f"Crie copy de vendas para WhatsApp. Nicho: {nicho}, Público: {publico}, Oferta: {oferta}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Copy WhatsApp", resultado)
+                        st.success("Gerado!")
+                        st.markdown(resultado)
+
+        elif escolha == "📸 Planejador Instagram":
+            st.header("📸 Planejador Instagram")
+            tema = st.text_input("Tema central")
+            qtd_dias = st.slider("Dias", 3, 7, 5)
+            
+            if st.button("Planejar Conteúdo"):
+                if tema:
+                    with st.spinner("Planejando..."):
+                        prompt = f"Planeje conteúdo para Instagram por {qtd_dias} dias sobre: {tema}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Planejador Instagram", resultado)
+                        st.success("Planejado!")
+                        st.markdown(resultado)
+
+        elif escolha == "✉️ Gerador de E-mail Comercial":
+            st.header("✉️ Gerador de E-mail Comercial")
+            objetivo_email = st.selectbox("Objetivo", ["Prospecção", "Follow-up", "Proposta", "Recuperação"])
+            cliente_alvo = st.text_input("Para quem?")
+            detalhes_produto = st.text_area("O que vende?")
+            
+            if st.button("Gerar E-mail"):
+                if detalhes_produto:
+                    with st.spinner("Redigindo..."):
+                        prompt = f"Escreva e-mail de {objetivo_email} para {cliente_alvo} vendendo {detalhes_produto}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "E-mail Comercial", resultado)
+                        st.success("E-mail gerado!")
+                        st.markdown(resultado)
+
+        elif escolha == "🎬 Gerador de Roteiro para Vídeos":
+            st.header("🎬 Gerador de Roteiro para Vídeos")
+            tema_video = st.text_input("Tema principal")
+            formato_video = st.selectbox("Formato", ["Reels/TikTok", "YouTube"])
+            tom = st.selectbox("Tom", ["Dinâmico", "Educativo", "Polêmico", "Divertido"])
+            
+            if st.button("Gerar Roteiro"):
+                if tema_video:
+                    with st.spinner("Escrevendo..."):
+                        prompt = f"Crie roteiro para {formato_video} sobre {tema_video} em tom {tom}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
+                        st.success("Roteiro pronto!")
+                        st.markdown(resultado)
