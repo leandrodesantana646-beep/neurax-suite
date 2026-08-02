@@ -5,13 +5,20 @@ import hashlib
 from datetime import datetime
 import pandas as pd
 
+# Configuração inicial da página
+st.set_page_config(
+    page_title="NeuraX Suite",
+    page_icon="🚀",
+    layout="wide"
+)
+
 # Estilização visual customizada (Tema NeuraX Pro & Ocultar Branding)
 st.markdown("""
     <style>
-    /* Oculta o cabeçalho superior (Remove o ícone do GitHub, Share e Menu) */
+    /* Oculta o cabeçalho superior */
     header {visibility: hidden;}
     
-    /* Oculta o rodapé padrão ("Made with Streamlit") */
+    /* Oculta o rodapé padrão */
     footer {visibility: hidden;}
     
     /* Ajuste de fontes e cores principais */
@@ -83,7 +90,6 @@ def add_user(username, password):
     conn.close()
 
 def login_user(username, password):
-    # 🔑 CHAVE MESTRA DE SEGURANÇA
     if username.strip().lower() == "admin" and password.strip().lower() == "admin":
         return True
 
@@ -173,15 +179,15 @@ else:
     st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
     st.sidebar.markdown("---")
     
+    # Carregamento automático da API Key via Secrets do Streamlit Cloud
+    groq_api_key = ""
+    try:
+        groq_api_key = st.secrets["GROQ_API_KEY"]
+    except Exception:
         groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
-    if not groq_api_key:
-        try:
-            groq_api_key = st.secrets["GROQ_API_KEY"]
-        except:
-            pass
 
     if not groq_api_key:
-        st.warning("⚠️ Insira sua chave da API da Groq na barra lateral para liberar as ferramentas.")
+        st.warning("⚠️ Chave da API da Groq não configurada nos Secrets do Streamlit.")
         client = None
     else:
         try:
@@ -189,7 +195,6 @@ else:
         except Exception as e:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
-
 
     # MENU PADRÃO (Para os usuários comuns) com a NOVA FERRAMENTA INOVADORA
     menu_options = [
@@ -202,14 +207,11 @@ else:
         "📂 Meu Histórico"
     ]
     
-    # =====================================================================
-    # 🔒 SISTEMA DE SEGURANÇA PARA O PAINEL ADMINISTRATIVO
-    # =====================================================================
+    # SISTEMA DE SEGURANÇA PARA O PAINEL ADMINISTRATIVO
     usuario_logado = st.session_state["username"].strip().lower()
     
     if usuario_logado == "admin":
         menu_options.insert(0, "🛠️ Painel Administrativo")
-    # =====================================================================
 
     escolha = st.sidebar.selectbox("Navegue pelas Ferramentas", menu_options)
     
