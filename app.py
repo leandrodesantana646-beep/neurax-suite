@@ -3,6 +3,7 @@ from groq import Groq
 import sqlite3
 import hashlib
 from datetime import datetime
+import pandas as pd
 
 # Configuração inicial da página
 st.set_page_config(
@@ -11,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Funções de Criptografia e Banco de Dados SQLite (Usuários + Histórico)
+# Funções de Criptografia e Banco de Dados SQLite (Usuários + Histórico + Admin)
 def make_hash(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
@@ -80,6 +81,22 @@ def get_history(username):
     conn.close()
     return data
 
+def get_all_users():
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username FROM users')
+    data = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in data]
+
+def get_all_history_admin():
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, tool_name, timestamp FROM history ORDER BY id DESC')
+    data = cursor.fetchall()
+    conn.close()
+    return data
+
 # Gerenciamento de Sessão de Login
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -143,25 +160,53 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # Menu de Navegação Completo (Com a opção de Histórico)
-    escolha = st.sidebar.selectbox(
-        "Navegue pelas Ferramentas",
-        [
-            "💰 Precificação Inteligente",
-            "💬 Gerador de Copy WhatsApp",
-            "📸 Planejador Instagram",
-            "✉️ Gerador de E-mail Comercial",
-            "🎬 Gerador de Roteiro para Vídeos",
-            "📂 Meu Histórico"
-        ]
-    )
+    # Montagem Dinâmica do Menu (Admin ganha acesso a opção extra)
+    menu_options = [
+        "💰 Precificação Inteligente",
+        "💬 Gerador de Copy WhatsApp",
+        "📸 Planejador Instagram",
+        "✉️ Gerador de E-mail Comercial",
+        "🎬 Gerador de Roteiro para Vídeos",
+        "📂 Meu Histórico"
+    ]
+    
+    if st.session_state["username"] == "admin":
+        menu_options.append("🛠️ Painel Administrativo")
+
+    escolha = st.sidebar.selectbox("Navegue pelas Ferramentas", menu_options)
     
     if st.sidebar.button("Sair da Conta"):
         st.session_state["logged_in"] = False
         st.session_state["username"] = ""
         st.rerun()
 
-    if escolha == "📂 Meu Histórico":
+    if escolha == "🛠️ Painel Administrativo":
+        st.header("🛠️ Painel Administrativo - NeuraX Suite")
+        st.write("Área restrita para monitoramento global do sistema e métricas de engajamento.")
+        
+        all_users = get_all_users()
+        all_history = get_all_history_admin()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Total de Usuários Cadastrados", len(all_users))
+        with col2:
+            st.metric("Total de Gerações na Plataforma", len(all_history))
+            
+        st.markdown("---")
+        st.markdown("### 👥 Usuários Registrados")
+        st.write(all_users)
+        
+        space_spacer = st.container()
+        
+        st.markdown("### 📊 Histórico Geral de Atividades")
+        if all_history:
+            df_history = pd.DataFrame(all_history, columns=["Usuário", "Ferramenta Utilizada", "Data e Hora"])
+            st.dataframe(df_history, use_container_width=True)
+        else:
+            st.info("Nenhuma atividade registrada na plataforma ainda.")
+
+    elif escolha == "📂 Meu Histórico":
         st.header("📂 Histórico de Gerações")
         st.write("Consulte abaixo todas as análises, copies e roteiros salvos no seu perfil.")
         
@@ -218,7 +263,6 @@ else:
                             st.session_state["generation_count"] += 1
                             resultado = completion.choices[0].message.content
                             
-                            # Salvar no histórico do banco de dados
                             save_history(st.session_state["username"], "Precificação Inteligente", resultado)
                             
                             st.success("Análise estratégica de precificação concluída e salva no histórico!")
@@ -362,7 +406,7 @@ else:
                                 mime="text/plain"
                             )
                         except Exception as e:
-                            st.error(f5"Erro ao gerar e-mail: {e}")
+                            st.error(f"Erro ao gerar e-mail: {e}")
                 else:
                     st.warning("Por favor, preencha os detalhes do produto ou serviço.")
 
