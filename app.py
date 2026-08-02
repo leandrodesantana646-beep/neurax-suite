@@ -121,6 +121,8 @@ else:
         st.subheader("💰 Precificação Inteligente & Margem de 100%")
         st.write("Analise o valor de custo do produtor em comparação com o mercado e descubra o preço ideal para garantir 100% de lucro.")
         
+        nome_produto = st.text_input("Nome do Produto ou Serviço:", "Ex: Camiseta Oversized / Curso Online")
+        
         col_c1, col_c2 = st.columns(2)
         with col_c1:
             custo = st.number_input("Valor de Custo / Produtor (R$)", min_value=0.0, value=50.0, step=5.0)
@@ -128,11 +130,11 @@ else:
             concorrencia = st.number_input("Preço Médio Atual no Mercado (R$)", min_value=0.0, value=120.0, step=5.0)
             
         if st.button("Analisar Preço e Sugerir Venda"):
-            preco_100_lucro = custo * 2  # 100% de lucro sobre o custo (Markup 2x)
+            preco_100_lucro = custo * 2  # 100% de lucro sobre o custo
             lucro_reais = preco_100_lucro - custo
             
             st.markdown("---")
-            st.markdown("### 📊 Relatório de Análise de Precificação")
+            st.markdown(f"### 📊 Relatório de Análise: {nome_produto}")
             
             res_col1, res_col2, res_col3 = st.columns(3)
             res_col1.metric("Seu Custo de Produção", f"R$ {custo:.2f}")
@@ -140,9 +142,9 @@ else:
             res_col3.metric("Lucro Líquido Estimado", f"R$ {lucro_reais:.2f}")
             
             if preco_100_lucro <= concorrencia:
-                st.success(f"✅ **Viável:** O preço sugerido de R$ {preco_100_lucro:.2f} está competitivo e abaixo ou alinhado com o mercado atual (R$ {concorrencia:.2f}).")
+                st.success(f"✅ **Viável:** O preço sugerido de R$ {preco_100_lucro:.2f} para **{nome_produto}** está competitivo e alinhado com o mercado atual (R$ {concorrencia:.2f}).")
             else:
-                st.warning(f"⚠️ **Atenção:** Para obter 100% de lucro, o preço sugerido (R$ {preco_100_lucro:.2f}) ficou acima da média de mercado (R$ {concorrencia:.2f}). Avalie reduzir custos ou agregar mais valor ao produto.")
+                st.warning(f"⚠️ **Atenção:** Para obter 100% de lucro, o preço sugerido de R$ {preco_100_lucro:.2f} para **{nome_produto}** ficou acima da média de mercado (R$ {concorrencia:.2f}). Avalie reduzir custos.")
                 
     elif menu == "Gerador de Copy WhatsApp":
         st.subheader("💬 Gerador de Copy para WhatsApp")
