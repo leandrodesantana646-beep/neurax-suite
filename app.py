@@ -11,14 +11,16 @@ try:
 except ImportError:
     TEM_GROQ = False
 
-# Configuração da Páginaimport streamlit as st
+# Configuração da Páginaimport streamlit as st import streamlit as st
 
+# Configuração da Página (Deve ser sempre o primeiro comando do Streamlit)
 st.set_page_config(
-    page_title="NeuraX Suite | IA & Negócios",  # Nome que aparece na aba do navegador
-    page_icon="🚀",                            # Emoji ou ícone da aba
-    layout="wide",                             # Deixa o layout expandido na tela
+    page_title="NeuraX Suite | IA & Negócios",
+    page_icon="🚀",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
+                       
 
 
 # =========================================================
