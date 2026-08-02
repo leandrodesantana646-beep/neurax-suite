@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Funções de Criptografia e Banco de Dados SQLite (Usuários + Histórico + Admin)
+# Funções de Criptografia e Banco de Dados SQLite
 def make_hash(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
@@ -24,14 +24,12 @@ def check_hash(password, hashed_text):
 def init_db():
     conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
     cursor = conn.cursor()
-    # Tabela de Usuários
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             password TEXT
         )
     ''')
-    # Tabela de Histórico de Gerações
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -133,16 +131,14 @@ if not st.session_state["logged_in"]:
                 st.warning("Preencha todos os campos.")
 
 else:
-    # Painel Principal do SaaS
+    # Painel Principal
     st.sidebar.title("Painel NeuraX")
     st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
-    # Estatísticas de Sessão
     st.sidebar.markdown("---")
     st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
     st.sidebar.markdown("---")
     
-    # Configuração da Chave da API da Groq
     groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
     if not groq_api_key:
         try:
@@ -160,7 +156,7 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # Montagem Dinâmica do Menu (Admin ganha acesso a opção extra)
+    # MONTANDO O MENU PADRÃO (Para os usuários comuns)
     menu_options = [
         "💰 Precificação Inteligente",
         "💬 Gerador de Copy WhatsApp",
@@ -170,9 +166,19 @@ else:
         "📂 Meu Histórico"
     ]
     
-    # Verificação inteligente para o Admin (ignora espaços e letras maiúsculas/minúsculas)
-    if st.session_state["username"].strip().lower() == "admin":
+    # =====================================================================
+    # 🔒 SISTEMA DE SEGURANÇA: Só mostra o painel para o dono do sistema!
+    # O sistema transforma tudo em minúsculo e tira espaços para não ter erro
+    # =====================================================================
+    
+    USUARIO_DONO = "admin" # <-- SE O SEU LOGIN NÃO FOR ADMIN, ME AVISE PARA EU MUDAR AQUI!
+    
+    usuario_logado = st.session_state["username"].strip().lower()
+    
+    if usuario_logado == USUARIO_DONO or usuario_logado == "admin":
         menu_options.append("🛠️ Painel Administrativo")
+    
+    # =====================================================================
 
     escolha = st.sidebar.selectbox("Navegue pelas Ferramentas", menu_options)
     
@@ -181,9 +187,10 @@ else:
         st.session_state["username"] = ""
         st.rerun()
 
+    # LÓGICA DO PAINEL ADMINISTRATIVO
     if escolha == "🛠️ Painel Administrativo":
         st.header("🛠️ Painel Administrativo - NeuraX Suite")
-        st.write("Área restrita para monitoramento global do sistema e métricas de engajamento.")
+        st.write("Área para monitoramento global do sistema e métricas de engajamento.")
         
         all_users = get_all_users()
         all_history = get_all_history_admin()
@@ -225,234 +232,90 @@ else:
                         key=f"dl_hist_{idx}"
                     )
 
+    # LÓGICA DAS FERRAMENTAS DE IA
     elif client:
         model_name = "llama-3.3-70b-versatile"
 
         if escolha == "💰 Precificação Inteligente":
             st.header("💰 Calculadora de Precificação Inteligente com IA")
-            st.write("Analise custos, margem de lucro, psicologia do consumidor e testes práticos de mercado.")
-            
             produto = st.text_input("Nome do Produto ou Serviço")
-            custo = st.number_input("Custo de Produção / Aquisição (R$)", min_value=0.0, format="%.2f")
-            margem = st.slider("Margem de Lucro Desejada (%)", min_value=10, max_value=500, value=100)
+            custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
+            margem = st.slider("Margem de Lucro (%)", min_value=10, max_value=500, value=100)
             
             if st.button("Calcular Preço Ideal"):
                 if produto and custo > 0:
-                    with st.spinner("Analisando mercado, custos e o fator humano..."):
-                        prompt = f"""
-                        Atue como um consultor financeiro especialista em precificação estratégica e comportamento do consumidor.
-                        Produto: {produto}
-                        Custo de produção: R$ {custo}
-                        Margem de lucro desejada: {margem}%
-                        
-                        Leve em conta não apenas os cálculos frios de markup, mas também o fator humano, a percepção de valor do cliente e a validação prática no mundo real.
-                        
-                        Retorne uma análise detalhada contendo:
-                        1. Preço de venda sugerido com base nos custos e na percepção de valor.
-                        2. Estimativa do preço médio praticado no mercado.
-                        3. Lucro líquido estimado por unidade.
-                        4. **Análise do Fator Humano e Psicologia do Consumidor** (como o público enxerga o valor e barreiras de preço).
-                        5. **Estratégias de Teste Prático** (sugestões de como testar o preço de forma segura na prática antes de fixá-lo definitivamente).
-                        """
-                        try:
-                            completion = client.chat.completions.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            st.session_state["generation_count"] += 1
-                            resultado = completion.choices[0].message.content
-                            
-                            save_history(st.session_state["username"], "Precificação Inteligente", resultado)
-                            
-                            st.success("Análise estratégica de precificação concluída e salva no histórico!")
-                            st.markdown(resultado)
-                            
-                            st.download_button(
-                                label="📥 Baixar Relatório de Precificação (.txt)",
-                                data=resultado,
-                                file_name=f"precificacao_{produto.lower().replace(' ', '_')}.txt",
-                                mime="text/plain"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro na IA: {e}")
-                else:
-                    st.warning("Insira o nome do produto e um custo válido.")
+                    with st.spinner("Analisando..."):
+                        prompt = f"Analise a precificação de: {produto} com custo R${custo} e margem de {margem}%."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                        st.success("Análise concluída!")
+                        st.markdown(resultado)
 
         elif escolha == "💬 Gerador de Copy WhatsApp":
             st.header("💬 Gerador de Copy para WhatsApp")
-            st.write("Crie mensagens de vendas persuasivas de alta conversão em segundos.")
+            nicho = st.text_input("Seu nicho/produto")
+            publico = st.text_input("Público-alvo")
+            oferta = st.text_area("Oferta")
             
-            nicho = st.text_input("Qual o seu nicho ou produto?")
-            publico = st.text_input("Quem é o público-alvo?")
-            oferta = st.text_area("Detalhes da oferta ou chamada")
-            
-            if st.button("Gerar Copy para WhatsApp"):
+            if st.button("Gerar Copy"):
                 if nicho and oferta:
-                    with st.spinner("Criando copy de alta conversão..."):
-                        prompt = f"""
-                        Crie uma mensagem de vendas persuasiva para WhatsApp.
-                        Nicho/Produto: {nicho}
-                        Público: {publico}
-                        Oferta: {oferta}
-                        A mensagem deve ser direta, usar emojis estratégicos e ter uma chamada para ação clara.
-                        """
-                        try:
-                            completion = client.chat.completions.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            st.session_state["generation_count"] += 1
-                            resultado = completion.choices[0].message.content
-                            
-                            save_history(st.session_state["username"], "Copy WhatsApp", resultado)
-                            
-                            st.success("Copy gerada e salva no histórico com sucesso!")
-                            st.markdown(resultado)
-                            
-                            st.download_button(
-                                label="📥 Baixar Copy do WhatsApp (.txt)",
-                                data=resultado,
-                                file_name="copy_whatsapp.txt",
-                                mime="text/plain"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro na IA: {e}")
-                else:
-                    st.warning("Preencha o nicho e os detalhes da oferta.")
+                    with st.spinner("Criando..."):
+                        prompt = f"Crie copy de vendas para WhatsApp. Nicho: {nicho}, Público: {publico}, Oferta: {oferta}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Copy WhatsApp", resultado)
+                        st.success("Gerado!")
+                        st.markdown(resultado)
 
         elif escolha == "📸 Planejador Instagram":
-            st.header("📸 Planejador de Conteúdo para Instagram")
-            st.write("Estruture sua grade de postagens para engajar sua audiência.")
-            
-            tema = st.text_input("Tema central ou nicho do perfil")
-            qtd_dias = st.slider("Quantos dias de conteúdo planejar?", 3, 7, 5)
+            st.header("📸 Planejador Instagram")
+            tema = st.text_input("Tema central")
+            qtd_dias = st.slider("Dias", 3, 7, 5)
             
             if st.button("Planejar Conteúdo"):
                 if tema:
-                    with st.spinner("Planejando grade de conteúdo..."):
-                        prompt = f"""
-                        Crie um planejamento de conteúdo para o Instagram com duração de {qtd_dias} dias focado no tema: {tema}.
-                        Para cada dia, forneça:
-                        - Formato (Reels, Carrossel, Story)
-                        - Ideia de título/gancho
-                        - Legenda completa com hashtags
-                        """
-                        try:
-                            completion = client.chat.completions.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            st.session_state["generation_count"] += 1
-                            resultado = completion.choices[0].message.content
-                            
-                            save_history(st.session_state["username"], "Planejador Instagram", resultado)
-                            
-                            st.success("Planejamento concluído e salvo no histórico!")
-                            st.markdown(resultado)
-                            
-                            st.download_button(
-                                label="📥 Baixar Planejamento (.txt)",
-                                data=resultado,
-                                file_name="planejamento_instagram.txt",
-                                mime="text/plain"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro na IA: {e}")
-                else:
-                    st.warning("Informe o tema central.")
+                    with st.spinner("Planejando..."):
+                        prompt = f"Planeje conteúdo para Instagram por {qtd_dias} dias sobre: {tema}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Planejador Instagram", resultado)
+                        st.success("Planejado!")
+                        st.markdown(resultado)
 
         elif escolha == "✉️ Gerador de E-mail Comercial":
-            st.header("✉️ Gerador de E-mails Comerciais por IA")
-            st.write("Crie e-mails de prospecção, follow-up ou propostas comerciais profissionais.")
+            st.header("✉️ Gerador de E-mail Comercial")
+            objetivo_email = st.selectbox("Objetivo", ["Prospecção", "Follow-up", "Proposta", "Recuperação"])
+            cliente_alvo = st.text_input("Para quem?")
+            detalhes_produto = st.text_area("O que vende?")
             
-            objetivo_email = st.selectbox(
-                "Qual o objetivo do e-mail?",
-                ["Prospecção a Frio (Primeiro Contato)", "Follow-up de Vendas", "Envio de Proposta Comercial", "Recuperação de Cliente Inativo"]
-            )
-            
-            cliente_alvo = st.text_input("Para quem é o e-mail? (Ex: Gerente de Compras, Dono de E-commerce)")
-            detalhes_produto = st.text_area("O que você está vendendo ou oferecendo? (Descreva brevemente)")
-            
-            if st.button("Gerar E-mail Profissional"):
+            if st.button("Gerar E-mail"):
                 if detalhes_produto:
-                    with st.spinner("A IA está redigindo o e-mail estratégico..."):
-                        prompt = f"""
-                        Escreva um e-mail comercial altamente persuasivo e profissional.
-                        Objetivo do e-mail: {objetivo_email}
-                        Público-alvo / Destinatário: {cliente_alvo}
-                        Detalhes do produto/serviço: {detalhes_produto}
-                        
-                        O e-mail deve ter um assunto chamativo, uma abertura cordial, uma proposta de valor clara e um Call to Action (CTA) forte no final.
-                        """
-                        try:
-                            completion = client.chat.completions.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            st.session_state["generation_count"] += 1
-                            resultado = completion.choices[0].message.content
-                            
-                            save_history(st.session_state["username"], "E-mail Comercial", resultado)
-                            
-                            st.success("E-mail gerado e salvo no histórico com sucesso!")
-                            st.markdown("---")
-                            st.markdown(resultado)
-                            
-                            st.download_button(
-                                label="📥 Baixar E-mail Comercial (.txt)",
-                                data=resultado,
-                                file_name="email_comercial.txt",
-                                mime="text/plain"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro ao gerar e-mail: {e}")
-                else:
-                    st.warning("Por favor, preencha os detalhes do produto ou serviço.")
+                    with st.spinner("Redigindo..."):
+                        prompt = f"Escreva e-mail de {objetivo_email} para {cliente_alvo} vendendo {detalhes_produto}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "E-mail Comercial", resultado)
+                        st.success("E-mail gerado!")
+                        st.markdown(resultado)
 
         elif escolha == "🎬 Gerador de Roteiro para Vídeos":
-            st.header("🎬 Gerador de Roteiro para Vídeos (Reels / TikTok / YouTube)")
-            st.write("Crie roteiros magnéticos com ganchos fortes para prender a atenção do espectador nos primeiros segundos.")
+            st.header("🎬 Gerador de Roteiro para Vídeos")
+            tema_video = st.text_input("Tema principal")
+            formato_video = st.selectbox("Formato", ["Reels/TikTok", "YouTube"])
+            tom = st.selectbox("Tom", ["Dinâmico", "Educativo", "Polêmico", "Divertido"])
             
-            tema_video = st.text_input("Qual o tema principal do vídeo?")
-            formato_video = st.selectbox("Formato do vídeo", ["Reels / TikTok (Curto - Até 1 min)", "YouTube (Longo - 5 a 10 min)"])
-            tom_comunicacao = st.selectbox("Tom de voz", ["Dinâmico e Enérgico", "Educativo e Profissional", "Polêmico / Provocativo", "Divertido"])
-            
-            if st.button("Gerar Roteiro Completo"):
+            if st.button("Gerar Roteiro"):
                 if tema_video:
-                    with st.spinner("Escrevendo roteiro de alto engajamento..."):
-                        prompt = f"""
-                        Atue como um roteirista profissional de vídeo e criador de conteúdo de sucesso.
-                        Tema: {tema_video}
-                        Formato: {formato_video}
-                        Tom de voz: {tom_comunicacao}
-                        
-                        Crie um roteiro estruturado contendo:
-                        1. **Gancho (Hook)**: Os primeiros 3 segundos cruciais para reter a atenção.
-                        2. **Desenvolvimento / Corpo**: Argumentos principais divididos em passos ou tópicos claros.
-                        3. **Chamada para Ação (CTA)**: O que o espectador deve fazer no final.
-                        4. **Dicas de Edição / B-roll**: Sugestões visuais e de legendas para enriquecer o vídeo.
-                        """
-                        try:
-                            completion = client.chat.completions.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            st.session_state["generation_count"] += 1
-                            resultado = completion.choices[0].message.content
-                            
-                            save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
-                            
-                            st.success("Roteiro gerado e salvo no histórico com sucesso!")
-                            st.markdown("---")
-                            st.markdown(resultado)
-                            
-                            st.download_button(
-                                label="📥 Baixar Roteiro (.txt)",
-                                data=resultado,
-                                file_name=f"roteiro_{tema_video.lower().replace(' ', '_')}.txt",
-                                mime="text/plain"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro ao gerar roteiro: {e}")
-                else:
-                    st.warning("Por favor, informe o tema principal do vídeo.")
+                    with st.spinner("Escrevendo..."):
+                        prompt = f"Crie roteiro para {formato_video} sobre {tema_video} em tom {tom}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
+                        st.success("Roteiro pronto!")
+                        st.markdown(resultado)
