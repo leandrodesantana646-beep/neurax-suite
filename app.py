@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Funções de Criptografia e Banco de Dados SQLite
+# Funções de Criptografia e Banco de Dados SQLite (Usuários + Histórico)
 def make_hash(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
@@ -23,10 +23,21 @@ def check_hash(password, hashed_text):
 def init_db():
     conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
     cursor = conn.cursor()
+    # Tabela de Usuários
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             password TEXT
+        )
+    ''')
+    # Tabela de Histórico de Gerações
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            tool_name TEXT,
+            content TEXT,
+            timestamp TEXT
         )
     ''')
     conn.commit()
@@ -51,6 +62,23 @@ def login_user(username, password):
         if check_hash(password, data[0][0]):
             return True
     return False
+
+def save_history(username, tool_name, content):
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+    cursor.execute('INSERT INTO history (username, tool_name, content, timestamp) VALUES (?, ?, ?, ?)', 
+                   (username, tool_name, content, timestamp))
+    conn.commit()
+    conn.close()
+
+def get_history(username):
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('SELECT tool_name, content, timestamp FROM history WHERE username = ? ORDER BY id DESC', (username,))
+    data = cursor.fetchall()
+    conn.close()
+    return data
 
 # Gerenciamento de Sessão de Login
 if "logged_in" not in st.session_state:
@@ -92,7 +120,7 @@ else:
     st.sidebar.title(f"Painel NeuraX")
     st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
-    # Estatísticas de Sessão ("E mais")
+    # Estatísticas de Sessão
     st.sidebar.markdown("---")
     st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
     st.sidebar.markdown("---")
@@ -115,7 +143,7 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # Menu de Navegação Completo (Com a Nova Ferramenta)
+    # Menu de Navegação Completo (Com a opção de Histórico)
     escolha = st.sidebar.selectbox(
         "Navegue pelas Ferramentas",
         [
@@ -123,7 +151,8 @@ else:
             "💬 Gerador de Copy WhatsApp",
             "📸 Planejador Instagram",
             "✉️ Gerador de E-mail Comercial",
-            "🎬 Gerador de Roteiro para Vídeos"
+            "🎬 Gerador de Roteiro para Vídeos",
+            "📂 Meu Histórico"
         ]
     )
     
@@ -132,7 +161,27 @@ else:
         st.session_state["username"] = ""
         st.rerun()
 
-    if client:
+    if escolha == "📂 Meu Histórico":
+        st.header("📂 Histórico de Gerações")
+        st.write("Consulte abaixo todas as análises, copies e roteiros salvos no seu perfil.")
+        
+        user_history = get_history(st.session_state["username"])
+        
+        if not user_history:
+            st.info("Você ainda não gerou nenhum conteúdo nesta conta. Use as ferramentas ao lado para começar!")
+        else:
+            for idx, (tool, content, timestamp) in enumerate(user_history):
+                with st.expander(f"🛠️ [{tool}] - {timestamp}"):
+                    st.markdown(content)
+                    st.download_button(
+                        label=f"📥 Baixar este item (.txt)",
+                        data=content,
+                        file_name=f"historico_{idx}_{tool.lower().replace(' ', '_')}.txt",
+                        mime="text/plain",
+                        key=f"dl_hist_{idx}"
+                    )
+
+    elif client:
         model_name = "llama-3.3-70b-versatile"
 
         if escolha == "💰 Precificação Inteligente":
@@ -168,10 +217,13 @@ else:
                             )
                             st.session_state["generation_count"] += 1
                             resultado = completion.choices[0].message.content
-                            st.success("Análise estratégica de precificação concluída!")
+                            
+                            # Salvar no histórico do banco de dados
+                            save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                            
+                            st.success("Análise estratégica de precificação concluída e salva no histórico!")
                             st.markdown(resultado)
                             
-                            # Botão de Exportação (.txt)
                             st.download_button(
                                 label="📥 Baixar Relatório de Precificação (.txt)",
                                 data=resultado,
@@ -208,7 +260,10 @@ else:
                             )
                             st.session_state["generation_count"] += 1
                             resultado = completion.choices[0].message.content
-                            st.success("Copy gerada com sucesso!")
+                            
+                            save_history(st.session_state["username"], "Copy WhatsApp", resultado)
+                            
+                            st.success("Copy gerada e salva no histórico com sucesso!")
                             st.markdown(resultado)
                             
                             st.download_button(
@@ -246,7 +301,10 @@ else:
                             )
                             st.session_state["generation_count"] += 1
                             resultado = completion.choices[0].message.content
-                            st.success("Planejamento concluído!")
+                            
+                            save_history(st.session_state["username"], "Planejador Instagram", resultado)
+                            
+                            st.success("Planejamento concluído e salvo no histórico!")
                             st.markdown(resultado)
                             
                             st.download_button(
@@ -290,7 +348,10 @@ else:
                             )
                             st.session_state["generation_count"] += 1
                             resultado = completion.choices[0].message.content
-                            st.success("E-mail gerado com sucesso!")
+                            
+                            save_history(st.session_state["username"], "E-mail Comercial", resultado)
+                            
+                            st.success("E-mail gerado e salvo no histórico com sucesso!")
                             st.markdown("---")
                             st.markdown(resultado)
                             
@@ -301,7 +362,7 @@ else:
                                 mime="text/plain"
                             )
                         except Exception as e:
-                            st.error(f"Erro ao gerar e-mail: {e}")
+                            st.error(f5"Erro ao gerar e-mail: {e}")
                 else:
                     st.warning("Por favor, preencha os detalhes do produto ou serviço.")
 
@@ -335,7 +396,10 @@ else:
                             )
                             st.session_state["generation_count"] += 1
                             resultado = completion.choices[0].message.content
-                            st.success("Roteiro gerado com sucesso!")
+                            
+                            save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
+                            
+                            st.success("Roteiro gerado e salvo no histórico com sucesso!")
                             st.markdown("---")
                             st.markdown(resultado)
                             
