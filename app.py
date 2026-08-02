@@ -11,12 +11,15 @@ try:
 except ImportError:
     TEM_GROQ = False
 
-# Configuração da Página
+# Configuração da Páginaimport streamlit as st
+
 st.set_page_config(
-    page_title="NeuraX Suite - SaaS Intelligence",
-    page_icon="🚀",
-    layout="centered"
+    page_title="NeuraX Suite | IA & Negócios",  # Nome que aparece na aba do navegador
+    page_icon="🚀",                            # Emoji ou ícone da aba
+    layout="wide",                             # Deixa o layout expandido na tela
+    initial_sidebar_state="expanded"
 )
+
 
 # =========================================================
 # BANCO DE DADOS & AUTENTICAÇÃO (SQLITE)
