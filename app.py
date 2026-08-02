@@ -173,7 +173,7 @@ else:
     st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
     st.sidebar.markdown("---")
     
-    groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
+        groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
     if not groq_api_key:
         try:
             groq_api_key = st.secrets["GROQ_API_KEY"]
@@ -189,6 +189,7 @@ else:
         except Exception as e:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
+
 
     # MENU PADRÃO (Para os usuários comuns) com a NOVA FERRAMENTA INOVADORA
     menu_options = [
