@@ -149,7 +149,7 @@ else:
                         """
                         try:
                             response = client.models.generate_content(
-                                model="gemini-2.5-flash",
+                                model="gemini-1.5-flash",
                                 contents=prompt
                             )
                             st.success("Análise de precificação concluída!")
@@ -179,7 +179,7 @@ else:
                         """
                         try:
                             response = client.models.generate_content(
-                                model="gemini-2.5-flash",
+                                model="gemini-1.5-flash",
                                 contents=prompt
                             )
                             st.success("Copy gerada com sucesso!")
@@ -208,7 +208,7 @@ else:
                         """
                         try:
                             response = client.models.generate_content(
-                                model="gemini-2.5-flash",
+                                model="gemini-1.5-flash",
                                 contents=prompt
                             )
                             st.success("Planejamento concluído!")
@@ -243,7 +243,7 @@ else:
                         """
                         try:
                             response = client.models.generate_content(
-                                model="gemini-2.5-flash",
+                                model="gemini-1.5-flash",
                                 contents=prompt
                             )
                             st.success("E-mail gerado com sucesso!")
