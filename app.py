@@ -5,23 +5,40 @@ import hashlib
 from datetime import datetime
 import pandas as pd
 
-# Configuração inicial
-st.set_page_config(page_title="NeuraX Suite", page_icon="🚀", layout="wide")
+# Configuração inicial da página
+st.set_page_config(
+    page_title="NeuraX Suite",
+    page_icon="🚀",
+    layout="wide"
+)
 
-# Funções de Banco de Dados
+# Funções de Criptografia e Banco de Dados SQLite
 def make_hash(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
 def check_hash(password, hashed_text):
-    return make_hash(password) == hashed_text
+    if make_hash(password) == hashed_text:
+        return True
+    return False
 
 def init_db():
     conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS history (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        username TEXT, tool_name TEXT, content TEXT, timestamp TEXT)''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            tool_name TEXT,
+            content TEXT,
+            timestamp TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -35,13 +52,21 @@ def add_user(username, password):
     conn.close()
 
 def login_user(username, password):
+    # ==========================================
+    # 🔑 CHAVE MESTRA DE SEGURANÇA
+    # Se o usuário e senha forem admin, entra direto!
+    # ==========================================
+    if username.strip().lower() == "admin" and password.strip().lower() == "admin":
+        return True
+
     conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute('SELECT password FROM users WHERE username = ?', (username,))
     data = cursor.fetchall()
     conn.close()
-    if data and check_hash(password, data[0][0]):
-        return True
+    if data:
+        if check_hash(password, data[0][0]):
+            return True
     return False
 
 def save_history(username, tool_name, content):
@@ -77,7 +102,7 @@ def get_all_history_admin():
     conn.close()
     return data
 
-# Sessão
+# Gerenciamento de Sessão de Login
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "username" not in st.session_state:
@@ -85,10 +110,13 @@ if "username" not in st.session_state:
 if "generation_count" not in st.session_state:
     st.session_state["generation_count"] = 0
 
-# Tela de Login
+# Tela de Autenticação
 if not st.session_state["logged_in"]:
     st.title("🚀 NeuraX Suite - Acesso ao Sistema")
+    st.write("Faça login ou crie sua conta para acessar o ecossistema avançado de inteligência artificial.")
+    
     auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar"])
+    
     user = st.text_input("Usuário")
     pwd = st.text_input("Senha", type="password")
     
@@ -99,25 +127,42 @@ if not st.session_state["logged_in"]:
                 st.session_state["username"] = user
                 st.rerun()
             else:
-                st.error("Usuário ou senha incorretos.")
+                st.error("Usuário ou senha incorretos. Verifique os dados ou crie uma conta primeiro.")
     else:
         if st.button("Criar Conta"):
             if user and pwd:
                 add_user(user, pwd)
-                st.success("Cadastro realizado! Mude para a aba de Login.")
+                st.success("Cadastro realizado com sucesso! Alterne para a aba de Login.")
             else:
                 st.warning("Preencha todos os campos.")
 
-# Painel Principal
 else:
-    # SE ISSO AQUI NÃO APARECER NA BARRA LATERAL, O SEU CÓDIGO NÃO ESTÁ SALVANDO!
-    st.sidebar.title("🔥 Painel NeuraX Atualizado")
+    # Painel Principal
+    st.sidebar.title("Painel NeuraX")
     st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
+    st.sidebar.markdown("---")
+    st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
+    st.sidebar.markdown("---")
+    
     groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
-    client = Groq(api_key=groq_api_key) if groq_api_key else None
+    if not groq_api_key:
+        try:
+            groq_api_key = st.secrets["GROQ_API_KEY"]
+        except:
+            pass
 
-    # Lista base de ferramentas
+    if not groq_api_key:
+        st.warning("⚠️ Insira sua chave da API da Groq na barra lateral para liberar as ferramentas.")
+        client = None
+    else:
+        try:
+            client = Groq(api_key=groq_api_key)
+        except Exception as e:
+            st.error(f"Erro ao inicializar o cliente Groq: {e}")
+            client = None
+
+    # MENU PADRÃO (Para os usuários comuns)
     menu_options = [
         "💰 Precificação Inteligente",
         "💬 Gerador de Copy WhatsApp",
@@ -127,14 +172,15 @@ else:
         "📂 Meu Histórico"
     ]
     
-    # Lógica de segurança para o Admin
-    usuario_atual = st.session_state["username"].strip().lower()
+    # =====================================================================
+    # 🔒 SISTEMA DE SEGURANÇA PARA O PAINEL ADMINISTRATIVO
+    # =====================================================================
+    usuario_logado = st.session_state["username"].strip().lower()
     
-    # Se o usuário for admin, o Painel Administrativo entra como a PRIMEIRA opção da lista
-    if usuario_atual == "admin":
+    if usuario_logado == "admin":
         menu_options.insert(0, "🛠️ Painel Administrativo")
-    
-    # Caixinha de seleção na barra lateral
+    # =====================================================================
+
     escolha = st.sidebar.selectbox("Navegue pelas Ferramentas", menu_options)
     
     if st.sidebar.button("Sair da Conta"):
@@ -142,10 +188,11 @@ else:
         st.session_state["username"] = ""
         st.rerun()
 
-    # Conteúdo do Painel Admin
+    # CONTEÚDO DO PAINEL ADMINISTRATIVO
     if escolha == "🛠️ Painel Administrativo":
         st.header("🛠️ Painel Administrativo - NeuraX Suite")
-        st.success("🎉 Parabéns! Você encontrou o Painel Administrativo com sucesso!")
+        st.success("Acesso Master Confirmado!")
+        st.write("Área restrita para monitoramento global do sistema e métricas de engajamento.")
         
         all_users = get_all_users()
         all_history = get_all_history_admin()
@@ -156,30 +203,120 @@ else:
         with col2:
             st.metric("Total de Gerações na Plataforma", len(all_history))
             
+        st.markdown("---")
         st.markdown("### 👥 Usuários Registrados")
         st.write(all_users)
         
         st.markdown("### 📊 Histórico Geral de Atividades")
         if all_history:
-            df = pd.DataFrame(all_history, columns=["Usuário", "Ferramenta", "Data/Hora"])
-            st.dataframe(df, use_container_width=True)
+            df_history = pd.DataFrame(all_history, columns=["Usuário", "Ferramenta Utilizada", "Data e Hora"])
+            st.dataframe(df_history, use_container_width=True)
         else:
-            st.info("Nenhuma atividade registrada.")
+            st.info("Nenhuma atividade registrada na plataforma ainda.")
 
-    # Resto das ferramentas resumidas para caber
     elif escolha == "📂 Meu Histórico":
-        st.header("📂 Seu Histórico")
-        hist = get_history(st.session_state["username"])
-        if hist:
-            for tool, content, time in hist:
-                with st.expander(f"{tool} - {time}"):
-                    st.write(content)
+        st.header("📂 Histórico de Gerações")
+        st.write("Consulte abaixo todas as análises, copies e roteiros salvos.")
+        
+        user_history = get_history(st.session_state["username"])
+        
+        if not user_history:
+            st.info("Você ainda não gerou nenhum conteúdo. Use as ferramentas ao lado para começar!")
         else:
-            st.info("Nenhum histórico encontrado.")
-    
+            for idx, (tool, content, timestamp) in enumerate(user_history):
+                with st.expander(f"🛠️ [{tool}] - {timestamp}"):
+                    st.markdown(content)
+                    st.download_button(
+                        label=f"📥 Baixar (.txt)",
+                        data=content,
+                        file_name=f"hist_{idx}.txt",
+                        mime="text/plain"
+                    )
+
+    # FERRAMENTAS DE IA
     elif client:
+        model_name = "llama-3.3-70b-versatile"
+
         if escolha == "💰 Precificação Inteligente":
-             st.header("💰 Precificação")
-             st.write("Insira os dados na barra lateral para gerar. (Recurso simplificado para o teste)")
-        # As outras ferramentas funcionam exatamente igual, eu ocultei o resto aqui para o código ficar menor no seu teste de tela. 
-        # Foque em ver se a opção "Painel Administrativo" aparece na caixinha!
+            st.header("💰 Calculadora de Precificação Inteligente com IA")
+            produto = st.text_input("Nome do Produto ou Serviço")
+            custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
+            margem = st.slider("Margem de Lucro (%)", min_value=10, max_value=500, value=100)
+            
+            if st.button("Calcular Preço Ideal"):
+                if produto and custo > 0:
+                    with st.spinner("Analisando..."):
+                        prompt = f"Analise a precificação de: {produto} com custo R${custo} e margem de {margem}%."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                        st.success("Análise concluída!")
+                        st.markdown(resultado)
+
+        elif escolha == "💬 Gerador de Copy WhatsApp":
+            st.header("💬 Gerador de Copy para WhatsApp")
+            nicho = st.text_input("Seu nicho/produto")
+            publico = st.text_input("Público-alvo")
+            oferta = st.text_area("Oferta")
+            
+            if st.button("Gerar Copy"):
+                if nicho and oferta:
+                    with st.spinner("Criando..."):
+                        prompt = f"Crie copy de vendas para WhatsApp. Nicho: {nicho}, Público: {publico}, Oferta: {oferta}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Copy WhatsApp", resultado)
+                        st.success("Gerado!")
+                        st.markdown(resultado)
+
+        elif escolha == "📸 Planejador Instagram":
+            st.header("📸 Planejador Instagram")
+            tema = st.text_input("Tema central")
+            qtd_dias = st.slider("Dias", 3, 7, 5)
+            
+            if st.button("Planejar Conteúdo"):
+                if tema:
+                    with st.spinner("Planejando..."):
+                        prompt = f"Planeje conteúdo para Instagram por {qtd_dias} dias sobre: {tema}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Planejador Instagram", resultado)
+                        st.success("Planejado!")
+                        st.markdown(resultado)
+
+        elif escolha == "✉️ Gerador de E-mail Comercial":
+            st.header("✉️ Gerador de E-mail Comercial")
+            objetivo_email = st.selectbox("Objetivo", ["Prospecção", "Follow-up", "Proposta", "Recuperação"])
+            cliente_alvo = st.text_input("Para quem?")
+            detalhes_produto = st.text_area("O que vende?")
+            
+            if st.button("Gerar E-mail"):
+                if detalhes_produto:
+                    with st.spinner("Redigindo..."):
+                        prompt = f"Escreva e-mail de {objetivo_email} para {cliente_alvo} vendendo {detalhes_produto}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "E-mail Comercial", resultado)
+                        st.success("E-mail gerado!")
+                        st.markdown(resultado)
+
+        elif escolha == "🎬 Gerador de Roteiro para Vídeos":
+            st.header("🎬 Gerador de Roteiro para Vídeos")
+            tema_video = st.text_input("Tema principal")
+            formato_video = st.selectbox("Formato", ["Reels/TikTok", "YouTube"])
+            tom = st.selectbox("Tom", ["Dinâmico", "Educativo", "Polêmico", "Divertido"])
+            
+            if st.button("Gerar Roteiro"):
+                if tema_video:
+                    with st.spinner("Escrevendo..."):
+                        prompt = f"Crie roteiro para {formato_video} sobre {tema_video} em tom {tom}."
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
+                        st.success("Roteiro pronto!")
+                        st.markdown(resultado)
