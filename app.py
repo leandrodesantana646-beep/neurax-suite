@@ -128,7 +128,7 @@ else:
 
         if escolha == "💰 Precificação Inteligente":
             st.header("💰 Calculadora de Precificação Inteligente com IA")
-            st.write("Analise custos, margem de lucro e o preço médio praticado pelo mercado.")
+            st.write("Analise custos, margem de lucro, psicologia do consumidor e testes práticos de mercado.")
             
             produto = st.text_input("Nome do Produto ou Serviço")
             custo = st.number_input("Custo de Produção / Aquisição (R$)", min_value=0.0, format="%.2f")
@@ -136,25 +136,28 @@ else:
             
             if st.button("Calcular Preço Ideal"):
                 if produto and custo > 0:
-                    with st.spinner("Analisando mercado e calculando..."):
+                    with st.spinner("Analisando mercado, custos e o fator humano..."):
                         prompt = f"""
-                        Atue como um consultor financeiro especialista em precificação de negócios e SaaS.
+                        Atue como um consultor financeiro especialista em precificação estratégica e comportamento do consumidor.
                         Produto: {produto}
                         Custo de produção: R$ {custo}
                         Margem de lucro desejada: {margem}%
                         
+                        Leve em conta não apenas os cálculos frios de markup, mas também o fator humano, a percepção de valor do cliente e a validação prática no mundo real.
+                        
                         Retorne uma análise detalhada contendo:
-                        1. Preço de venda sugerido com base no markup.
-                        2. Estimativa do preço médio praticado no mercado para esse tipo de item.
+                        1. Preço de venda sugerido com base nos custos e na percepção de valor.
+                        2. Estimativa do preço médio praticado no mercado.
                         3. Lucro líquido estimado por unidade.
-                        4. Dicas estratégicas para otimizar as vendas.
+                        4. **Análise do Fator Humano e Psicologia do Consumidor** (como o público enxerga o valor e barreiras de preço).
+                        5. **Estratégias de Teste Prático** (sugestões de como testar o preço de forma segura na prática antes de fixá-lo definitivamente).
                         """
                         try:
                             completion = client.chat.completions.create(
                                 model=model_name,
                                 messages=[{"role": "user", "content": prompt}]
                             )
-                            st.success("Análise de precificação concluída!")
+                            st.success("Análise estratégica de precificação concluída!")
                             st.markdown(completion.choices[0].message.content)
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
