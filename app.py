@@ -134,7 +134,7 @@ if not st.session_state["logged_in"]:
 
 else:
     # Painel Principal do SaaS
-    st.sidebar.title(f"Painel NeuraX")
+    st.sidebar.title("Painel NeuraX")
     st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
     # Estatísticas de Sessão
@@ -170,7 +170,8 @@ else:
         "📂 Meu Histórico"
     ]
     
-    if st.session_state["username"] == "admin":
+    # Verificação inteligente para o Admin (ignora espaços e letras maiúsculas/minúsculas)
+    if st.session_state["username"].strip().lower() == "admin":
         menu_options.append("🛠️ Painel Administrativo")
 
     escolha = st.sidebar.selectbox("Navegue pelas Ferramentas", menu_options)
@@ -196,8 +197,6 @@ else:
         st.markdown("---")
         st.markdown("### 👥 Usuários Registrados")
         st.write(all_users)
-        
-        space_spacer = st.container()
         
         st.markdown("### 📊 Histórico Geral de Atividades")
         if all_history:
