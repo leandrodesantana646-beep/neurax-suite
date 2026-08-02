@@ -1,170 +1,252 @@
 import streamlit as st
+from groq import Groq
+import sqlite3
+import hashlib
 
-# 1. Configuração da Página (Obrigatório ser o primeiro comando)
+# Configuração inicial da página
 st.set_page_config(
-    page_title="NeuraX Suite | IA & Negócios",
+    page_title="NeuraX Suite",
     page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# 2. Função de Geração com IA / Simulação Inteligente (Blindada contra erros)
-def gerar_com_groq(prompt, system_prompt, api_key):
-    if api_key and api_key.startswith("gsk_"):
-        try:
-            from groq import Groq
-            client = Groq(api_key=api_key)
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1024,
-            )
-            return completion.choices[0].message.content
-        except Exception:
-            pass  # Se der erro na API, usa o modo de simulação abaixo
+# Funções de Criptografia e Banco de Dados SQLite
+def make_hash(password):
+    return hashlib.sha256(str.encode(password)).hexdigest()
 
-    # Modo de Simulação Inteligente (Fallback)
-    if "precificação" in system_prompt.lower() or "preço" in prompt.lower() or "mercado" in prompt.lower():
-        return (
-            "💰 **Relatório de Inteligência de Preço e Mercado**\n\n"
-            "- **Produto Analisado:** Baseado no seu input\n"
-            "- **Preço Médio Estimado de Mercado:** R$ 120,00\n"
-            "- **Seu Custo de Produção:** R$ 50,00\n"
-            "- **Preço Sugerido (100% de Lucro / Markup 2x):** R$ 100,00\n\n"
-            "📊 **Parecer Estratégico da IA:**\n"
-            "O preço sugerido de R$ 100,00 para garantir 100% de lucro está **abaixo da média de mercado** (R$ 120,00). "
-            "Isso significa que você tem alta margem de lucro e ainda continua extremamente competitivo para vender em larga escala!"
-        )
-    elif "WhatsApp" in system_prompt or "whatsapp" in prompt.lower():
-        return (
-            "🚀 **Copy Mágica para WhatsApp**\n\n"
-            "Olá! Se você quer escalar seu negócio e automatizar suas vendas sem perder tempo, "
-            "o **NeuraX Suite** é a solução perfeita para você.\n\n"
-            "✅ Atendimento Inteligente 24/7\n"
-            "✅ Geração de Scripts em segundos\n"
-            "✅ Dashboards e Relatórios completos\n\n"
-            "👉 *Clique no link abaixo e garanta seu acesso com desconto exclusivo:* [Link do Seu Produto]"
-        )
-    elif "Instagram" in system_prompt or "post" in prompt.lower() or "carrossel" in prompt.lower():
-        return (
-            "📸 **Plano de Conteúdo para Instagram**\n\n"
-            "**Post 1: Carrossel Educativo**\n"
-            "- *Título:* 3 Erros que te impedem de faturar mais este mês.\n"
-            "- *Slide 1:* Não automatizar tarefas repetitivas.\n"
-            "- *Slide 2:* Fazer anúncios sem uma oferta clara.\n"
-            "- *Slide 3:* Não acompanhar as métricas do seu negócio.\n\n"
-            "**Legenda:** Qual desses erros você mais comete hoje? Comente 'AUTOMATIZAR' para receber nossa solução no Direct!"
-        )
-    else:
-        return (
-            "🎯 **Plano Estratégico Gerado pelo NeuraX IA**\n\n"
-            "1. **Análise de Cenário:** Identifique o seu público-alvo principal e otimize a oferta.\n"
-            "2. **Ação Rápida:** Crie uma página de vendas direta com gatilhos de urgência e escassez.\n"
-            "3. **Retenção:** Utilize e-mail marketing e sequências de mensagens para converter leads frios.\n\n"
-            "💡 *Dica Bônus:* Teste novos criativos a cada 7 dias para manter o custo por clique (CPC) baixo."
-        )
+def check_hash(password, hashed_text):
+    if make_hash(password) == hashed_text:
+        return True
+    return False
 
-# 3. Estado de Login
-if "logado" not in st.session_state:
-    st.session_state.logado = False
+def init_db():
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-# 4. Barra Lateral
-with st.sidebar:
-    st.title("⚙️ Configurações")
-    api_key_input = st.text_input("Chave Groq API (IA):", type="password", help="Opcional. O app roda perfeitamente sem ela.")
-    if api_key_input:
-        st.success("⚡ IA Manual Conectada")
-    else:
-        st.info("ℹ️ Modo de demonstração ativo.")
+init_db()
+
+def add_user(username, password):
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR IGNORE INTO users(username, password) VALUES (?, ?)', (username, make_hash(password)))
+    conn.commit()
+    conn.close()
+
+def login_user(username, password):
+    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('SELECT password FROM users WHERE username = ?', (username,))
+    data = cursor.fetchall()
+    conn.close()
+    if data:
+        if check_hash(password, data[0][0]):
+            return True
+    return False
+
+# Gerenciamento de Sessão de Login
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+if "username" not in st.session_state:
+    st.session_state["username"] = ""
+
+# Tela de Autenticação
+if not st.session_state["logged_in"]:
+    st.title("🚀 NeuraX Suite - Acesso ao Sistema")
+    st.write("Faça login ou crie sua conta para acessar o ecossistema de inteligência artificial.")
     
-    st.markdown("---")
-    if st.session_state.logado:
-        if st.button("🚪 Sair da Conta"):
-            st.session_state.logado = False
-            st.rerun()
-
-# 5. Interface Principal (Login ou Painel)
-if not st.session_state.logado:
-    st.markdown("<h1 style='text-align: center;'>🚀 NeuraX Suite</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Plataforma Inteligente de Automação para Negócios</p>", unsafe_allow_html=True)
+    auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar"])
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        tab1, tab2 = st.tabs(["🔑 Entrar", "📝 Criar Conta"])
-        
-        with tab1:
-            usuario = st.text_input("Usuário", key="login_user")
-            senha = st.text_input("Senha", type="password", key="login_pass")
-            if st.button("Acessar Painel"):
-                if usuario and senha:
-                    st.session_state.logado = True
-                    st.rerun()
-                else:
-                    st.warning("Preencha usuário e senha.")
-        
-        with tab2:
-            novo_usuario = st.text_input("Novo Usuário", key="reg_user")
-            nova_senha = st.text_input("Nova Senha", type="password", key="reg_pass")
-            if st.button("Cadastrar"):
-                if novo_usuario and nova_senha:
-                    st.success("Conta criada com sucesso! Vá na aba Entrar.")
-                else:
-                    st.warning("Preencha todos os campos.")
+    user = st.text_input("Usuário")
+    pwd = st.text_input("Senha", type="password")
+    
+    if auth_mode == "Login":
+        if st.button("Entrar no Sistema"):
+            if login_user(user, pwd):
+                st.session_state["logged_in"] = True
+                st.session_state["username"] = user
+                st.success("Login realizado com sucesso!")
+                st.rerun()
+            else:
+                st.error("Usuário ou senha incorretos.")
+    else:
+        if st.button("Criar Conta"):
+            if user and pwd:
+                add_user(user, pwd)
+                st.success("Cadastro realizado com sucesso! Alterne para a aba de Login.")
+            else:
+                st.warning("Preencha todos os campos.")
+
 else:
-    st.title("🚀 NeuraX Suite - Painel de Controle")
-    st.write("Bem-vindo ao seu painel de automação e inteligência artificial.")
+    # Painel Principal do SaaS
+    st.sidebar.title(f"Painel NeuraX")
+    st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
-    menu = st.selectbox(
-        "Escolha a Ferramenta:", 
+    # Configuração da Chave da API Groq
+    api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
+    if not api_key:
+        try:
+            api_key = st.secrets["GROQ_API_KEY"]
+        except:
+            pass
+
+    if not api_key:
+        st.warning("⚠️ Insira sua chave da API Groq na barra lateral para liberar as ferramentas de IA.")
+        client = None
+    else:
+        client = Groq(api_key=api_key)
+
+    # Menu de Navegação Completo
+    escolha = st.sidebar.selectbox(
+        "Navegue pelas Ferramentas",
         [
-            "Calculadora de Preço & Lucro (100%)", 
-            "Gerador de Copy WhatsApp", 
-            "Planejador de Instagram", 
-            "Estratégia de Negócios"
+            "💰 Precificação Inteligente",
+            "💬 Gerador de Copy WhatsApp",
+            "📸 Planejador Instagram",
+            "✉️ Gerador de E-mail Comercial"
         ]
     )
     
-    if menu == "Calculadora de Preço & Lucro (100%)":
-        st.subheader("💰 Precificação Inteligente por IA & Margem de 100%")
-        st.write("Informe o nome do seu produto e o valor de custo. A IA vai estimar o preço médio de mercado atual e calcular a sugestão ideal para garantir 100% de lucro.")
-        
-        nome_produto = st.text_input("Nome do Produto ou Serviço:", "Ex: Camiseta Oversized de Algodão")
-        custo = st.number_input("Valor de Custo / Produção (R$)", min_value=0.0, value=50.0, step=5.0)
-        
-        if st.button("Analisar Preço com IA"):
-            with st.spinner("A Inteligência Artificial está pesquisando o mercado e calculando a margem..."):
-                prompt_precificacao = f"Analise o produto '{nome_produto}' que tem um custo de produção de R$ {custo:.2f}. Estime o preço médio atual praticado no mercado para este produto, calcule o preço de venda necessário para garantir 100% de lucro sobre o custo, e dê uma recomendação estratégica se o preço é competitivo."
-                system_precificacao = "Você é um consultor financeiro sênior e especialista em precificação de mercado."
-                
-                resultado = gerar_com_groq(prompt_precificacao, system_precificacao, api_key_input)
-                st.markdown("---")
-                st.markdown("### 📊 Relatório de Análise de Preço")
-                st.markdown(resultado)
-                
-    elif menu == "Gerador de Copy WhatsApp":
-        st.subheader("💬 Gerador de Copy para WhatsApp")
-        produto = st.text_input("Qual o seu produto ou serviço?", "Mentoria de Vendas")
-        if st.button("Gerar Copy"):
-            with st.spinner("Gerando conteúdo..."):
-                resultado = gerar_com_groq(f"Criar copy para {produto}", "Você é um especialista em WhatsApp Marketing.", api_key_input)
-                st.markdown(resultado)
-                
-    elif menu == "Planejador de Instagram":
-        st.subheader("📸 Planejador de Conteúdo - Instagram")
-        nicho = st.text_input("Qual o seu nicho?", "Marketing Digital")
-        if st.button("Gerar Plano"):
-            with st.spinner("Gerando posts..."):
-                resultado = gerar_com_groq(f"Criar posts para nicho de {nicho}", "Você é um estrategista de mídias sociais.", api_key_input)
-                st.markdown(resultado)
-                
-    else:
-        st.subheader("🎯 Estratégia de Negócios")
-        objetivo = st.text_input("Qual o seu objetivo principal?", "Aumentar faturamento")
-        if st.button("Gerar Estratégia"):
-            with st.spinner("Estruturando plano..."):
-                resultado = gerar_com_groq(f"Criar estratégia para {objetivo}", "Você é um consultor de negócios sênior.", api_key_input)
-                st.markdown(resultado)
+    if st.sidebar.button("Sair da Conta"):
+        st.session_state["logged_in"] = False
+        st.session_state["username"] = ""
+        st.rerun()
+
+    if client:
+        if escolha == "💰 Precificação Inteligente":
+            st.header("💰 Calculadora de Precificação Inteligente com IA")
+            st.write("Analise custos, margem de lucro e o preço médio praticado pelo mercado.")
+            
+            produto = st.text_input("Nome do Produto ou Serviço")
+            custo = st.number_input("Custo de Produção / Aquisição (R$)", min_value=0.0, format="%.2f")
+            margem = st.slider("Margem de Lucro Desejada (%)", min_value=10, max_value=500, value=100)
+            
+            if st.button("Calcular Preço Ideal"):
+                if produto and custo > 0:
+                    with st.spinner("Analisando mercado e calculando..."):
+                        prompt = f"""
+                        Atue como um consultor financeiro especialista em precificação de negócios e SaaS.
+                        Produto: {produto}
+                        Custo de produção: R$ {custo}
+                        Margem de lucro desejada: {margem}%
+                        
+                        Retorne uma análise detalhada contendo:
+                        1. Preço de venda sugerido com base no markup.
+                        2. Estimativa do preço médio praticado no mercado para esse tipo de item.
+                        3. Lucro líquido estimado por unidade.
+                        4. Dicas estratégicas para otimizar as vendas.
+                        """
+                        try:
+                            response = client.chat.completions.create(
+                                messages=[{"role": "user", "content": prompt}],
+                                model="llama-3.3-70b-versatile"
+                            )
+                            st.success("Análise de precificação concluída!")
+                            st.markdown(response.choices[0].message.content)
+                        except Exception as e:
+                            st.error(f"Erro na IA: {e}")
+                else:
+                    st.warning("Insira o nome do produto e um custo válido.")
+
+        elif escolha == "💬 Gerador de Copy WhatsApp":
+            st.header("💬 Gerador de Copy para WhatsApp")
+            st.write("Crie mensagens de vendas persuasivas de alta conversão em segundos.")
+            
+            nicho = st.text_input("Qual o seu nicho ou produto?")
+            publico = st.text_input("Quem é o público-alvo?")
+            oferta = st.text_area("Detalhes da oferta ou chamada")
+            
+            if st.button("Gerar Copy para WhatsApp"):
+                if nicho and oferta:
+                    with st.spinner("Criando copy de alta conversão..."):
+                        prompt = f"""
+                        Crie uma mensagem de vendas persuasiva para WhatsApp.
+                        Nicho/Produto: {nicho}
+                        Público: {publico}
+                        Oferta: {oferta}
+                        A mensagem deve ser direta, usar emojis estratégicos e ter uma chamada para ação clara.
+                        """
+                        try:
+                            response = client.chat.completions.create(
+                                messages=[{"role": "user", "content": prompt}],
+                                model="llama-3.3-70b-versatile"
+                            )
+                            st.success("Copy gerada com sucesso!")
+                            st.markdown(response.choices[0].message.content)
+                        except Exception as e:
+                            st.error(f"Erro na IA: {e}")
+                else:
+                    st.warning("Preencha o nicho e os detalhes da oferta.")
+
+        elif escolha == "📸 Planejador Instagram":
+            st.header("📸 Planejador de Conteúdo para Instagram")
+            st.write("Estruture sua grade de postagens para engajar sua audiência.")
+            
+            tema = st.text_input("Tema central ou nicho do perfil")
+            qtd_dias = st.slider("Quantos dias de conteúdo planejar?", 3, 7, 5)
+            
+            if st.button("Planejar Conteúdo"):
+                if tema:
+                    with st.spinner("Planejando grade de conteúdo..."):
+                        prompt = f"""
+                        Crie um planejamento de conteúdo para o Instagram com duração de {qtd_dias} dias focado no tema: {tema}.
+                        Para cada dia, forneça:
+                        - Formato (Reels, Carrossel, Story)
+                        - Ideia de título/gancho
+                        - Legenda completa com hashtags
+                        """
+                        try:
+                            response = client.chat.completions.create(
+                                messages=[{"role": "user", "content": prompt}],
+                                model="llama-3.3-70b-versatile"
+                            )
+                            st.success("Planejamento concluído!")
+                            st.markdown(response.choices[0].message.content)
+                        except Exception as e:
+                            st.error(f"Erro na IA: {e}")
+                else:
+                    st.warning("Informe o tema central.")
+
+        elif escolha == "✉️ Gerador de E-mail Comercial":
+            st.header("✉️ Gerador de E-mails Comerciais por IA")
+            st.write("Crie e-mails de prospecção, follow-up ou propostas comerciais profissionais.")
+            
+            objetivo_email = st.selectbox(
+                "Qual o objetivo do e-mail?",
+                ["Prospecção a Frio (Primeiro Contato)", "Follow-up de Vendas", "Envio de Proposta Comercial", "Recuperação de Cliente Inativo"]
+            )
+            
+            cliente_alvo = st.text_input("Para quem é o e-mail? (Ex: Gerente de Compras, Dono de E-commerce)")
+            detalhes_produto = st.text_area("O que você está vendendo ou oferecendo? (Descreva brevemente)")
+            
+            if st.button("Gerar E-mail Profissional"):
+                if detalhes_produto:
+                    with st.spinner("A IA está redigindo o e-mail estratégico..."):
+                        prompt = f"""
+                        Escreva um e-mail comercial altamente persuasivo e profissional.
+                        Objetivo do e-mail: {objetivo_email}
+                        Público-alvo / Destinatário: {cliente_alvo}
+                        Detalhes do produto/serviço: {detalhes_produto}
+                        
+                        O e-mail deve ter um assunto chamativo, uma abertura cordial, uma proposta de valor clara e um Call to Action (CTA) forte no final.
+                        """
+                        try:
+                            chat_completion = client.chat.completions.create(
+                                messages=[{"role": "user", "content": prompt}],
+                                model="llama-3.3-70b-versatile",
+                            )
+                            resultado_email = chat_completion.choices[0].message.content
+                            st.success("E-mail gerado com sucesso!")
+                            st.markdown("---")
+                            st.write(resultado_email)
+                        except Exception as e:
+                            st.error(f"Erro ao gerar e-mail: {e}")
+                else:
+                    st.warning("Por favor, preencha os detalhes do produto ou serviço.")
