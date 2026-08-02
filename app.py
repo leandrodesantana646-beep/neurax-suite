@@ -1,5 +1,5 @@
 import streamlit as st
-from groq import Groq
+from google import genai
 import sqlite3
 import hashlib
 
@@ -89,19 +89,23 @@ else:
     st.sidebar.title(f"Painel NeuraX")
     st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
-    # Configuração da Chave da API Groq
-    api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
-    if not api_key:
+    # Configuração da Chave da API do Google Gemini
+    gemini_api_key = st.sidebar.text_input("Insira sua Gemini API Key", type="password")
+    if not gemini_api_key:
         try:
-            api_key = st.secrets["GROQ_API_KEY"]
+            gemini_api_key = st.secrets["GEMINI_API_KEY"]
         except:
             pass
 
-    if not api_key:
-        st.warning("⚠️ Insira sua chave da API Groq na barra lateral para liberar as ferramentas de IA.")
+    if not gemini_api_key:
+        st.warning("⚠️ Insira sua chave da API do Google Gemini na barra lateral para liberar as ferramentas de IA.")
         client = None
     else:
-        client = Groq(api_key=api_key)
+        try:
+            client = genai.Client(api_key=gemini_api_key)
+        except Exception as e:
+            st.error(f"Erro ao inicializar o cliente Gemini: {e}")
+            client = None
 
     # Menu de Navegação Completo
     escolha = st.sidebar.selectbox(
@@ -144,12 +148,12 @@ else:
                         4. Dicas estratégicas para otimizar as vendas.
                         """
                         try:
-                            response = client.chat.completions.create(
-                                messages=[{"role": "user", "content": prompt}],
-                                model="llama-3.3-70b-versatile"
+                            response = client.models.generate_content(
+                                model="gemini-2.5-flash",
+                                contents=prompt
                             )
                             st.success("Análise de precificação concluída!")
-                            st.markdown(response.choices[0].message.content)
+                            st.markdown(response.text)
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
                 else:
@@ -174,12 +178,12 @@ else:
                         A mensagem deve ser direta, usar emojis estratégicos e ter uma chamada para ação clara.
                         """
                         try:
-                            response = client.chat.completions.create(
-                                messages=[{"role": "user", "content": prompt}],
-                                model="llama-3.3-70b-versatile"
+                            response = client.models.generate_content(
+                                model="gemini-2.5-flash",
+                                contents=prompt
                             )
                             st.success("Copy gerada com sucesso!")
-                            st.markdown(response.choices[0].message.content)
+                            st.markdown(response.text)
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
                 else:
@@ -203,12 +207,12 @@ else:
                         - Legenda completa com hashtags
                         """
                         try:
-                            response = client.chat.completions.create(
-                                messages=[{"role": "user", "content": prompt}],
-                                model="llama-3.3-70b-versatile"
+                            response = client.models.generate_content(
+                                model="gemini-2.5-flash",
+                                contents=prompt
                             )
                             st.success("Planejamento concluído!")
-                            st.markdown(response.choices[0].message.content)
+                            st.markdown(response.text)
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
                 else:
@@ -238,14 +242,13 @@ else:
                         O e-mail deve ter um assunto chamativo, uma abertura cordial, uma proposta de valor clara e um Call to Action (CTA) forte no final.
                         """
                         try:
-                            chat_completion = client.chat.completions.create(
-                                messages=[{"role": "user", "content": prompt}],
-                                model="llama-3.3-70b-versatile",
+                            response = client.models.generate_content(
+                                model="gemini-2.5-flash",
+                                contents=prompt
                             )
-                            resultado_email = chat_completion.choices[0].message.content
                             st.success("E-mail gerado com sucesso!")
                             st.markdown("---")
-                            st.write(resultado_email)
+                            st.markdown(response.text)
                         except Exception as e:
                             st.error(f"Erro ao gerar e-mail: {e}")
                 else:
