@@ -5,11 +5,15 @@ import hashlib
 from datetime import datetime
 import pandas as pd
 
-# Configuração inicial da página
-
-# Estilização visual customizada (Tema NeuraX Dark Pro)
+# Estilização visual customizada (Tema NeuraX Pro & Ocultar Branding)
 st.markdown("""
     <style>
+    /* Oculta o cabeçalho superior (Remove o ícone do GitHub, Share e Menu) */
+    header {visibility: hidden;}
+    
+    /* Oculta o rodapé padrão ("Made with Streamlit") */
+    footer {visibility: hidden;}
+    
     /* Ajuste de fontes e cores principais */
     h1, h2, h3 {
         color: #58a6ff !important;
@@ -31,7 +35,7 @@ st.markdown("""
         color: #ffffff;
     }
     
-    /* Estilização dos blocos de expansão e métricas */
+    /* Estilização dos blocos de expansão */
     .streamlit-expanderHeader {
         background-color: #161b22;
         border-radius: 6px;
