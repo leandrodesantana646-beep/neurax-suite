@@ -2,6 +2,7 @@ import streamlit as st
 from groq import Groq
 import sqlite3
 import hashlib
+from datetime import datetime
 
 # Configuração inicial da página
 st.set_page_config(
@@ -56,11 +57,13 @@ if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "username" not in st.session_state:
     st.session_state["username"] = ""
+if "generation_count" not in st.session_state:
+    st.session_state["generation_count"] = 0
 
 # Tela de Autenticação
 if not st.session_state["logged_in"]:
     st.title("🚀 NeuraX Suite - Acesso ao Sistema")
-    st.write("Faça login ou crie sua conta para acessar o ecossistema de inteligência artificial.")
+    st.write("Faça login ou crie sua conta para acessar o ecossistema avançado de inteligência artificial.")
     
     auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar"])
     
@@ -89,6 +92,11 @@ else:
     st.sidebar.title(f"Painel NeuraX")
     st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
     
+    # Estatísticas de Sessão ("E mais")
+    st.sidebar.markdown("---")
+    st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
+    st.sidebar.markdown("---")
+    
     # Configuração da Chave da API da Groq
     groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
     if not groq_api_key:
@@ -107,14 +115,15 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # Menu de Navegação Completo
+    # Menu de Navegação Completo (Com a Nova Ferramenta)
     escolha = st.sidebar.selectbox(
         "Navegue pelas Ferramentas",
         [
             "💰 Precificação Inteligente",
             "💬 Gerador de Copy WhatsApp",
             "📸 Planejador Instagram",
-            "✉️ Gerador de E-mail Comercial"
+            "✉️ Gerador de E-mail Comercial",
+            "🎬 Gerador de Roteiro para Vídeos"
         ]
     )
     
@@ -157,8 +166,18 @@ else:
                                 model=model_name,
                                 messages=[{"role": "user", "content": prompt}]
                             )
+                            st.session_state["generation_count"] += 1
+                            resultado = completion.choices[0].message.content
                             st.success("Análise estratégica de precificação concluída!")
-                            st.markdown(completion.choices[0].message.content)
+                            st.markdown(resultado)
+                            
+                            # Botão de Exportação (.txt)
+                            st.download_button(
+                                label="📥 Baixar Relatório de Precificação (.txt)",
+                                data=resultado,
+                                file_name=f"precificacao_{produto.lower().replace(' ', '_')}.txt",
+                                mime="text/plain"
+                            )
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
                 else:
@@ -187,8 +206,17 @@ else:
                                 model=model_name,
                                 messages=[{"role": "user", "content": prompt}]
                             )
+                            st.session_state["generation_count"] += 1
+                            resultado = completion.choices[0].message.content
                             st.success("Copy gerada com sucesso!")
-                            st.markdown(completion.choices[0].message.content)
+                            st.markdown(resultado)
+                            
+                            st.download_button(
+                                label="📥 Baixar Copy do WhatsApp (.txt)",
+                                data=resultado,
+                                file_name="copy_whatsapp.txt",
+                                mime="text/plain"
+                            )
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
                 else:
@@ -216,8 +244,17 @@ else:
                                 model=model_name,
                                 messages=[{"role": "user", "content": prompt}]
                             )
+                            st.session_state["generation_count"] += 1
+                            resultado = completion.choices[0].message.content
                             st.success("Planejamento concluído!")
-                            st.markdown(completion.choices[0].message.content)
+                            st.markdown(resultado)
+                            
+                            st.download_button(
+                                label="📥 Baixar Planejamento (.txt)",
+                                data=resultado,
+                                file_name="planejamento_instagram.txt",
+                                mime="text/plain"
+                            )
                         except Exception as e:
                             st.error(f"Erro na IA: {e}")
                 else:
@@ -251,10 +288,64 @@ else:
                                 model=model_name,
                                 messages=[{"role": "user", "content": prompt}]
                             )
+                            st.session_state["generation_count"] += 1
+                            resultado = completion.choices[0].message.content
                             st.success("E-mail gerado com sucesso!")
                             st.markdown("---")
-                            st.markdown(completion.choices[0].message.content)
+                            st.markdown(resultado)
+                            
+                            st.download_button(
+                                label="📥 Baixar E-mail Comercial (.txt)",
+                                data=resultado,
+                                file_name="email_comercial.txt",
+                                mime="text/plain"
+                            )
                         except Exception as e:
                             st.error(f"Erro ao gerar e-mail: {e}")
                 else:
                     st.warning("Por favor, preencha os detalhes do produto ou serviço.")
+
+        elif escolha == "🎬 Gerador de Roteiro para Vídeos":
+            st.header("🎬 Gerador de Roteiro para Vídeos (Reels / TikTok / YouTube)")
+            st.write("Crie roteiros magnéticos com ganchos fortes para prender a atenção do espectador nos primeiros segundos.")
+            
+            tema_video = st.text_input("Qual o tema principal do vídeo?")
+            formato_video = st.selectbox("Formato do vídeo", ["Reels / TikTok (Curto - Até 1 min)", "YouTube (Longo - 5 a 10 min)"])
+            tom_comunicacao = st.selectbox("Tom de voz", ["Dinâmico e Enérgico", "Educativo e Profissional", "Polêmico / Provocativo", "Divertido"])
+            
+            if st.button("Gerar Roteiro Completo"):
+                if tema_video:
+                    with st.spinner("Escrevendo roteiro de alto engajamento..."):
+                        prompt = f"""
+                        Atue como um roteirista profissional de vídeo e criador de conteúdo de sucesso.
+                        Tema: {tema_video}
+                        Formato: {formato_video}
+                        Tom de voz: {tom_comunicacao}
+                        
+                        Crie um roteiro estruturado contendo:
+                        1. **Gancho (Hook)**: Os primeiros 3 segundos cruciais para reter a atenção.
+                        2. **Desenvolvimento / Corpo**: Argumentos principais divididos em passos ou tópicos claros.
+                        3. **Chamada para Ação (CTA)**: O que o espectador deve fazer no final.
+                        4. **Dicas de Edição / B-roll**: Sugestões visuais e de legendas para enriquecer o vídeo.
+                        """
+                        try:
+                            completion = client.chat.completions.create(
+                                model=model_name,
+                                messages=[{"role": "user", "content": prompt}]
+                            )
+                            st.session_state["generation_count"] += 1
+                            resultado = completion.choices[0].message.content
+                            st.success("Roteiro gerado com sucesso!")
+                            st.markdown("---")
+                            st.markdown(resultado)
+                            
+                            st.download_button(
+                                label="📥 Baixar Roteiro (.txt)",
+                                data=resultado,
+                                file_name=f"roteiro_{tema_video.lower().replace(' ', '_')}.txt",
+                                mime="text/plain"
+                            )
+                        except Exception as e:
+                            st.error(f"Erro ao gerar roteiro: {e}")
+                else:
+                    st.warning("Por favor, informe o tema principal do vídeo.")
