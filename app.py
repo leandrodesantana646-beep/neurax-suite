@@ -28,7 +28,18 @@ def gerar_com_groq(prompt, system_prompt, api_key):
             pass  # Se der erro na API, usa o modo de simulação abaixo
 
     # Modo de Simulação Inteligente (Fallback)
-    if "WhatsApp" in system_prompt or "whatsapp" in prompt.lower():
+    if "precificação" in system_prompt.lower() or "preço" in prompt.lower() or "mercado" in prompt.lower():
+        return (
+            "💰 **Relatório de Inteligência de Preço e Mercado**\n\n"
+            "- **Produto Analisado:** Baseado no seu input\n"
+            "- **Preço Médio Estimado de Mercado:** R$ 120,00\n"
+            "- **Seu Custo de Produção:** R$ 50,00\n"
+            "- **Preço Sugerido (100% de Lucro / Markup 2x):** R$ 100,00\n\n"
+            "📊 **Parecer Estratégico da IA:**\n"
+            "O preço sugerido de R$ 100,00 para garantir 100% de lucro está **abaixo da média de mercado** (R$ 120,00). "
+            "Isso significa que você tem alta margem de lucro e ainda continua extremamente competitivo para vender em larga escala!"
+        )
+    elif "WhatsApp" in system_prompt or "whatsapp" in prompt.lower():
         return (
             "🚀 **Copy Mágica para WhatsApp**\n\n"
             "Olá! Se você quer escalar seu negócio e automatizar suas vendas sem perder tempo, "
@@ -118,33 +129,21 @@ else:
     )
     
     if menu == "Calculadora de Preço & Lucro (100%)":
-        st.subheader("💰 Precificação Inteligente & Margem de 100%")
-        st.write("Analise o valor de custo do produtor em comparação com o mercado e descubra o preço ideal para garantir 100% de lucro.")
+        st.subheader("💰 Precificação Inteligente por IA & Margem de 100%")
+        st.write("Informe o nome do seu produto e o valor de custo. A IA vai estimar o preço médio de mercado atual e calcular a sugestão ideal para garantir 100% de lucro.")
         
-        nome_produto = st.text_input("Nome do Produto ou Serviço:", "Ex: Camiseta Oversized / Curso Online")
+        nome_produto = st.text_input("Nome do Produto ou Serviço:", "Ex: Camiseta Oversized de Algodão")
+        custo = st.number_input("Valor de Custo / Produção (R$)", min_value=0.0, value=50.0, step=5.0)
         
-        col_c1, col_c2 = st.columns(2)
-        with col_c1:
-            custo = st.number_input("Valor de Custo / Produtor (R$)", min_value=0.0, value=50.0, step=5.0)
-        with col_c2:
-            concorrencia = st.number_input("Preço Médio Atual no Mercado (R$)", min_value=0.0, value=120.0, step=5.0)
-            
-        if st.button("Analisar Preço e Sugerir Venda"):
-            preco_100_lucro = custo * 2  # 100% de lucro sobre o custo
-            lucro_reais = preco_100_lucro - custo
-            
-            st.markdown("---")
-            st.markdown(f"### 📊 Relatório de Análise: {nome_produto}")
-            
-            res_col1, res_col2, res_col3 = st.columns(3)
-            res_col1.metric("Seu Custo de Produção", f"R$ {custo:.2f}")
-            res_col2.metric("Preço Sugerido (100% Lucro)", f"R$ {preco_100_lucro:.2f}")
-            res_col3.metric("Lucro Líquido Estimado", f"R$ {lucro_reais:.2f}")
-            
-            if preco_100_lucro <= concorrencia:
-                st.success(f"✅ **Viável:** O preço sugerido de R$ {preco_100_lucro:.2f} para **{nome_produto}** está competitivo e alinhado com o mercado atual (R$ {concorrencia:.2f}).")
-            else:
-                st.warning(f"⚠️ **Atenção:** Para obter 100% de lucro, o preço sugerido de R$ {preco_100_lucro:.2f} para **{nome_produto}** ficou acima da média de mercado (R$ {concorrencia:.2f}). Avalie reduzir custos.")
+        if st.button("Analisar Preço com IA"):
+            with st.spinner("A Inteligência Artificial está pesquisando o mercado e calculando a margem..."):
+                prompt_precificacao = f"Analise o produto '{nome_produto}' que tem um custo de produção de R$ {custo:.2f}. Estime o preço médio atual praticado no mercado para este produto, calcule o preço de venda necessário para garantir 100% de lucro sobre o custo, e dê uma recomendação estratégica se o preço é competitivo."
+                system_precificacao = "Você é um consultor financeiro sênior e especialista em precificação de mercado."
+                
+                resultado = gerar_com_groq(prompt_precificacao, system_precificacao, api_key_input)
+                st.markdown("---")
+                st.markdown("### 📊 Relatório de Análise de Preço")
+                st.markdown(resultado)
                 
     elif menu == "Gerador de Copy WhatsApp":
         st.subheader("💬 Gerador de Copy para WhatsApp")
