@@ -15,6 +15,12 @@ st.set_page_config(
 # Estilização visual customizada (Tema NeuraX Pro)
 st.markdown("""
     <style>
+    /* Oculta apenas os ícones do GitHub/Share no topo, mantendo o menu lateral funcionando */
+    [data-testid="stToolbar"] {
+        visibility: hidden;
+        display: none;
+    }
+    
     /* Oculta o rodapé padrão do Streamlit */
     footer {visibility: hidden;}
     
