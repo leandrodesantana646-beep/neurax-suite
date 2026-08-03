@@ -339,7 +339,8 @@ else:
                         except Exception as e:
                             st.error(f"Erro ao conectar com a Groq: {e}.")
 
-        elif escolha == "💰 Precificação Inteligente":
+        elif escolha == "💰 
+                        try:        elif escolha == "💰 Precificação Inteligente":
             st.header("💰 Calculadora de Precificação Inteligente com IA")
             produto = st.text_input("Nome do Produto ou Serviço")
             custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
@@ -348,10 +349,25 @@ else:
             if st.button("Calcular Preço Ideal"):
                 if produto and custo > 0:
                     with st.spinner("Analisando..."):
-                        prompt = "Utilizando o tom de voz '{}', analise a precificação de: {} com custo R${} e margem de {}%.".format(
-                            user_tone, produto, custo, margem
+                        prompt = (
+                            f"Atue como um Especialista em Finanças e Precificação aplicando o tom de voz: '{user_tone}'.\n"
+                            f"Elabore uma análise detalhada e estruturada de precificação para o produto/serviço: '{produto}', com custo de R$ {custo:.2f} e margem de lucro de {margem}%.\n"
+                            "Sua resposta deve ser estritamente em Markdown limpo, sem erros matemáticos colados, contendo:\n"
+                            "1. O detalhamento claro do custo.\n"
+                            "2. A aplicação correta da margem de lucro e o preço de venda final formatado de forma legível (ex: R$ 00,00).\n"
+                            "3. A análise de impacto do lucro para o negócio.\n"
+                            "4. Orientações estratégicas e uma chamada para ação (CTA) forte para o profissional."
                         )
                         try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                            st.success("Análise concluída!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
                             completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
                             resultado = completion.choices[0].message.content
                             st.session_state["generation_count"] += 1
