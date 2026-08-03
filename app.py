@@ -6,6 +6,10 @@ import pandas as pd
 from supabase import create_client, Client
 import pypdf
 import io
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Configuração inicial da página
 st.set_page_config(
@@ -82,7 +86,7 @@ def add_user(username, password):
             st.warning("Este usuário já existe.")
         else:
             supabase.table("users").insert({"username": username, "password": make_hash(password)}).execute()
-            st.success("Cadastro realizado com sucesso!")
+            st.success("Cadastro realizado com sucesso! Faça seu login.")
     except Exception as e:
         st.error(f"Erro ao cadastrar: {e}")
 
@@ -98,6 +102,40 @@ def login_user(username, password):
     except Exception:
         pass
     return False
+
+def update_password(username, new_password):
+    if not supabase:
+        return False
+    try:
+        hashed = make_hash(new_password)
+        supabase.table("users").update({"password": hashed}).eq("username", username).execute()
+        return True
+    except Exception:
+        return False
+
+def send_recovery_email(to_email, code):
+    try:
+        smtp_server = st.secrets["smtp"]["server"]
+        smtp_port = int(st.secrets["smtp"]["port"])
+        sender_email = st.secrets["smtp"]["email"]
+        sender_password = st.secrets["smtp"]["password"]
+        
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = to_email
+        msg["Subject"] = "Código de Recuperação - NeuraX Suite Pro"
+        
+        body = f"Olá,\n\nSeu código de recuperação de senha no NeuraX Suite Pro é: {code}\n\nInsira este código na tela de recuperação para definir sua nova senha."
+        msg.attach(MIMEText(body, "plain"))
+        
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception:
+        return False
 
 def save_history(username, tool_name, content):
     if not supabase:
@@ -140,6 +178,41 @@ def get_all_history_admin():
     except Exception:
         return []
 
+def get_user_profile(username):
+    if not supabase:
+        return {}
+    try:
+        data = supabase.table("profiles").select("*").eq("username", username).execute().data
+        if data:
+            return data[0]
+    except Exception:
+        pass
+    return {"business_name": "", "niche": "", "budget": "", "goals": ""}
+
+def save_user_profile(username, business_name, niche, budget, goals):
+    if not supabase:
+        return
+    try:
+        existing = supabase.table("profiles").select("username").eq("username", username).execute().data
+        if existing:
+            supabase.table("profiles").update({
+                "business_name": business_name,
+                "niche": niche,
+                "budget": budget,
+                "goals": goals
+            }).eq("username", username).execute()
+        else:
+            supabase.table("profiles").insert({
+                "username": username,
+                "business_name": business_name,
+                "niche": niche,
+                "budget": budget,
+                "goals": goals
+            }).execute()
+        st.success("Perfil salvo com sucesso na Memória de Longo Prazo!")
+    except Exception as e:
+        st.error(f"Erro ao salvar perfil: {e}")
+
 # Gerenciamento de Sessão
 for key in ["logged_in", "username", "generation_count"]:
     if key not in st.session_state:
@@ -149,11 +222,11 @@ for key in ["logged_in", "username", "generation_count"]:
 if not st.session_state["logged_in"]:
     st.title("🚀 NeuraX Suite Pro")
     st.markdown("### O Único Ecossistema Inteligente que Você Precisa")
-    auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar"])
-    user = st.text_input("Usuário")
-    pwd = st.text_input("Senha", type="password")
+    auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar", "Esqueci minha senha"])
     
     if auth_mode == "Login":
+        user = st.text_input("Usuário ou E-mail")
+        pwd = st.text_input("Senha", type="password")
         if st.button("Entrar no Sistema"):
             if login_user(user, pwd):
                 st.session_state["logged_in"] = True
@@ -161,12 +234,89 @@ if not st.session_state["logged_in"]:
                 st.rerun()
             else:
                 st.error("Dados incorretos.")
-    else:
+                
+    elif auth_mode == "Cadastrar":
+        user = st.text_input("E-mail / Usuário")
+        pwd = st.text_input("Senha", type="password")
         if st.button("Criar Conta"):
             if user and pwd:
                 add_user(user, pwd)
             else:
                 st.warning("Preencha todos os campos.")
+                
+    else: # Esqueci minha senha
+        st.markdown("### 🔑 Recuperação de Senha")
+        if "reset_stage" not in st.session_state:
+            st.session_state["reset_stage"] = 1
+        
+        if st.session_state["reset_stage"] == 1:
+            recovery_user = st.text_input("Digite seu E-mail / Usuário cadastrado")
+            if st.button("Enviar Código de Verificação"):
+                if recovery_user:
+                    exists = False
+                    if recovery_user.strip().lower() == "admin":
+                        exists = True
+                    elif supabase:
+                        data = supabase.table("users").select("username").eq("username", recovery_user).execute().data
+                        if data:
+                            exists = True
+                    
+                    if exists:
+                        code = str(random.randint(100000, 999999))
+                        st.session_state["reset_code"] = code
+                        st.session_state["reset_user"] = recovery_user
+                        
+                        email_sent = False
+                        try:
+                            email_sent = send_recovery_email(recovery_user, code)
+                        except Exception:
+                            pass
+                        
+                        if email_sent:
+                            st.success("📨 Código enviado para o seu e-mail!")
+                        else:
+                            st.info(f"💡 [Simulação/Desenvolvimento] Seu código de verificação é: **{code}**")
+                        
+                        st.session_state["reset_stage"] = 2
+                        st.rerun()
+                    else:
+                        st.error("Usuário ou e-mail não encontrado no sistema.")
+                else:
+                    st.warning("Insira seu usuário/e-mail.")
+        
+        elif st.session_state["reset_stage"] == 2:
+            st.info(f"Enviamos um código de verificação para: **{st.session_state.get('reset_user')}**")
+            entered_code = st.text_input("Digite o Código de 6 Dígitos")
+            new_pwd = st.text_input("Nova Senha", type="password")
+            confirm_pwd = st.text_input("Confirme a Nova Senha", type="password")
+            
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                if st.button("Redefinir Senha"):
+                    if entered_code == st.session_state.get("reset_code"):
+                        if new_pwd and new_pwd == confirm_pwd:
+                            target_user = st.session_state.get("reset_user")
+                            if target_user.strip().lower() == "admin":
+                                st.warning("A senha do administrador padrão não pode ser redefinida por aqui.")
+                            else:
+                                if update_password(target_user, new_pwd):
+                                    st.success("Senha redefinida com sucesso! Volte ao Login.")
+                                    st.session_state["reset_stage"] = 1
+                                    st.session_state.pop("reset_code", None)
+                                    st.session_state.pop("reset_user", None)
+                                    st.rerun()
+                                else:
+                                    st.error("Erro ao atualizar a senha no banco de dados.")
+                        else:
+                            st.warning("As senhas não coincidem ou estão vazias.")
+                    else:
+                        st.error("Código de verificação incorreto.")
+            with col_r2:
+                if st.button("Cancelar"):
+                    st.session_state["reset_stage"] = 1
+                    st.session_state.pop("reset_code", None)
+                    st.session_state.pop("reset_user", None)
+                    st.rerun()
 
 else:
     # Sidebar
@@ -193,9 +343,20 @@ else:
 
     client = Groq(api_key=groq_api_key) if groq_api_key else None
 
+    # Carrega perfil de longo prazo para injeção automática no prompt
+    current_profile = get_user_profile(st.session_state["username"])
+    profile_context = (
+        f"\n[DADOS DE CONTEXTO DO USUÁRIO]:\n"
+        f"- Nome do Negócio/Projeto: {current_profile.get('business_name', 'Não informado')}\n"
+        f"- Nicho de Atuação: {current_profile.get('niche', 'Não informado')}\n"
+        f"- Orçamento Disponível: {current_profile.get('budget', 'Não informado')}\n"
+        f"- Objetivos Principais: {current_profile.get('goals', 'Não informado')}\n"
+    )
+
     # MENU DE FERRAMENTAS COMPLETO
     menu_options = [
         "📊 Meu Painel de Produtividade",
+        "👤 Meu Perfil & Contexto (Memória)",
         "📂 Analista de Arquivos & PDFs",
         "⚡ Gestor de Tarefas Inteligente",
         "🧠 Mentor de Saúde Mental",
@@ -263,6 +424,20 @@ else:
         else:
             st.info("Você ainda não utilizou nenhuma ferramenta.")
 
+    elif escolha == "👤 Meu Perfil & Contexto (Memória)":
+        st.header("👤 Memória de Longo Prazo - Perfil do Usuário")
+        st.write("Defina suas informações principais uma única vez. A inteligência artificial usará esses dados automaticamente em todas as ferramentas.")
+        
+        with st.form("form_profile"):
+            b_name = st.text_input("Nome do Negócio ou Projeto", value=current_profile.get("business_name", ""))
+            b_niche = st.text_input("Nicho de Atuação", value=current_profile.get("niche", ""))
+            b_budget = st.text_input("Orçamento Disponível / Faturamento", value=current_profile.get("budget", ""))
+            b_goals = st.text_area("Objetivos Principais e Metas", value=current_profile.get("goals", ""))
+            
+            submit_profile = st.form_submit_button("Salvar Perfil Definitivo")
+            if submit_profile:
+                save_user_profile(st.session_state["username"], b_name, b_niche, b_budget, b_goals)
+
     elif escolha == "📂 Analista de Arquivos & PDFs":
         st.header("📂 Analista de Arquivos e PDFs")
         st.write("Faça o upload de contratos, faturas, artigos científicos ou livros e faça qualquer pergunta para a IA.")
@@ -298,6 +473,7 @@ else:
                                 texto_limitado = texto_extraido[:30000]
                                 prompt = (
                                     f"Atue como um Especialista em Análise Documental sênior aplicando o tom de voz: '{user_tone}'.\n"
+                                    f"{profile_context}\n"
                                     f"Com base estritamente no texto extraído do PDF abaixo:\n\n"
                                     f"--- INÍCIO DO TEXTO ---\n{texto_limitado}\n--- FIM DO TEXTO ---\n\n"
                                     f"Responda detalhadamente e com clareza à seguinte requisição do usuário: '{pergunta}'"
@@ -326,7 +502,12 @@ else:
         if st.button("Organizar Meu Dia"):
             if tarefas_brutas and client:
                 with st.spinner("Construindo matriz de produtividade..."):
-                    prompt = f"Atue como um Especialista em Produtividade (Tom: '{user_tone}'). O usuário tem {horas_disponiveis} horas livres e as tarefas: '{tarefas_brutas}'. Crie uma organização usando a Matriz de Eisenhower e monte um cronograma realista."
+                    prompt = (
+                        f"Atue como um Especialista em Produtividade (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"O usuário tem {horas_disponiveis} horas livres e as tarefas: '{tarefas_brutas}'. "
+                        f"Crie uma organização usando a Matriz de Eisenhower e monte um cronograma realista."
+                    )
                     completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
                     resultado = completion.choices[0].message.content
                     st.session_state["generation_count"] += 1
@@ -344,7 +525,12 @@ else:
         if st.button("Refletir com o Mentor"):
             if desabafo and client:
                 with st.spinner("Processando..."):
-                    prompt = f"Atue como um Mentor de Bem-Estar empático e acolhedor (Tom: '{user_tone}'). O usuário está se sentindo '{humor}' e escreveu: '{desabafo}'. Responda validando sentimentos e termine sugerindo um exercício prático de respiração ou foco."
+                    prompt = (
+                        f"Atue como um Mentor de Bem-Estar empático e acolhedor (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"O usuário está se sentindo '{humor}' e escreveu: '{desabafo}'. "
+                        f"Responda validando sentimentos e termine sugerindo um exercício prático de respiração ou foco."
+                    )
                     completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
                     resultado = completion.choices[0].message.content
                     st.session_state["generation_count"] += 1
@@ -359,7 +545,12 @@ else:
         if st.button("Iniciar Sessão de Estudo"):
             if assunto and client:
                 with st.spinner("O Professor NeuraX está preparando a aula..."):
-                    prompt = f"Atue como um Professor Universitário genial (Tom: '{user_tone}'). O usuário quer estudar: '{assunto}' no formato: '{tipo_estudo}'. Entregue o conteúdo de forma didática com markdown limpo."
+                    prompt = (
+                        f"Atue como um Professor Universitário genial (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"O usuário quer estudar: '{assunto}' no formato: '{tipo_estudo}'. "
+                        f"Entregue o conteúdo de forma didática com markdown limpo."
+                    )
                     completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
                     resultado = completion.choices[0].message.content
                     st.session_state["generation_count"] += 1
@@ -368,12 +559,16 @@ else:
 
     elif escolha == "🗺️ Arquiteto de Funis de Vendas":
         st.header("🗺️ Arquiteto de Funis de Vendas")
-        funil_produto = st.text_input("Qual é o seu produto ou serviço?")
-        funil_publico = st.text_input("Quem é o seu público-alvo?")
+        funil_produto = st.text_input("Qual é o seu produto ou serviço?", value=current_profile.get("business_name", ""))
+        funil_publico = st.text_input("Quem é o seu público-alvo?", value=current_profile.get("niche", ""))
         if st.button("Gerar Estratégia e Fluxograma"):
             if funil_produto and client:
                 with st.spinner("Desenhando a arquitetura..."):
-                    prompt = f"Crie um funil de vendas estratégico para '{funil_produto}' e público '{funil_publico}'. Inclua uma descrição passo a passo e um diagrama em Mermaid (graph TD). Tom: {user_tone}."
+                    prompt = (
+                        f"Crie um funil de vendas estratégico para '{funil_produto}' e público '{funil_publico}'.\n"
+                        f"{profile_context}\n"
+                        f"Inclua uma descrição passo a passo e um diagrama em Mermaid (graph TD). Tom: {user_tone}."
+                    )
                     resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
@@ -386,7 +581,11 @@ else:
         if st.button("Calcular Preço Ideal"):
             if produto and client:
                 with st.spinner("Analisando..."):
-                    prompt = f"Elabore uma análise detalhada de precificação para '{produto}' com custo de R${custo}. Tom: {user_tone}."
+                    prompt = (
+                        f"Elabore uma análise detalhada de precificação para '{produto}' com custo de R${custo}.\n"
+                        f"{profile_context}\n"
+                        f"Tom: {user_tone}."
+                    )
                     resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], "Precificação Inteligente", resultado)
@@ -398,7 +597,11 @@ else:
         if st.button("Gerar Copys de Anúncio"):
             if anuncio_produto and client:
                 with st.spinner("Criando estruturas..."):
-                    prompt = f"Crie copies de anúncios magnéticas para vender '{anuncio_produto}'. Tom: {user_tone}."
+                    prompt = (
+                        f"Crie copies de anúncios magnéticas para vender '{anuncio_produto}'.\n"
+                        f"{profile_context}\n"
+                        f"Tom: {user_tone}."
+                    )
                     resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], "Gerador de Anúncios", resultado)
@@ -411,7 +614,11 @@ else:
         if st.button("Executar Simulação"):
             if client:
                 with st.spinner("Desenhando plano de guerra..."):
-                    prompt = f"Crie um plano tático de marketing para transformar R${orcamento} em R${meta_fat}. Tom: {user_tone}."
+                    prompt = (
+                        f"Crie um plano tático de marketing para transformar R${orcamento} em R${meta_fat}.\n"
+                        f"{profile_context}\n"
+                        f"Tom: {user_tone}."
+                    )
                     resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], "NeuraX Growth Engine", resultado)
@@ -432,7 +639,11 @@ else:
         if st.button("Gerar com IA"):
             if detalhe and client:
                 with st.spinner("Processando requisição..."):
-                    prompt = f"Atue como um Especialista (Tom: '{user_tone}'). Resolva a demanda da ferramenta '{escolha}': {detalhe}"
+                    prompt = (
+                        f"Atue como um Especialista (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"Resolva a demanda da ferramenta '{escolha}': {detalhe}"
+                    )
                     resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], escolha, resultado)
