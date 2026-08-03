@@ -7,7 +7,7 @@ from supabase import create_client, Client
 
 # Configuração inicial da página
 st.set_page_config(
-    page_title="NeuraX Suite",
+    page_title="NeuraX Suite Pro",
     page_icon="🚀",
     layout="wide"
 )
@@ -21,37 +21,67 @@ except Exception as e:
     st.error(f"Erro ao conectar com o Supabase. Verifique os Secrets: {e}")
     supabase = None
 
-# Estilização visual customizada (Tema NeuraX Pro)
+# Estilização visual customizada (Tema NeuraX Pro - Dark Moderno & Elegante)
 st.markdown("""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    /* Fundo geral do aplicativo */
+    .stApp {
+        background-color: #0b0f19;
+        color: #f3f4f6;
+    }
+    
     /* Oculta o rodapé padrão do Streamlit */
     footer {visibility: hidden;}
     
-    /* Ajuste de fontes e cores principais */
+    /* Cabeçalhos estilizados */
     h1, h2, h3 {
-        color: #58a6ff !important;
-        font-family: 'Inter', sans-serif;
+        color: #38bdf8 !important;
+        font-weight: 700;
     }
     
-    /* Customização dos botões principais */
+    /* Sidebar moderna */
+    [data-testid="stSidebar"] {
+        background-color: #111827;
+        border-right: 1px solid #1f2937;
+    }
+    
+    /* Botões com efeito neon e gradiente */
     .stButton>button {
-        background: linear-gradient(90deg, #1f6feb 0%, #388bfd 100%);
+        background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
         color: white;
-        border-radius: 8px;
-        font-weight: bold;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 0.6rem 1.2rem;
         border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        transition: 0.3s;
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+        transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        background: linear-gradient(90deg, #388bfd 0%, #58a6ff 100%);
-        color: #ffffff;
+        background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+        box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+        transform: translateY(-1px);
     }
     
-    /* Estilização dos blocos de expansão */
+    /* Cards de Métricas */
+    [data-testid="stMetric"] {
+        background: #111827;
+        border: 1px solid #1f2937;
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Blocos de expansão personalizados */
     .streamlit-expanderHeader {
-        background-color: #161b22;
-        border-radius: 6px;
+        background-color: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -146,8 +176,9 @@ if "generation_count" not in st.session_state:
 
 # Tela de Autenticação
 if not st.session_state["logged_in"]:
-    st.title("🚀 NeuraX Suite - Acesso ao Sistema")
-    st.write("Faça login ou crie sua conta para acessar o ecossistema avançado de inteligência artificial.")
+    st.title("🚀 NeuraX Suite Pro")
+    st.markdown("### Ecossistema Avançado de Inteligência Artificial")
+    st.write("Faça login ou crie sua conta para acessar ferramentas profissionais de alta performance.")
     
     auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar"])
     
@@ -170,23 +201,36 @@ if not st.session_state["logged_in"]:
                 st.warning("Preencha todos os campos.")
 
 else:
-    # Painel Principal
-    st.sidebar.title("Painel NeuraX")
-    st.sidebar.write(f"Logado como: **{st.session_state['username']}**")
+    # Painel Principal (Sidebar)
+    st.sidebar.title("⚡ NeuraX Control")
+    st.sidebar.write(f"Operador: **{st.session_state['username']}**")
     
     st.sidebar.markdown("---")
-    st.sidebar.metric(label="Gerações nesta Sessão", value=st.session_state["generation_count"])
+    st.sidebar.metric(label="Gerações na Sessão", value=st.session_state["generation_count"])
     st.sidebar.markdown("---")
     
-    # Carregamento automático da API Key via Secrets do Streamlit Cloud
-    groq_api_key = ""
-    try:
-        groq_api_key = st.secrets["GROQ_API_KEY"]
-    except Exception:
-        groq_api_key = st.sidebar.text_input("Insira sua Groq API Key", type="password")
+    # Sistema de Preferências (Opção 3 - Tom de Voz Global)
+    st.sidebar.subheader("⚙️ Preferências de IA")
+    user_tone = st.sidebar.selectbox(
+        "Tom de Voz Padrão",
+        [
+            "Persuasivo & Direto (Foco em Conversão)",
+            "Técnico & Profissional (Autoridade Sênior)",
+            "Divertido & Descontraído (Engajamento)",
+            "Inspirador & Emocional (Storytelling)"
+        ]
+    )
+    
+    st.sidebar.markdown("---")
+    
+    # Carregamento da API Key da Groq
+    groq_api_key = st.secrets.get("GROQ_API_KEY", "")
+    
+    if not groq_api_key or not groq_api_key.startswith("gsk_"):
+        groq_api_key = st.sidebar.text_input("Insira sua Groq API Key (gsk_...)", type="password")
 
     if not groq_api_key:
-        st.warning("⚠️ Chave da API da Groq não configurada nos Secrets do Streamlit.")
+        st.warning("⚠️ Insira uma chave válida da Groq no menu lateral para ativar as ferramentas de IA.")
         client = None
     else:
         try:
@@ -195,7 +239,7 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # MENU PADRÃO
+    # MENU DE FERRAMENTAS
     menu_options = [
         "🗺️ Arquiteto de Funis de Vendas",
         "💰 Precificação Inteligente",
@@ -206,9 +250,7 @@ else:
         "📂 Meu Histórico"
     ]
     
-    # SISTEMA DE SEGURANÇA PARA O PAINEL ADMINISTRATIVO
     usuario_logado = st.session_state["username"].strip().lower()
-    
     if usuario_logado == "admin":
         menu_options.insert(0, "🛠️ Painel Administrativo")
 
@@ -280,19 +322,22 @@ else:
                 if funil_produto and funil_publico:
                     with st.spinner("Desenhando a arquitetura do funil e o fluxograma visual..."):
                         prompt = (
-                            f"Atue como um Estrategista de Marketing Digital sênior. "
+                            f"Atue como um Estrategista de Marketing Digital sênior aplicando o tom de voz: '{user_tone}'. "
                             f"Crie um funil de vendas estratégico completo para o produto: '{funil_produto}', "
                             f"com ticket '{funil_ticket}', voltado para o público: '{funil_publico}'.\n"
                             "Sua resposta deve conter obrigatoriamente:\n"
                             "1. A estratégia detalhada por etapas (Tráfego/Atração, Página de Captura/Conversão, Oferta/Checkout, Recuperação/Upsell).\n"
                             "2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (no formato de bloco de código para Mermaid) para que o Streamlit possa renderizar o fluxograma visual do funil passo a passo."
                         )
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
-                        st.success("Arquitetura e Fluxograma gerados com sucesso!")
-                        st.markdown(resultado)
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
+                            st.success("Arquitetura e Fluxograma gerados com sucesso!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
 
         elif escolha == "💰 Precificação Inteligente":
             st.header("💰 Calculadora de Precificação Inteligente com IA")
@@ -303,13 +348,16 @@ else:
             if st.button("Calcular Preço Ideal"):
                 if produto and custo > 0:
                     with st.spinner("Analisando..."):
-                        prompt = f"Analise a precificação de: {produto} com custo R${custo} e margem de {margem}%."
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Precificação Inteligente", resultado)
-                        st.success("Análise concluída!")
-                        st.markdown(resultado)
+                        prompt = f"Utilizando o tom de voz '{user_tone}', analise a precificação de: {produto} com custo R${custo} e margem de {margem}%."
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                            st.success("Análise concluída!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
 
         elif escolha == "💬 Gerador de Copy WhatsApp":
             st.header("💬 Gerador de Copy para WhatsApp")
@@ -320,13 +368,16 @@ else:
             if st.button("Gerar Copy"):
                 if nicho and oferta:
                     with st.spinner("Criando..."):
-                        prompt = f"Crie copy de vendas para WhatsApp. Nicho: {nicho}, Público: {publico}, Oferta: {oferta}."
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Copy WhatsApp", resultado)
-                        st.success("Gerado!")
-                        st.markdown(resultado)
+                        prompt = f"Com base no tom '{user_tone}', crie copy de vendas para WhatsApp. Nicho: {nicho}, Público: {publico}, Oferta: {oferta}."
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Copy WhatsApp", resultado)
+                            st.success("Gerado!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
 
         elif escolha == "📸 Planejador Instagram":
             st.header("📸 Planejador Instagram")
@@ -336,13 +387,16 @@ else:
             if st.button("Planejar Conteúdo"):
                 if tema:
                     with st.spinner("Planejando..."):
-                        prompt = f"Planeje conteúdo para Instagram por {qtd_dias} dias sobre: {tema}."
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Planejador Instagram", resultado)
-                        st.success("Planejado!")
-                        st.markdown(resultado)
+                        prompt = f"Adotando o tom '{user_tone}', planeje conteúdo para Instagram por {qtd_dias} dias sobre: {tema}."
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Planejador Instagram", resultado)
+                            st.success("Planejado!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
 
         elif escolha == "✉️ Gerador de E-mail Comercial":
             st.header("✉️ Gerador de E-mail Comercial")
@@ -353,27 +407,33 @@ else:
             if st.button("Gerar E-mail"):
                 if detalhes_produto:
                     with st.spinner("Redigindo..."):
-                        prompt = f"Escreva e-mail de {objetivo_email} para {cliente_alvo} vendendo {detalhes_produto}."
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "E-mail Comercial", resultado)
-                        st.success("E-mail gerado!")
-                        st.markdown(resultado)
+                        prompt = f"Usando o tom '{user_tone}', escreva e-mail de {objetivo_email} para {cliente_alvo} vendendo {detalhes_produto}."
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "E-mail Comercial", resultado)
+                            st.success("E-mail gerado!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
 
         elif escolha == "🎬 Gerador de Roteiro para Vídeos":
             st.header("🎬 Gerador de Roteiro para Vídeos")
             tema_video = st.text_input("Tema principal")
             formato_video = st.selectbox("Formato", ["Reels/TikTok", "YouTube"])
-            tom = st.selectbox("Tom", ["Dinâmico", "Educativo", "Polêmico", "Divertido"])
+            tom = st.selectbox("Tom Específico", ["Dinâmico", "Educativo", "Polêmico", "Divertido"])
             
             if st.button("Gerar Roteiro"):
                 if tema_video:
                     with st.spinner("Escrevendo..."):
-                        prompt = f"Crie roteiro para {formato_video} sobre {tema_video} em tom {tom}."
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
-                        st.success("Roteiro pronto!")
-                        st.markdown(resultado)
+                        prompt = f"Considerando o tom global '{user_tone}' e tom específico '{tom}', crie um roteiro para {formato_video} sobre {tema_video}."
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
+                            st.success("Roteiro pronto!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
