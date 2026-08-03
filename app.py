@@ -1,4 +1,4 @@
-import streamlit as st
+         import streamlit as st
 from groq import Groq
 import hashlib
 from datetime import datetime
@@ -289,6 +289,17 @@ def save_user_profile(username, business_name, niche, budget, goals):
     except Exception as e:
         st.error(f"Erro ao salvar perfil: {e}")
 
+# Função de Validação do Teste Gratuito (1 Uso Total)
+def verify_generation_permission(current_user, user_plan):
+    if user_plan == "free":
+        user_history = get_history(current_user)
+        if len(user_history) >= 1:
+            st.error("🔒 **Seu teste gratuito de 1 uso já foi utilizado!**")
+            st.warning("Para continuar gerando conteúdos e desbloquear acesso total e ilimitado a todas as ferramentas e agentes de IA, assine o plano por apenas **R$ 29,99/mês**.")
+            st.markdown("[💳 Assinar Plano PRO (R$ 29,99/mês)](https://seu-link-de-pagamento.com)", unsafe_allow_html=True)
+            return False
+    return True
+
 # Funções de Exportação Avançada (Word e PDF modernizadas)
 def export_to_docx(content):
     doc = Document()
@@ -408,9 +419,9 @@ else:
     st.sidebar.markdown(f"Plano Atual: **{user_plan.upper()}**")
     
     if user_plan == "free":
-        st.sidebar.warning("⚠️ Você está no Plano Gratuito com limitações.")
-        if st.sidebar.button("⚡ Atualizar para o Plano PRO"):
-            st.sidebar.markdown("[Clique aqui para assinar via PIX/Cartão](https://seu-link-de-pagamento.com)", unsafe_allow_html=True)
+        st.sidebar.info("🎁 Você tem direito a **1 teste gratuito** no app.")
+        st.sidebar.markdown("⚡ **Assine o Plano PRO por R$ 29,99/mês**")
+        st.sidebar.markdown("[👉 Clique aqui para assinar](https://seu-link-de-pagamento.com)", unsafe_allow_html=True)
 
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
@@ -550,7 +561,9 @@ else:
         final_query = voice_query if voice_query else user_query
         
         if final_query:
-            if not client:
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif not client:
                 st.error("Configure sua chave da Groq no menu lateral.")
             else:
                 st.session_state["chat_messages"].append({"role": "user", "content": final_query})
@@ -592,7 +605,9 @@ else:
         pergunta = st.text_input("O que você deseja saber ou resumir sobre este documento?")
         
         if st.button("Analisar PDF"):
-            if not arquivo_pdf or not pergunta or not client:
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif not arquivo_pdf or not pergunta or not client:
                 st.warning("⚠️ Envie o PDF, digite a pergunta e configure sua chave da Groq.")
             else:
                 with st.spinner("Lendo documento..."):
@@ -622,171 +637,163 @@ else:
 
     elif escolha == "🤖 Equipe de Agentes Autônomos [PRO]":
         st.header("🤖 Equipe de Agentes Autônomos (Multi-Agent Workflow)")
-        if user_plan == "free":
-            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
-            st.info("Atualize para o Plano PRO para desbloquear fluxos colaborativos de inteligência artificial em cadeia.")
-        else:
-            st.write("Insira o seu objetivo de projeto. Nossa equipe de 4 agentes especializados (Pesquisador, Estrategista, Copywriter e Crítico) trabalhará em conjunto de forma automatizada.")
-            objetivo_agentes = st.text_area("Qual é o grande objetivo ou projeto que sua equipe de agentes deve executar?")
-            
-            if st.button("Executar Equipe Autônoma"):
-                if not objetivo_agentes or not client:
-                    st.warning("Insira o objetivo do projeto e verifique sua chave da Groq.")
-                else:
-                    total_tokens_flow = 0
-                    
-                    # Agente 1: Pesquisador
-                    with st.status("🔍 Agente 1 (Pesquisador): Analisando mercado e público-alvo...", expanded=True) as status:
-                        prompt_p1 = f"Atue como um Pesquisador de Mercado sênior.\n{profile_context}\nObjetivo: {objetivo_agentes}\nFaça uma análise de dores do público, do mercado e tendências."
-                        res_p1 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p1}]).choices[0].message.content
-                        total_tokens_flow += len(prompt_p1.split()) + len(res_p1.split())
-                        st.markdown(res_p1)
-                        status.update(label="✅ Agente 1 (Pesquisador) Concluído!", state="complete", expanded=False)
-                    
-                    # Agente 2: Estrategista
-                    with st.status("📈 Agente 2 (Estrategista): Desenhando o modelo de negócios e funil...", expanded=True) as status:
-                        prompt_p2 = f"Atue como um Estrategista de Negócios sênior.\nCom base nesta pesquisa:\n{res_p1}\nCrie a estratégia completa e o plano de ação passo a passo."
-                        res_p2 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p2}]).choices[0].message.content
-                        total_tokens_flow += len(prompt_p2.split()) + len(res_p2.split())
-                        st.markdown(res_p2)
-                        status.update(label="✅ Agente 2 (Estrategista) Concluído!", state="complete", expanded=False)
+        st.write("Insira o seu objetivo de projeto. Nossa equipe de 4 agentes especializados (Pesquisador, Estrategista, Copywriter e Crítico) trabalhará em conjunto de forma automatizada.")
+        objetivo_agentes = st.text_area("Qual é o grande objetivo ou projeto que sua equipe de agentes deve executar?")
+        
+        if st.button("Executar Equipe Autônoma"):
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif not objetivo_agentes or not client:
+                st.warning("Insira o objetivo do projeto e verifique sua chave da Groq.")
+            else:
+                total_tokens_flow = 0
+                
+                # Agente 1: Pesquisador
+                with st.status("🔍 Agente 1 (Pesquisador): Analisando mercado e público-alvo...", expanded=True) as status:
+                    prompt_p1 = f"Atue como um Pesquisador de Mercado sênior.\n{profile_context}\nObjetivo: {objetivo_agentes}\nFaça uma análise de dores do público, do mercado e tendências."
+                    res_p1 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p1}]).choices[0].message.content
+                    total_tokens_flow += len(prompt_p1.split()) + len(res_p1.split())
+                    st.markdown(res_p1)
+                    status.update(label="✅ Agente 1 (Pesquisador) Concluído!", state="complete", expanded=False)
+                
+                # Agente 2: Estrategista
+                with st.status("📈 Agente 2 (Estrategista): Desenhando o modelo de negócios e funil...", expanded=True) as status:
+                    prompt_p2 = f"Atue como um Estrategista de Negócios sênior.\nCom base nesta pesquisa:\n{res_p1}\nCrie a estratégia completa e o plano de ação passo a passo."
+                    res_p2 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p2}]).choices[0].message.content
+                    total_tokens_flow += len(prompt_p2.split()) + len(res_p2.split())
+                    st.markdown(res_p2)
+                    status.update(label="✅ Agente 2 (Estrategista) Concluído!", state="complete", expanded=False)
 
-                    # Agente 3: Copywriter
-                    with st.status("✍️ Agente 3 (Copywriter): Escrevendo as copies e mensagens de conversão...", expanded=True) as status:
-                        prompt_p3 = f"Atue como um Copywriter de Elite (Tom: '{user_tone}').\nCom base nesta estratégia:\n{res_p2}\nEscreva as copies de vendas essenciais (landing page / WhatsApp / anúncios)."
-                        res_p3 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p3}]).choices[0].message.content
-                        total_tokens_flow += len(prompt_p3.split()) + len(res_p3.split())
-                        st.markdown(res_p3)
-                        status.update(label="✅ Agente 3 (Copywriter) Concluído!", state="complete", expanded=False)
+                # Agente 3: Copywriter
+                with st.status("✍️ Agente 3 (Copywriter): Escrevendo as copies e mensagens de conversão...", expanded=True) as status:
+                    prompt_p3 = f"Atue como um Copywriter de Elite (Tom: '{user_tone}').\nCom base nesta estratégia:\n{res_p2}\nEscreva as copies de vendas essenciais (landing page / WhatsApp / anúncios)."
+                    res_p3 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p3}]).choices[0].message.content
+                    total_tokens_flow += len(prompt_p3.split()) + len(res_p3.split())
+                    st.markdown(res_p3)
+                    status.update(label="✅ Agente 3 (Copywriter) Concluído!", state="complete", expanded=False)
 
-                    # Agente 4: Crítico & Considador Master
-                    with st.status("⚖️ Agente 4 (Crítico & Considador): Revisando falhas e gerando o Plano Master final...", expanded=True) as status:
-                        prompt_p4 = f"Atue como um Diretor Executivo implacável.\nAnalise o trabalho conjunto do Pesquisador, Estrategista e Copywriter.\nRemova inconsistências, adicione salvaguardas e entregue o **Plano Master Final** formatado.\n\nPesquisa:\n{res_p1}\n\nEstratégia:\n{res_p2}\n\nCopy:\n{res_p3}"
-                        resultado_final = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p4}]).choices[0].message.content
-                        total_tokens_flow += len(prompt_p4.split()) + len(resultado_final.split())
-                        status.update(label="🚀 Equipe Autônoma Concluída com Sucesso!", state="complete", expanded=True)
+                # Agente 4: Crítico & Considador Master
+                with st.status("⚖️ Agente 4 (Crítico & Considador): Revisando falhas e gerando o Plano Master final...", expanded=True) as status:
+                    prompt_p4 = f"Atue como um Diretor Executivo implacável.\nAnalise o trabalho conjunto do Pesquisador, Estrategista e Copywriter.\nRemova inconsistências, adicione salvaguardas e entregue o **Plano Master Final** formatado.\n\nPesquisa:\n{res_p1}\n\nEstratégia:\n{res_p2}\n\nCopy:\n{res_p3}"
+                    resultado_final = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p4}]).choices[0].message.content
+                    total_tokens_flow += len(prompt_p4.split()) + len(resultado_final.split())
+                    status.update(label="🚀 Equipe Autônoma Concluída com Sucesso!", state="complete", expanded=True)
 
-                    st.success("Fluxo multi-agente finalizado!")
-                    st.markdown("### 🏆 Relatório Consolidado da Equipe")
-                    st.markdown(resultado_final)
-                    
-                    st.session_state["generation_count"] += 1
-                    save_history(current_user, "Equipe de Agentes Autônomos", resultado_final, tokens=total_tokens_flow)
-                    
-                    col_ex1, col_ex2 = st.columns(2)
-                    with col_ex1:
-                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado_final), file_name="agentes_autonomos.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    with col_ex2:
-                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado_final), file_name="agentes_autonomos.pdf", mime="application/pdf")
+                st.success("Fluxo multi-agente finalizado!")
+                st.markdown("### 🏆 Relatório Consolidado da Equipe")
+                st.markdown(resultado_final)
+                
+                st.session_state["generation_count"] += 1
+                save_history(current_user, "Equipe de Agentes Autônomos", resultado_final, tokens=total_tokens_flow)
+                
+                col_ex1, col_ex2 = st.columns(2)
+                with col_ex1:
+                    st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado_final), file_name="agentes_autonomos.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                with col_ex2:
+                    st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado_final), file_name="agentes_autonomos.pdf", mime="application/pdf")
 
     elif escolha == "🕵️‍♂️ Inteligência Competitiva & Concorrentes [PRO]":
         st.header("🕵️‍♂️ Inteligência Competitiva & Análise de Concorrentes")
-        if user_plan == "free":
-            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
-            st.info("Atualize para o Plano PRO para analisar concorrentes e descobrir falhas de mercado.")
-        else:
-            st.write("Descreva o seu concorrente ou empresa de referência para que a IA realize uma varredura tática de inteligência de mercado.")
-            concorrente_nome = st.text_input("Nome do Concorrente / Empresa Referência")
-            concorrente_detalhes = st.text_area("O que eles vendem, qual o preço aproximado e onde atuam?")
-            
-            if st.button("Executar Inteligência Competitiva"):
-                if not concorrente_nome or not concorrente_detalhes or not client:
-                    st.warning("Preencha os campos do concorrente e verifique sua chave da Groq.")
-                else:
-                    with st.spinner("Analisando posicionamento, fraquezas ocultas e criando estratégia de contra-ataque..."):
-                        prompt = (
-                            f"Atue como um Especialista em Inteligência Competitiva e Estratégia de Mercado (Tom: '{user_tone}').\n"
-                            f"{profile_context}\n"
-                            f"Concorrente analisado: {concorrente_nome}\n"
-                            f"Detalhes informados: {concorrente_detalhes}\n\n"
-                            f"Estruture um relatório estratégico contendo:\n"
-                            f"1. **Raio-X do Concorrente** (Pontos fortes aparentes)\n"
-                            f"2. **Pontos Cegos & Fraquezas** (Onde eles estão falhando e deixando clientes insatisfeitos)\n"
-                            f"3. **Matriz de Diferenciação** (Como o usuário pode se posicionar para parecer superior)\n"
-                            f"4. **Plano de Guerra (30 Dias)** (Ações práticas para roubar market share de forma ética e agressiva)"
-                        )
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        approx_tokens = len(prompt.split()) + len(resultado.split())
-                        
-                        st.session_state["generation_count"] += 1
-                        save_history(current_user, "Inteligência Competitiva", resultado, tokens=approx_tokens)
-                        st.markdown(resultado)
-                        
-                        col_ex1, col_ex2 = st.columns(2)
-                        with col_ex1:
-                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="inteligencia_competitiva.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                        with col_ex2:
-                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="inteligencia_competitiva.pdf", mime="application/pdf")
+        st.write("Descreva o seu concorrente ou empresa de referência para que a IA realize uma varredura tática de inteligência de mercado.")
+        concorrente_nome = st.text_input("Nome do Concorrente / Empresa Referência")
+        concorrente_detalhes = st.text_area("O que eles vendem, qual o preço aproximado e onde atuam?")
+        
+        if st.button("Executar Inteligência Competitiva"):
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif not concorrente_nome or not concorrente_detalhes or not client:
+                st.warning("Preencha os campos do concorrente e verifique sua chave da Groq.")
+            else:
+                with st.spinner("Analisando posicionamento, fraquezas ocultas e criando estratégia de contra-ataque..."):
+                    prompt = (
+                        f"Atue como um Especialista em Inteligência Competitiva e Estratégia de Mercado (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"Concorrente analisado: {concorrente_nome}\n"
+                        f"Detalhes informados: {concorrente_detalhes}\n\n"
+                        f"Estruture um relatório estratégico contendo:\n"
+                        f"1. **Raio-X do Concorrente** (Pontos fortes aparentes)\n"
+                        f"2. **Pontos Cegos & Fraquezas** (Onde eles estão falhando e deixando clientes insatisfeitos)\n"
+                        f"3. **Matriz de Diferenciação** (Como o usuário pode se posicionar para parecer superior)\n"
+                        f"4. **Plano de Guerra (30 Dias)** (Ações práticas para roubar market share de forma ética e agressiva)"
+                    )
+                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                    resultado = completion.choices[0].message.content
+                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    
+                    st.session_state["generation_count"] += 1
+                    save_history(current_user, "Inteligência Competitiva", resultado, tokens=approx_tokens)
+                    st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="inteligencia_competitiva.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="inteligencia_competitiva.pdf", mime="application/pdf")
 
     elif escolha == "🏛️ Conselho de Gigantes (Board de IAs) [PRO]":
         st.header("🏛️ Conselho de Gigantes - Board de IAs de Elite")
-        if user_plan == "free":
-            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
-            st.info("Atualize sua conta para ter acesso ilimitado aos melhores cérebros de IA do mercado.")
-        else:
-            st.write("Submeta um desafio crítico e veja 4 lendas de negócios debatendo o seu problema.")
-            desafio_board = st.text_area("Qual é o seu dilema ou projeto atual para ser julgado pelo Conselho?")
-            
-            if st.button("Convocar o Conselho de Gigantes"):
-                if not desafio_board or not client:
-                    st.warning("Insira o seu desafio e verifique sua chave da Groq.")
-                else:
-                    with st.spinner("Convocando os conselheiros..."):
-                        prompt = (
-                            f"Atue simultaneamente como um Conselho de Administração de Elite composto por 4 personas:\n"
-                            f"1. O Visionario | 2. O Estrategista Financeiro | 3. O Mestre de Growth | 4. O Crítico Implacável\n\n"
-                            f"{profile_context}\n"
-                            f"Desafio: {desafio_board}\n\n"
-                            f"Estruture a resposta em: Parecer do Visionário, Estrategista, Mestre de Growth, Alerta do Crítico e Consenso."
-                        )
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        approx_tokens = len(prompt.split()) + len(resultado.split())
-                        
-                        st.session_state["generation_count"] += 1
-                        save_history(current_user, "Conselho de Gigantes", resultado, tokens=approx_tokens)
-                        st.markdown(resultado)
-                        
-                        col_ex1, col_ex2 = st.columns(2)
-                        with col_ex1:
-                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="conselho_gigantes.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                        with col_ex2:
-                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="conselho_gigantes.pdf", mime="application/pdf")
+        st.write("Submeta um desafio crítico e veja 4 lendas de negócios debatendo o seu problema.")
+        desafio_board = st.text_area("Qual é o seu dilema ou projeto atual para ser julgado pelo Conselho?")
+        
+        if st.button("Convocar o Conselho de Gigantes"):
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif not desafio_board or not client:
+                st.warning("Insira o seu desafio e verifique sua chave da Groq.")
+            else:
+                with st.spinner("Convocando os conselheiros..."):
+                    prompt = (
+                        f"Atue simultaneamente como um Conselho de Administração de Elite composto por 4 personas:\n"
+                        f"1. O Visionario | 2. O Estrategista Financeiro | 3. O Mestre de Growth | 4. O Crítico Implacável\n\n"
+                        f"{profile_context}\n"
+                        f"Desafio: {desafio_board}\n\n"
+                        f"Estruture a resposta em: Parecer do Visionário, Estrategista, Mestre de Growth, Alerta do Crítico e Consenso."
+                    )
+                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                    resultado = completion.choices[0].message.content
+                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    
+                    st.session_state["generation_count"] += 1
+                    save_history(current_user, "Conselho de Gigantes", resultado, tokens=approx_tokens)
+                    st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="conselho_gigantes.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="conselho_gigantes.pdf", mime="application/pdf")
 
     elif escolha == "💸 Gerador de Renda Extra & Negócios [PRO]":
         st.header("💸 Gerador de Renda Extra & Negócios Digitais")
-        if user_plan == "free":
-            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
-            st.info("Assine o plano PRO para desbloquear planos de faturamento e ideias de negócios validadas.")
-        else:
-            nicho_foco = st.text_input("Qual é a sua principal habilidade ou área de interesse?", value=current_profile.get("niche", ""))
-            capital_inicial = st.selectbox("Quanto você tem disponível para investir?", ["Zero (Começar do zero)", "Baixo (Até R$ 500)", "Médio (R$ 500 a R$ 2.000)", "Alto (Acima de R$ 2.000)"])
-            
-            if st.button("Gerar Plano de Renda Extra"):
-                if not client:
-                    st.warning("Configure sua chave da Groq no menu lateral.")
-                else:
-                    with st.spinner("Mapeando oportunidades de faturamento..."):
-                        prompt = (
-                            f"Atue como um Especialista em Monetização e Negócios Digitais (Tom: '{user_tone}').\n"
-                            f"{profile_context}\n"
-                            f"O usuário quer gerar renda extra na área de '{nicho_foco}' com capital inicial '{capital_inicial}'. "
-                            f"Crie um plano prático com 3 modelos de negócios viáveis, passo a passo para 30 dias e captação de clientes."
-                        )
-                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                        resultado = completion.choices[0].message.content
-                        approx_tokens = len(prompt.split()) + len(resultado.split())
-                        
-                        st.session_state["generation_count"] += 1
-                        save_history(current_user, "Gerador de Renda Extra", resultado, tokens=approx_tokens)
-                        st.markdown(resultado)
-                        
-                        col_ex1, col_ex2 = st.columns(2)
-                        with col_ex1:
-                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="renda_extra.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                        with col_ex2:
-                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="renda_extra.pdf", mime="application/pdf")
+        nicho_foco = st.text_input("Qual é a sua principal habilidade ou área de interesse?", value=current_profile.get("niche", ""))
+        capital_inicial = st.selectbox("Quanto você tem disponível para investir?", ["Zero (Começar do zero)", "Baixo (Até R$ 500)", "Médio (R$ 500 a R$ 2.000)", "Alto (Acima de R$ 2.000)"])
+        
+        if st.button("Gerar Plano de Renda Extra"):
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif not client:
+                st.warning("Configure sua chave da Groq no menu lateral.")
+            else:
+                with st.spinner("Mapeando oportunidades de faturamento..."):
+                    prompt = (
+                        f"Atue como um Especialista em Monetização e Negócios Digitais (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"O usuário quer gerar renda extra na área de '{nicho_foco}' com capital inicial '{capital_inicial}'. "
+                        f"Crie um plano prático com 3 modelos de negócios viáveis, passo a passo para 30 dias e captação de clientes."
+                    )
+                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                    resultado = completion.choices[0].message.content
+                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    
+                    st.session_state["generation_count"] += 1
+                    save_history(current_user, "Gerador de Renda Extra", resultado, tokens=approx_tokens)
+                    st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="renda_extra.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="renda_extra.pdf", mime="application/pdf")
 
     elif escolha in [
         "⚡ Gestor de Tarefas Inteligente", "🧠 Mentor de Saúde Mental", "📚 Tutor Universal & Estudos",
@@ -798,7 +805,9 @@ else:
         st.header(escolha)
         detalhe = st.text_area("Descreva os detalhes da sua demanda:")
         if st.button("Gerar com IA"):
-            if detalhe and client:
+            if not verify_generation_permission(current_user, user_plan):
+                pass
+            elif detalhe and client:
                 with st.spinner("Processando..."):
                     prompt = f"Atue como um Especialista (Tom: '{user_tone}').\n{profile_context}\nDemanda: {detalhe}"
                     completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
@@ -841,3 +850,5 @@ else:
                             delete_history_item(item_id)
                             st.success("Excluído!")
                             st.rerun()
+                   
+                            
