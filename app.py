@@ -27,7 +27,7 @@ try:
 except Exception as e:
     supabase = None
 
-# Estilização visual customizada (Cabeçalho oculto e letras do menu em azul)
+# Estilização visual customizada (Cabeçalho mantido visível para o botão do menu aparecer no celular)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -38,7 +38,6 @@ st.markdown("""
     
     .stApp { background-color: #0b0f19; color: #f3f4f6; }
     footer {visibility: hidden;}
-    [data-testid="stHeader"] {display: none !important;}
     h1, h2, h3 { color: #38bdf8 !important; font-weight: 700; }
     
     [data-testid="stSidebar"] {
