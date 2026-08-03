@@ -209,7 +209,7 @@ else:
     st.sidebar.metric(label="Gerações na Sessão", value=st.session_state["generation_count"])
     st.sidebar.markdown("---")
     
-    # Sistema de Preferências (Opção 3 - Tom de Voz Global)
+    # Sistema de Preferências (Tom de Voz Global)
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
         "Tom de Voz Padrão",
@@ -321,8 +321,129 @@ else:
             if st.button("Gerar Estratégia e Fluxograma"):
                 if funil_produto and funil_publico:
                     with st.spinner("Desenhando a arquitetura do funil e o fluxograma visual..."):
-                        prompt = f"""Atue como um Estrategista de Marketing Digital sênior aplicando o tom de voz: '{user_tone}'.
-Crie um funil de vendas estratégico completo para o produto: '{funil_produto}', com ticket '{funil_ticket}', voltado para o público: '{funil_publico}'.
+                        prompt = """Atue como um Estrategista de Marketing Digital sênior aplicando o tom de voz: '{}'.
+Crie um funil de vendas estratégico completo para o produto: '{}', com ticket '{}', voltado para o público: '{}'.
 Sua resposta deve conter obrigatoriamente:
 1. A estratégia detalhada por etapas (Tráfego/Atração, Página de Captura/Conversão, Oferta/Checkout, Recuperação/Upsell).
-2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (em bloco ```mermaid ... 
+2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (em bloco ```mermaid ... ```). 
+ATENÇÃO sobre o Mermaid: Use apenas setas simples (ex: A --> B) sem textos complexos ou caracteres especiais nas setas para evitar erros de renderização.""".format(
+                            user_tone, funil_produto, funil_ticket, funil_publico
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
+                            st.success("Arquitetura e Fluxograma gerados com sucesso!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "💰 Precificação Inteligente":
+            st.header("💰 Calculadora de Precificação Inteligente com IA")
+            produto = st.text_input("Nome do Produto ou Serviço")
+            custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
+            margem = st.slider("Margem de Lucro (%)", min_value=10, max_value=500, value=100)
+            
+            if st.button("Calcular Preço Ideal"):
+                if produto and custo > 0:
+                    with st.spinner("Analisando..."):
+                        prompt = "Utilizando o tom de voz '{}', analise a precificação de: {} com custo R${} e margem de {}%.".format(
+                            user_tone, produto, custo, margem
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Precificação Inteligente", resultado)
+                            st.success("Análise concluída!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "💬 Gerador de Copy WhatsApp":
+            st.header("💬 Gerador de Copy para WhatsApp")
+            nicho = st.text_input("Seu nicho/produto")
+            publico = st.text_input("Público-alvo")
+            oferta = st.text_area("Oferta")
+            
+            if st.button("Gerar Copy"):
+                if nicho and oferta:
+                    with st.spinner("Criando..."):
+                        prompt = "Com base no tom '{}', crie copy de vendas para WhatsApp. Nicho: {}, Público: {}, Oferta: {}.".format(
+                            user_tone, nicho, publico, oferta
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Copy WhatsApp", resultado)
+                            st.success("Gerado!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "📸 Planejador Instagram":
+            st.header("📸 Planejador Instagram")
+            tema = st.text_input("Tema central")
+            qtd_dias = st.slider("Dias", 3, 7, 5)
+            
+            if st.button("Planejar Conteúdo"):
+                if tema:
+                    with st.spinner("Planejando..."):
+                        prompt = "Adotando o tom '{}', planeje conteúdo para Instagram por {} dias sobre: {}.".format(
+                            user_tone, qtd_dias, tema
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Planejador Instagram", resultado)
+                            st.success("Planejado!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "✉️ Gerador de E-mail Comercial":
+            st.header("✉️ Gerador de E-mail Comercial")
+            objetivo_email = st.selectbox("Objetivo", ["Prospecção", "Follow-up", "Proposta", "Recuperação"])
+            cliente_alvo = st.text_input("Para quem?")
+            detalhes_produto = st.text_area("O que vende?")
+            
+            if st.button("Gerar E-mail"):
+                if detalhes_produto:
+                    with st.spinner("Redigindo..."):
+                        prompt = "Usando o tom '{}', escreva e-mail de {} para {} vendendo {}.".format(
+                            user_tone, objetivo_email, cliente_alvo, detalhes_produto
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "E-mail Comercial", resultado)
+                            st.success("E-mail gerado!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "🎬 Gerador de Roteiro para Vídeos":
+            st.header("🎬 Gerador de Roteiro para Vídeos")
+            tema_video = st.text_input("Tema principal")
+            formato_video = st.selectbox("Formato", ["Reels/TikTok", "YouTube"])
+            tom = st.selectbox("Tom Específico", ["Dinâmico", "Educativo", "Polêmico", "Divertido"])
+            
+            if st.button("Gerar Roteiro"):
+                if tema_video:
+                    with st.spinner("Escrevendo..."):
+                        prompt = "Considerando o tom global '{}' e tom específico '{}', crie um roteiro para {} sobre {}.".format(
+                            user_tone, tom, formato_video, tema_video
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
+                            st.success("Roteiro pronto!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
