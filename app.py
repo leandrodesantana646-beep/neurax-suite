@@ -131,7 +131,11 @@ def add_user(username, password):
         if supabase.table("users").select("username").eq("username", username).execute().data:
             st.warning("Este usuário já existe.")
         else:
-            supabase.table("users").insert({"username": username, "password": make_hash(password)}).execute()
+            supabase.table("users").insert({
+                "username": username, 
+                "password": make_hash(password),
+                "plan": "free"
+            }).execute()
             st.success("Cadastro realizado com sucesso! Faça seu login.")
     except Exception as e:
         st.error(f"Erro ao cadastrar: {e}")
@@ -148,6 +152,19 @@ def login_user(username, password):
     except Exception:
         pass
     return False
+
+def get_user_plan(username):
+    if username.strip().lower() == "admin":
+        return "pro"
+    if not supabase:
+        return "free"
+    try:
+        data = supabase.table("users").select("plan").eq("username", username).execute().data
+        if data and "plan" in data[0]:
+            return data[0]["plan"]
+    except Exception:
+        pass
+    return "free"
 
 def update_password(username, new_password):
     if not supabase:
@@ -223,8 +240,8 @@ def get_all_users():
     if not supabase:
         return []
     try:
-        data = supabase.table("users").select("username").execute().data
-        return [r["username"] for r in data]
+        data = supabase.table("users").select("username, plan").execute().data
+        return [(r["username"], r.get("plan", "free")) for r in data]
     except Exception:
         return []
 
@@ -272,7 +289,7 @@ def save_user_profile(username, business_name, niche, budget, goals):
     except Exception as e:
         st.error(f"Erro ao salvar perfil: {e}")
 
-# Funções de Exportação Avançada (Word e PDF corrigidas)
+# Funções de Exportação Avançada (Word e PDF modernizadas)
 def export_to_docx(content):
     doc = Document()
     doc.add_heading("NeuraX Suite Pro - Relatório", 0)
@@ -299,7 +316,10 @@ def export_to_pdf(content):
         else:
             pdf.multi_cell(190, 6, txt=line)
             
-    return pdf.output(dest='S').encode('latin-1')
+    output = pdf.output()
+    if isinstance(output, str):
+        return output.encode('latin-1')
+    return bytes(output)
 
 # Tela de Autenticação
 if not st.session_state["logged_in"]:
@@ -381,8 +401,17 @@ if not st.session_state["logged_in"]:
 
 else:
     # Sidebar Principal
-    st.sidebar.write(f"Usuário: **{st.session_state['username']}**")
+    current_user = st.session_state['username']
+    user_plan = get_user_plan(current_user)
     
+    st.sidebar.write(f"Usuário: **{current_user}**")
+    st.sidebar.markdown(f"Plano Atual: **{user_plan.upper()}**")
+    
+    if user_plan == "free":
+        st.sidebar.warning("⚠️ Você está no Plano Gratuito com limitações.")
+        if st.sidebar.button("⚡ Atualizar para o Plano PRO"):
+            st.sidebar.markdown("[Clique aqui para assinar via PIX/Cartão](https://seu-link-de-pagamento.com)", unsafe_allow_html=True)
+
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
         "Tom de Voz", 
@@ -398,7 +427,7 @@ else:
 
     client = Groq(api_key=groq_api_key) if groq_api_key else None
 
-    current_profile = get_user_profile(st.session_state["username"])
+    current_profile = get_user_profile(current_user)
     profile_context = (
         f"\n[DADOS DE CONTEXTO DO USUÁRIO]:\n"
         f"- Nome do Negócio/Projeto: {current_profile.get('business_name', 'Não informado')}\n"
@@ -412,7 +441,9 @@ else:
         "💬 Chat Geral com o NeuraX",
         "👤 Meu Perfil & Contexto (Memória)",
         "📂 Analista de Arquivos & PDFs",
-        "🏛️ Conselho de Gigantes (Board de IAs)",
+        "🤖 Equipe de Agentes Autônomos [PRO]",
+        "🕵️‍♂️ Inteligência Competitiva & Concorrentes [PRO]",
+        "🏛️ Conselho de Gigantes (Board de IAs) [PRO]",
         "⚡ Gestor de Tarefas Inteligente",
         "🧠 Mentor de Saúde Mental",
         "📚 Tutor Universal & Estudos",
@@ -420,7 +451,7 @@ else:
         "💰 Precificação Inteligente",
         "🎯 Gerador de Anúncios (Meta/Google)",
         "🚀 NeuraX Growth Engine",
-        "💸 Gerador de Renda Extra & Negócios",
+        "💸 Gerador de Renda Extra & Negócios [PRO]",
         "💬 Gerador de Copy WhatsApp",
         "📸 Planejador Instagram",
         "✉️ Gerador de E-mail Comercial",
@@ -432,7 +463,7 @@ else:
         "📂 Meu Histórico"
     ]
     
-    if st.session_state["username"].strip().lower() == "admin":
+    if current_user.strip().lower() == "admin":
         menu_options.insert(0, "🛠️ Painel Administrativo")
 
     escolha = st.sidebar.radio("⚡ Menu de Ferramentas", menu_options)
@@ -460,7 +491,7 @@ else:
             st.metric("Tokens / Custo Est.", f"{total_tokens:,} (~${estimated_cost:.4f})")
             
         st.markdown("---")
-        st.markdown("### 👥 Usuários Registrados")
+        st.markdown("### 👥 Usuários Registrados & Planos")
         st.write(all_users)
         
         st.markdown("### 📊 Histórico Geral de Atividades & Consumo")
@@ -471,8 +502,8 @@ else:
             st.info("Nenhuma atividade registrada na plataforma ainda.")
 
     elif escolha == "📊 Meu Painel de Produtividade":
-        st.header(f"📊 Painel de Produtividade de {st.session_state['username']}")
-        user_history = get_history(st.session_state["username"])
+        st.header(f"📊 Painel de Produtividade de {current_user}")
+        user_history = get_history(current_user)
         total_tokens_user = sum([item[4] for item in user_history])
         
         col_m1, col_m2, col_m3 = st.columns(3)
@@ -541,7 +572,7 @@ else:
                         st.markdown(response_text)
                         st.session_state["chat_messages"].append({"role": "assistant", "content": response_text})
                         st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Chat Geral", response_text, tokens=approx_tokens)
+                        save_history(current_user, "Chat Geral", response_text, tokens=approx_tokens)
 
     elif escolha == "👤 Meu Perfil & Contexto (Memória)":
         st.header("👤 Memória de Longo Prazo - Perfil do Usuário")
@@ -553,7 +584,7 @@ else:
             
             submit_profile = st.form_submit_button("Salvar Perfil Definitivo")
             if submit_profile:
-                save_user_profile(st.session_state["username"], b_name, b_niche, b_budget, b_goals)
+                save_user_profile(current_user, b_name, b_niche, b_budget, b_goals)
 
     elif escolha == "📂 Analista de Arquivos & PDFs":
         st.header("📂 Analista de Arquivos e PDFs")
@@ -576,7 +607,7 @@ else:
                         approx_tokens = len(prompt.split()) + len(resultado.split())
                         
                         st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Analista de PDF", resultado, tokens=approx_tokens)
+                        save_history(current_user, "Analista de PDF", resultado, tokens=approx_tokens)
                         
                         st.success("Análise Concluída!")
                         st.markdown(resultado)
@@ -589,91 +620,173 @@ else:
                     except Exception as e:
                         st.error(f"Erro: {e}")
 
-    elif escolha == "🏛️ Conselho de Gigantes (Board de IAs)":
-        st.header("🏛️ Conselho de Gigantes - Board de IAs de Elite")
-        st.write("Submeta um desafio crítico e veja 4 lendas de negócios (O Visionário, O Estrategista Financeiro, O Mestre de Growth e o Crítico Implacável) debatendo o seu problema com base no seu perfil cadastrado.")
-        
-        desafio_board = st.text_area("Qual é o seu dilema ou projeto atual para ser julgado pelo Conselho?")
-        
-        if st.button("Convocar o Conselho de Gigantes"):
-            if not desafio_board or not client:
-                st.warning("Insira o seu desafio e verifique sua chave da Groq.")
-            else:
-                with st.spinner("Convocando os conselheiros e cruzando dados do seu perfil..."):
-                    prompt = (
-                        f"Atue simultaneamente como um Conselho de Administração de Elite composto por 4 personas brilhantes:\n"
-                        f"1. O Visionario (focado em disrupção, inovação e escala massiva)\n"
-                        f"2. O Estrategista Financeiro (focado em fluxo de caixa, risco zero e margem de lucro)\n"
-                        f"3. O Mestre de Growth (focado em aquisição agressiva, tráfego e conversão)\n"
-                        f"4. O Crítico Implacável (Advogado do Diabo, focado em achar falhas e pontos cegos)\n\n"
-                        f"{profile_context}\n"
-                        f"Desafio submetido pelo usuário: {desafio_board}\n\n"
-                        f"Estruture a resposta exatamente assim:\n"
-                        f"- **Parecer do Visionário**\n"
-                        f"- **Parecer do Estrategista Financeiro**\n"
-                        f"- **Parecer do Mestre de Growth**\n"
-                        f"- **Alerta do Crítico Implacável**\n"
-                        f"- **Consenso do Conselho & Plano de Ação Imediato**"
-                    )
-                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                    resultado = completion.choices[0].message.content
-                    approx_tokens = len(prompt.split()) + len(resultado.split())
+    elif escolha == "🤖 Equipe de Agentes Autônomos [PRO]":
+        st.header("🤖 Equipe de Agentes Autônomos (Multi-Agent Workflow)")
+        if user_plan == "free":
+            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
+            st.info("Atualize para o Plano PRO para desbloquear fluxos colaborativos de inteligência artificial em cadeia.")
+        else:
+            st.write("Insira o seu objetivo de projeto. Nossa equipe de 4 agentes especializados (Pesquisador, Estrategista, Copywriter e Crítico) trabalhará em conjunto de forma automatizada.")
+            objetivo_agentes = st.text_area("Qual é o grande objetivo ou projeto que sua equipe de agentes deve executar?")
+            
+            if st.button("Executar Equipe Autônoma"):
+                if not objetivo_agentes or not client:
+                    st.warning("Insira o objetivo do projeto e verifique sua chave da Groq.")
+                else:
+                    total_tokens_flow = 0
                     
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Conselho de Gigantes", resultado, tokens=approx_tokens)
-                    st.markdown(resultado)
+                    # Agente 1: Pesquisador
+                    with st.status("🔍 Agente 1 (Pesquisador): Analisando mercado e público-alvo...", expanded=True) as status:
+                        prompt_p1 = f"Atue como um Pesquisador de Mercado sênior.\n{profile_context}\nObjetivo: {objetivo_agentes}\nFaça uma análise de dores do público, do mercado e tendências."
+                        res_p1 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p1}]).choices[0].message.content
+                        total_tokens_flow += len(prompt_p1.split()) + len(res_p1.split())
+                        st.markdown(res_p1)
+                        status.update(label="✅ Agente 1 (Pesquisador) Concluído!", state="complete", expanded=False)
                     
-                    col_ex1, col_ex2 = st.columns(2)
-                    with col_ex1:
-                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="conselho_gigantes.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    with col_ex2:
-                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="conselho_gigantes.pdf", mime="application/pdf")
-                        
-                    st.markdown("---")
-                    st.markdown("### 📧 Enviar Relatório por E-mail")
-                    destinatario_email = st.text_input("E-mail de destino", value=st.session_state["username"] if "@" in st.session_state["username"] else "")
-                    if st.button("Enviar PDF por E-mail agora"):
-                        if destinatario_email:
-                            pdf_bytes = export_to_pdf(resultado)
-                            enviado = send_email_smtp(destinatario_email, "NeuraX Suite - Conselho de Gigantes", "Olá,\n\nSegue em anexo a ata da reunião do Conselho de Gigantes gerada pelo NeuraX Suite Pro.", pdf_bytes, "conselho_gigantes.pdf")
-                            if enviado:
-                                st.success("E-mail enviado com sucesso!")
-                            else:
-                                st.error("Erro ao enviar e-mail. Verifique as credenciais SMTP no st.secrets.")
-                        else:
-                            st.warning("Insira um endereço de e-mail válido.")
+                    # Agente 2: Estrategista
+                    with st.status("📈 Agente 2 (Estrategista): Desenhando o modelo de negócios e funil...", expanded=True) as status:
+                        prompt_p2 = f"Atue como um Estrategista de Negócios sênior.\nCom base nesta pesquisa:\n{res_p1}\nCrie a estratégia completa e o plano de ação passo a passo."
+                        res_p2 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p2}]).choices[0].message.content
+                        total_tokens_flow += len(prompt_p2.split()) + len(res_p2.split())
+                        st.markdown(res_p2)
+                        status.update(label="✅ Agente 2 (Estrategista) Concluído!", state="complete", expanded=False)
 
-    elif escolha == "💸 Gerador de Renda Extra & Negócios":
-        st.header("💸 Gerador de Renda Extra & Negócios Digitais")
-        st.write("Descubra caminhos práticos para monetizar suas habilidades e gerar novas fontes de receita.")
-        nicho_foco = st.text_input("Qual é a sua principal habilidade ou área de interesse?", value=current_profile.get("niche", ""))
-        capital_inicial = st.selectbox("Quanto você tem disponível para investir?", ["Zero (Começar do zero)", "Baixo (Até R$ 500)", "Médio (R$ 500 a R$ 2.000)", "Alto (Acima de R$ 2.000)"])
-        
-        if st.button("Gerar Plano de Renda Extra"):
-            if not client:
-                st.warning("Configure sua chave da Groq no menu lateral.")
-            else:
-                with st.spinner("Mapeando oportunidades de faturamento..."):
-                    prompt = (
-                        f"Atue como um Especialista em Monetização e Negócios Digitais (Tom: '{user_tone}').\n"
-                        f"{profile_context}\n"
-                        f"O usuário quer gerar renda extra na área de '{nicho_foco}' com capital inicial '{capital_inicial}'. "
-                        f"Crie um plano prático com 3 modelos de negócios viáveis (ex: prestação de serviços, infoprodutos, afiliados), "
-                        f"passo a passo para os primeiros 30 dias e sugestões de captação de clientes."
-                    )
-                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                    resultado = completion.choices[0].message.content
-                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    # Agente 3: Copywriter
+                    with st.status("✍️ Agente 3 (Copywriter): Escrevendo as copies e mensagens de conversão...", expanded=True) as status:
+                        prompt_p3 = f"Atue como um Copywriter de Elite (Tom: '{user_tone}').\nCom base nesta estratégia:\n{res_p2}\nEscreva as copies de vendas essenciais (landing page / WhatsApp / anúncios)."
+                        res_p3 = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p3}]).choices[0].message.content
+                        total_tokens_flow += len(prompt_p3.split()) + len(res_p3.split())
+                        st.markdown(res_p3)
+                        status.update(label="✅ Agente 3 (Copywriter) Concluído!", state="complete", expanded=False)
+
+                    # Agente 4: Crítico & Considador Master
+                    with st.status("⚖️ Agente 4 (Crítico & Considador): Revisando falhas e gerando o Plano Master final...", expanded=True) as status:
+                        prompt_p4 = f"Atue como um Diretor Executivo implacável.\nAnalise o trabalho conjunto do Pesquisador, Estrategista e Copywriter.\nRemova inconsistências, adicione salvaguardas e entregue o **Plano Master Final** formatado.\n\nPesquisa:\n{res_p1}\n\nEstratégia:\n{res_p2}\n\nCopy:\n{res_p3}"
+                        resultado_final = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p4}]).choices[0].message.content
+                        total_tokens_flow += len(prompt_p4.split()) + len(resultado_final.split())
+                        status.update(label="🚀 Equipe Autônoma Concluída com Sucesso!", state="complete", expanded=True)
+
+                    st.success("Fluxo multi-agente finalizado!")
+                    st.markdown("### 🏆 Relatório Consolidado da Equipe")
+                    st.markdown(resultado_final)
                     
                     st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Gerador de Renda Extra", resultado, tokens=approx_tokens)
-                    st.markdown(resultado)
+                    save_history(current_user, "Equipe de Agentes Autônomos", resultado_final, tokens=total_tokens_flow)
                     
                     col_ex1, col_ex2 = st.columns(2)
                     with col_ex1:
-                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="renda_extra.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado_final), file_name="agentes_autonomos.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                     with col_ex2:
-                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="renda_extra.pdf", mime="application/pdf")
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado_final), file_name="agentes_autonomos.pdf", mime="application/pdf")
+
+    elif escolha == "🕵️‍♂️ Inteligência Competitiva & Concorrentes [PRO]":
+        st.header("🕵️‍♂️ Inteligência Competitiva & Análise de Concorrentes")
+        if user_plan == "free":
+            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
+            st.info("Atualize para o Plano PRO para analisar concorrentes e descobrir falhas de mercado.")
+        else:
+            st.write("Descreva o seu concorrente ou empresa de referência para que a IA realize uma varredura tática de inteligência de mercado.")
+            concorrente_nome = st.text_input("Nome do Concorrente / Empresa Referência")
+            concorrente_detalhes = st.text_area("O que eles vendem, qual o preço aproximado e onde atuam?")
+            
+            if st.button("Executar Inteligência Competitiva"):
+                if not concorrente_nome or not concorrente_detalhes or not client:
+                    st.warning("Preencha os campos do concorrente e verifique sua chave da Groq.")
+                else:
+                    with st.spinner("Analisando posicionamento, fraquezas ocultas e criando estratégia de contra-ataque..."):
+                        prompt = (
+                            f"Atue como um Especialista em Inteligência Competitiva e Estratégia de Mercado (Tom: '{user_tone}').\n"
+                            f"{profile_context}\n"
+                            f"Concorrente analisado: {concorrente_nome}\n"
+                            f"Detalhes informados: {concorrente_detalhes}\n\n"
+                            f"Estruture um relatório estratégico contendo:\n"
+                            f"1. **Raio-X do Concorrente** (Pontos fortes aparentes)\n"
+                            f"2. **Pontos Cegos & Fraquezas** (Onde eles estão falhando e deixando clientes insatisfeitos)\n"
+                            f"3. **Matriz de Diferenciação** (Como o usuário pode se posicionar para parecer superior)\n"
+                            f"4. **Plano de Guerra (30 Dias)** (Ações práticas para roubar market share de forma ética e agressiva)"
+                        )
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        approx_tokens = len(prompt.split()) + len(resultado.split())
+                        
+                        st.session_state["generation_count"] += 1
+                        save_history(current_user, "Inteligência Competitiva", resultado, tokens=approx_tokens)
+                        st.markdown(resultado)
+                        
+                        col_ex1, col_ex2 = st.columns(2)
+                        with col_ex1:
+                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="inteligencia_competitiva.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        with col_ex2:
+                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="inteligencia_competitiva.pdf", mime="application/pdf")
+
+    elif escolha == "🏛️ Conselho de Gigantes (Board de IAs) [PRO]":
+        st.header("🏛️ Conselho de Gigantes - Board de IAs de Elite")
+        if user_plan == "free":
+            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
+            st.info("Atualize sua conta para ter acesso ilimitado aos melhores cérebros de IA do mercado.")
+        else:
+            st.write("Submeta um desafio crítico e veja 4 lendas de negócios debatendo o seu problema.")
+            desafio_board = st.text_area("Qual é o seu dilema ou projeto atual para ser julgado pelo Conselho?")
+            
+            if st.button("Convocar o Conselho de Gigantes"):
+                if not desafio_board or not client:
+                    st.warning("Insira o seu desafio e verifique sua chave da Groq.")
+                else:
+                    with st.spinner("Convocando os conselheiros..."):
+                        prompt = (
+                            f"Atue simultaneamente como um Conselho de Administração de Elite composto por 4 personas:\n"
+                            f"1. O Visionario | 2. O Estrategista Financeiro | 3. O Mestre de Growth | 4. O Crítico Implacável\n\n"
+                            f"{profile_context}\n"
+                            f"Desafio: {desafio_board}\n\n"
+                            f"Estruture a resposta em: Parecer do Visionário, Estrategista, Mestre de Growth, Alerta do Crítico e Consenso."
+                        )
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        approx_tokens = len(prompt.split()) + len(resultado.split())
+                        
+                        st.session_state["generation_count"] += 1
+                        save_history(current_user, "Conselho de Gigantes", resultado, tokens=approx_tokens)
+                        st.markdown(resultado)
+                        
+                        col_ex1, col_ex2 = st.columns(2)
+                        with col_ex1:
+                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="conselho_gigantes.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        with col_ex2:
+                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="conselho_gigantes.pdf", mime="application/pdf")
+
+    elif escolha == "💸 Gerador de Renda Extra & Negócios [PRO]":
+        st.header("💸 Gerador de Renda Extra & Negócios Digitais")
+        if user_plan == "free":
+            st.error("🔒 Esta é uma ferramenta exclusiva do **Plano PRO**.")
+            st.info("Assine o plano PRO para desbloquear planos de faturamento e ideias de negócios validadas.")
+        else:
+            nicho_foco = st.text_input("Qual é a sua principal habilidade ou área de interesse?", value=current_profile.get("niche", ""))
+            capital_inicial = st.selectbox("Quanto você tem disponível para investir?", ["Zero (Começar do zero)", "Baixo (Até R$ 500)", "Médio (R$ 500 a R$ 2.000)", "Alto (Acima de R$ 2.000)"])
+            
+            if st.button("Gerar Plano de Renda Extra"):
+                if not client:
+                    st.warning("Configure sua chave da Groq no menu lateral.")
+                else:
+                    with st.spinner("Mapeando oportunidades de faturamento..."):
+                        prompt = (
+                            f"Atue como um Especialista em Monetização e Negócios Digitais (Tom: '{user_tone}').\n"
+                            f"{profile_context}\n"
+                            f"O usuário quer gerar renda extra na área de '{nicho_foco}' com capital inicial '{capital_inicial}'. "
+                            f"Crie um plano prático com 3 modelos de negócios viáveis, passo a passo para 30 dias e captação de clientes."
+                        )
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        approx_tokens = len(prompt.split()) + len(resultado.split())
+                        
+                        st.session_state["generation_count"] += 1
+                        save_history(current_user, "Gerador de Renda Extra", resultado, tokens=approx_tokens)
+                        st.markdown(resultado)
+                        
+                        col_ex1, col_ex2 = st.columns(2)
+                        with col_ex1:
+                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="renda_extra.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        with col_ex2:
+                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="renda_extra.pdf", mime="application/pdf")
 
     elif escolha in [
         "⚡ Gestor de Tarefas Inteligente", "🧠 Mentor de Saúde Mental", "📚 Tutor Universal & Estudos",
@@ -693,7 +806,7 @@ else:
                     approx_tokens = len(prompt.split()) + len(resultado.split())
                     
                     st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], escolha, resultado, tokens=approx_tokens)
+                    save_history(current_user, escolha, resultado, tokens=approx_tokens)
                     st.markdown(resultado)
                     
                     col_ex1, col_ex2 = st.columns(2)
@@ -701,24 +814,10 @@ else:
                         st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="relatorio.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                     with col_ex2:
                         st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="relatorio.pdf", mime="application/pdf")
-                        
-                    st.markdown("---")
-                    st.markdown("### 📧 Enviar Relatório por E-mail")
-                    destinatario_email = st.text_input("E-mail de destino", value=st.session_state["username"] if "@" in st.session_state["username"] else "")
-                    if st.button("Enviar PDF por E-mail agora"):
-                        if destinatario_email:
-                            pdf_bytes = export_to_pdf(resultado)
-                            enviado = send_email_smtp(destinatario_email, f"NeuraX Suite - {escolha}", "Olá,\n\nSegue em anexo o relatório gerado pelo NeuraX Suite Pro.", pdf_bytes, "relatorio.pdf")
-                            if enviado:
-                                st.success("E-mail enviado com sucesso!")
-                            else:
-                                st.error("Erro ao enviar e-mail. Verifique as credenciais SMTP no st.secrets.")
-                        else:
-                            st.warning("Insira um endereço de e-mail válido.")
 
     elif escolha == "📂 Meu Histórico":
         st.header("📂 Histórico de Gerações & Gerenciamento")
-        user_history = get_history(st.session_state["username"])
+        user_history = get_history(current_user)
         
         if not user_history:
             st.info("Nenhum histórico encontrado.")
