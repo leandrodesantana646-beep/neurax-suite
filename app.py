@@ -11,11 +11,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Configuração inicial da página
+# Configuração inicial da página (Barra lateral forçada a iniciar aberta)
 st.set_page_config(
     page_title="NeuraX Suite Pro - Life OS",
     page_icon="🚀",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Inicialização do Cliente Supabase via Secrets
