@@ -10,8 +10,10 @@ import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from docx import Document
+from fpdf import FPDF
 
-# Configuração inicial da página (Barra lateral forçada a iniciar aberta)
+# Configuração inicial da página
 st.set_page_config(
     page_title="NeuraX Suite Pro - Life OS",
     page_icon="🚀",
@@ -27,7 +29,7 @@ try:
 except Exception as e:
     supabase = None
 
-# Estilização visual customizada (Cabeçalho mantido visível para o botão do menu aparecer no celular)
+# Estilização visual customizada
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -80,7 +82,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Funções de Criptografia e Supabase
+# Funções de Criptografia, Banco de Dados e Exportação
 def make_hash(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
@@ -124,6 +126,10 @@ def update_password(username, new_password):
         return False
 
 def send_recovery_email(to_email, code):
+    """
+    Configuração SMTP Real. Substitua pelas credenciais do seu provedor (Gmail, SendGrid, Resend, etc.)
+    ou utilize uma App Password do Gmail.
+    """
     try:
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
@@ -135,7 +141,7 @@ def send_recovery_email(to_email, code):
         msg["To"] = to_email
         msg["Subject"] = "Código de Recuperação - NeuraX Suite Pro"
         
-        body = f"Olá,\n\nSeu código de recuperação de senha no NeuraX Suite Pro é: {code}\n\nInsira este código na tela de recuperação para definir sua nova senha."
+        body = f"Olá,\n\nSeu código de recuperação de senha no NeuraX Suite Pro é: {code}\n\nInsira este código na tela de recuperação."
         msg.attach(MIMEText(body, "plain"))
         
         server = smtplib.SMTP(smtp_server, smtp_port)
@@ -165,10 +171,18 @@ def get_history(username):
     if not supabase:
         return []
     try:
-        data = supabase.table("history").select("tool_name, content, timestamp").eq("username", username).order("id", desc=True).execute().data
-        return [(r["tool_name"], r["content"], r["timestamp"]) for r in data]
+        data = supabase.table("history").select("id, tool_name, content, timestamp").eq("username", username).order("id", desc=True).execute().data
+        return [(r["id"], r["tool_name"], r["content"], r["timestamp"]) for r in data]
     except Exception:
         return []
+
+def delete_history_item(item_id):
+    if not supabase:
+        return
+    try:
+        supabase.table("history").delete().eq("id", item_id).execute()
+    except Exception:
+        pass
 
 def get_all_users():
     if not supabase:
@@ -223,10 +237,39 @@ def save_user_profile(username, business_name, niche, budget, goals):
     except Exception as e:
         st.error(f"Erro ao salvar perfil: {e}")
 
+# Funções de Exportação Avançada (Word e PDF)
+def export_to_docx(content):
+    doc = Document()
+    doc.add_heading("NeuraX Suite Pro - Relatório", 0)
+    for paragraph in content.split("\n"):
+        if paragraph.strip():
+            doc.add_paragraph(paragraph)
+    bio = io.BytesIO()
+    doc.save(bio)
+    bio.seek(0)
+    return bio
+
+def export_to_pdf(content):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=11)
+    # Limpeza básica de caracteres especiais para compatibilidade com PDF padrão
+    clean_content = content.encode('latin-1', 'ignore').decode('latin-1')
+    for line in clean_content.split('\n'):
+        pdf.multi_cell(0, 8, txt=line)
+    return pdf.output(dest='S').encode('latin-1')
+
 # Gerenciamento de Sessão
-for key in ["logged_in", "username", "generation_count"]:
+for key in ["logged_in", "username", "generation_count", "chat_messages"]:
     if key not in st.session_state:
-        st.session_state[key] = False if key == "logged_in" else ("" if key == "username" else 0)
+        if key == "logged_in":
+            st.session_state[key] = False
+        elif key == "chat_messages":
+            st.session_state[key] = []
+        elif key == "generation_count":
+            st.session_state[key] = 0
+        else:
+            st.session_state[key] = ""
 
 # Tela de Autenticação
 if not st.session_state["logged_in"]:
@@ -361,7 +404,7 @@ else:
 
     client = Groq(api_key=groq_api_key) if groq_api_key else None
 
-    # Carrega perfil de longo prazo para injeção automática no prompt
+    # Carrega perfil de longo prazo
     current_profile = get_user_profile(st.session_state["username"])
     profile_context = (
         f"\n[DADOS DE CONTEXTO DO USUÁRIO]:\n"
@@ -371,9 +414,10 @@ else:
         f"- Objetivos Principais: {current_profile.get('goals', 'Não informado')}\n"
     )
 
-    # MENU DE FERRAMENTAS COMPLETO
+    # MENU DE FERRAMENTAS COMPLETO (Com Chat Geral)
     menu_options = [
         "📊 Meu Painel de Produtividade",
+        "💬 Chat Geral com o NeuraX",
         "👤 Meu Perfil & Contexto (Memória)",
         "📂 Analista de Arquivos & PDFs",
         "⚡ Gestor de Tarefas Inteligente",
@@ -432,15 +476,53 @@ else:
     elif escolha == "📊 Meu Painel de Produtividade":
         st.header(f"📊 Painel de Produtividade de {st.session_state['username']}")
         user_history = get_history(st.session_state["username"])
-        st.metric("Total de Conteúdos Gerados", len(user_history))
+        
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            st.metric("Total de Conteúdos Gerados", len(user_history))
+        with col_m2:
+            st.metric("Ações na Sessão Atual", st.session_state["generation_count"])
         
         if user_history:
-            tools_list = [item[0] for item in user_history]
+            tools_list = [item[1] for item in user_history]
             df_tools = pd.DataFrame(tools_list, columns=["Ferramenta"]).value_counts().reset_index()
             df_tools.columns = ["Ferramenta", "Quantidade"]
+            st.markdown("### 📈 Utilização por Ferramenta")
             st.bar_chart(df_tools.set_index("Ferramenta"))
         else:
             st.info("Você ainda não utilizou nenhuma ferramenta.")
+
+    elif escolha == "💬 Chat Geral com o NeuraX":
+        st.header("💬 Chat Geral com o NeuraX")
+        st.write("Converse livremente com o assistente inteligente. O chat considera suas configurações de Tom de Voz e a sua Memória de Longo Prazo.")
+        
+        # Exibe mensagens do chat
+        for message in st.session_state["chat_messages"]:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+                
+        user_query = st.chat_input("Digite sua mensagem para o NeuraX...")
+        if user_query:
+            if not client:
+                st.error("Configure sua chave da Groq no menu lateral.")
+            else:
+                st.session_state["chat_messages"].append({"role": "user", "content": user_query})
+                with st.chat_message("user"):
+                    st.markdown(user_query)
+                    
+                with st.chat_message("assistant"):
+                    with st.spinner("Pensando..."):
+                        system_prompt = (
+                            f"Atue como um Assistente Virtual Inteligente aplicando o tom de voz: '{user_tone}'.\n"
+                            f"{profile_context}"
+                        )
+                        messages_payload = [{"role": "system", "content": system_prompt}] + st.session_state["chat_messages"]
+                        completion = client.chat.completions.create(model=model_name, messages=messages_payload)
+                        response_text = completion.choices[0].message.content
+                        st.markdown(response_text)
+                        st.session_state["chat_messages"].append({"role": "assistant", "content": response_text})
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Chat Geral", response_text)
 
     elif escolha == "👤 Meu Perfil & Contexto (Memória)":
         st.header("👤 Memória de Longo Prazo - Perfil do Usuário")
@@ -507,13 +589,18 @@ else:
                                 
                                 st.success("Análise Concluída com Sucesso!")
                                 st.markdown(resultado)
+                                
+                                # Botões de Exportação
+                                col_ex1, col_ex2 = st.columns(2)
+                                with col_ex1:
+                                    st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="analise_pdf.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                                with col_ex2:
+                                    st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="analise_pdf.pdf", mime="application/pdf")
                     except Exception as e:
                         st.error(f"Erro ao processar o arquivo PDF: {e}")
 
     elif escolha == "⚡ Gestor de Tarefas Inteligente":
         st.header("⚡ Gestor de Rotina e Tarefas")
-        st.write("Despeje tudo o que você precisa fazer e deixe a IA priorizar seu dia.")
-        
         tarefas_brutas = st.text_area("Despeje suas tarefas aqui:")
         horas_disponiveis = st.number_input("Quantas horas livres você tem hoje?", min_value=1, value=8)
         
@@ -532,11 +619,15 @@ else:
                     save_history(st.session_state["username"], "Gestor de Tarefas", resultado)
                     st.success("Rotina otimizada!")
                     st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="tarefas.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="tarefas.pdf", mime="application/pdf")
 
     elif escolha == "🧠 Mentor de Saúde Mental":
         st.header("🧠 Diário Emocional e Bem-Estar")
-        st.write("Um espaço seguro para refletir, organizar os pensamentos e receber apoio.")
-        
         humor = st.select_slider("Como você está se sentindo hoje?", options=["Péssimo", "Triste", "Neutro", "Bem", "Incrível"], value="Neutro")
         desabafo = st.text_area("Escreva livremente sobre o seu dia (Journaling):")
         
@@ -574,6 +665,12 @@ else:
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], "Tutor Universal", resultado)
                     st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="estudo.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="estudo.pdf", mime="application/pdf")
 
     elif escolha == "🗺️ Arquiteto de Funis de Vendas":
         st.header("🗺️ Arquiteto de Funis de Vendas")
@@ -591,6 +688,12 @@ else:
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
                     st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="funil.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="funil.pdf", mime="application/pdf")
 
     elif escolha == "💰 Precificação Inteligente":
         st.header("💰 Calculadora de Precificação Inteligente")
@@ -666,19 +769,49 @@ else:
                     st.session_state["generation_count"] += 1
                     save_history(st.session_state["username"], escolha, resultado)
                     st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="documento.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="documento.pdf", mime="application/pdf")
 
     elif escolha == "📂 Meu Histórico":
-        st.header("📂 Histórico de Gerações")
+        st.header("📂 Histórico de Gerações & Gerenciamento")
         user_history = get_history(st.session_state["username"])
+        
         if not user_history:
             st.info("Nenhum histórico encontrado.")
         else:
-            for idx, (tool, content, timestamp) in enumerate(user_history):
+            # Filtro por ferramenta
+            ferramentas_disponiveis = ["Todas"] + list(set([item[1] for item in user_history]))
+            filtro_ferramenta = st.selectbox("Filtrar por Ferramenta", ferramentas_disponiveis)
+            
+            filtered_history = user_history if filtro_ferramenta == "Todas" else [item for item in user_history if item[1] == filtro_ferramenta]
+            
+            for item_id, tool, content, timestamp in filtered_history:
                 with st.expander(f"🛠️ [{tool}] - {timestamp}"):
                     st.markdown(content)
-                    st.download_button(
-                        label="📥 Baixar (.txt)",
-                        data=content,
-                        file_name=f"hist_{idx}.txt",
-                        mime="text/plain"
-                    )
+                    
+                    col_h1, col_h2, col_h3 = st.columns(3)
+                    with col_h1:
+                        st.download_button(
+                            label="📥 Baixar (.txt)",
+                            data=content,
+                            file_name=f"hist_{item_id}.txt",
+                            mime="text/plain",
+                            key=f"txt_{item_id}"
+                        )
+                    with col_h2:
+                        st.download_button(
+                            label="📥 Baixar em Word",
+                            data=export_to_docx(content),
+                            file_name=f"hist_{item_id}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            key=f"docx_{item_id}"
+                        )
+                    with col_h3:
+                        if st.button("🗑️ Excluir Registro", key=f"del_{item_id}"):
+                            delete_history_item(item_id)
+                            st.success("Registro excluído com sucesso!")
+                            st.rerun()
