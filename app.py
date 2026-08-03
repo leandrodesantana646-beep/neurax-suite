@@ -280,36 +280,39 @@ else:
             else:
                 with st.spinner("Lendo o documento com segurança..."):
                     try:
-                        bytes_arquivo = arquivo_pdf.read()
+                        bytes_arquivo = arquivo_pdf.getvalue()
                         leitor = pypdf.PdfReader(io.BytesIO(bytes_arquivo))
                         
-                        texto_extraido = ""
-                        for pagina in leitor.pages:
-                            texto = pagina.extract_text()
-                            if texto:
-                                texto_extraido += texto + "\n"
-                        
-                        if not texto_extraido.strip():
-                            st.error("⚠️ Este PDF parece ser uma imagem escaneada (sem texto selecionável).")
+                        if leitor.is_encrypted:
+                            st.error("⚠️ Este PDF está protegido por senha. Por favor, envie um arquivo desbloqueado.")
                         else:
-                            texto_limitado = texto_extraido[:30000]
-                            prompt = (
-                                f"Atue como um Especialista em Análise Documental sênior aplicando o tom de voz: '{user_tone}'.\n"
-                                f"Com base estritamente no texto extraído do PDF abaixo:\n\n"
-                                f"--- INÍCIO DO TEXTO ---\n{texto_limitado}\n--- FIM DO TEXTO ---\n\n"
-                                f"Responda detalhadamente e com clareza à seguinte requisição do usuário: '{pergunta}'"
-                            )
+                            texto_extraido = ""
+                            for pagina in leitor.pages:
+                                texto = pagina.extract_text()
+                                if texto:
+                                    texto_extraido += texto + "\n"
                             
-                            completion = client.chat.completions.create(
-                                model=model_name, 
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            resultado = completion.choices[0].message.content
-                            st.session_state["generation_count"] += 1
-                            save_history(st.session_state["username"], "Analista de PDF", resultado)
-                            
-                            st.success("Análise Concluída com Sucesso!")
-                            st.markdown(resultado)
+                            if not texto_extraido.strip():
+                                st.error("⚠️ Este PDF parece ser uma imagem escaneada (sem texto selecionável).")
+                            else:
+                                texto_limitado = texto_extraido[:30000]
+                                prompt = (
+                                    f"Atue como um Especialista em Análise Documental sênior aplicando o tom de voz: '{user_tone}'.\n"
+                                    f"Com base estritamente no texto extraído do PDF abaixo:\n\n"
+                                    f"--- INÍCIO DO TEXTO ---\n{texto_limitado}\n--- FIM DO TEXTO ---\n\n"
+                                    f"Responda detalhadamente e com clareza à seguinte requisição do usuário: '{pergunta}'"
+                                )
+                                
+                                completion = client.chat.completions.create(
+                                    model=model_name, 
+                                    messages=[{"role": "user", "content": prompt}]
+                                )
+                                resultado = completion.choices[0].message.content
+                                st.session_state["generation_count"] += 1
+                                save_history(st.session_state["username"], "Analista de PDF", resultado)
+                                
+                                st.success("Análise Concluída com Sucesso!")
+                                st.markdown(resultado)
                     except Exception as e:
                         st.error(f"Erro ao processar o arquivo PDF: {e}")
 
