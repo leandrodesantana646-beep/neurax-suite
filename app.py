@@ -270,10 +270,12 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # MENU DE FERRAMENTAS MODERNO
+    # MENU DE FERRAMENTAS MODERNO COM AS NOVAS ADIÇÕES
     menu_options = [
         "🗺️ Arquiteto de Funis de Vendas",
         "💰 Precificação Inteligente",
+        "🎯 Gerador de Anúncios (Meta/Google)",
+        "🚀 NeuraX Growth Engine (Simulador)",
         "💬 Gerador de Copy WhatsApp",
         "📸 Planejador Instagram",
         "✉️ Gerador de E-mail Comercial",
@@ -285,7 +287,6 @@ else:
     if usuario_logado == "admin":
         menu_options.insert(0, "🛠️ Painel Administrativo")
 
-    # Substituição do selectbox por um Radio estilizado em formato de cartões modernos
     escolha = st.sidebar.radio("⚡ Menu de Ferramentas", menu_options)
     
     st.sidebar.markdown("---")
@@ -396,6 +397,80 @@ else:
                             st.session_state["generation_count"] += 1
                             save_history(st.session_state["username"], "Precificação Inteligente", resultado)
                             st.success("Análise concluída!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "🎯 Gerador de Anúncios (Meta/Google)":
+            st.header("🎯 Gerador de Anúncios de Alta Conversão")
+            st.write("Crie copies validadas para tráfego pago focadas em maximizar cliques e conversões.")
+            
+            anuncio_produto = st.text_input("Qual é o produto, serviço ou oferta?")
+            anuncio_plataforma = st.selectbox("Onde o anúncio será veiculado?", ["Meta Ads (Instagram / Facebook)", "Google Ads (Rede de Pesquisa)", "Ambos"])
+            anuncio_objetivo = st.selectbox("Objetivo da Campanha", ["Geração de Leads / Cadastro", "Venda Direta (Checkout)", "Engajamento / Mensagens no WhatsApp"])
+            anuncio_publico = st.text_input("Público-alvo / Nicho específico")
+            
+            if st.button("Gerar Copys de Anúncio"):
+                if anuncio_produto and anuncio_publico:
+                    with st.spinner("Criando estruturas de anúncios de alta performance..."):
+                        prompt = (
+                            f"Atue como um Especialista em Tráfego Pago e Copywriting de alta conversão aplicando o tom de voz: '{user_tone}'.\n"
+                            f"Crie copies de anúncios estruturadas para a plataforma '{anuncio_plataforma}', com o objetivo de '{anuncio_objetivo}', para o produto: '{anuncio_produto}' e público: '{anuncio_publico}'.\n"
+                            "Sua resposta deve conter obrigatoriamente:\n"
+                            "1. 3 Opções de Títulos / Headlines magnéticas.\n"
+                            "2. 2 Opções de Textos Principais / Corpo do Anúncio estruturados (com foco em gancho, agitação de dor/desejo e solução).\n"
+                            "3. Chamadas para Ação (CTA) otimizadas para o objetivo escolhido.\n"
+                            "4. Dicas de segmentação ou palavra-chave para otimizar a campanha."
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Gerador de Anúncios", resultado)
+                            st.success("Anúncios gerados com sucesso!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "🚀 NeuraX Growth Engine (Simulador)":
+            st.header("🚀 NeuraX Growth Engine - Simulador de Metas & Escala")
+            st.write("Recurso Exclusivo: Simule cenários de faturamento e receba um plano tático de crescimento gerado por IA.")
+            
+            col_g1, col_g2, col_g3 = st.columns(3)
+            with col_g1:
+                orcamento = st.number_input("Orçamento Mensal Ads (R$)", min_value=100.0, value=2000.0, step=100.0)
+            with col_g2:
+                ticket = st.number_input("Ticket Médio do Produto (R$)", min_value=10.0, value=197.0, step=10.0)
+            with col_g3:
+                meta_fat = st.number_input("Meta de Faturamento Mensal (R$)", min_value=500.0, value=20000.0, step=500.0)
+                
+            if st.button("Executar Simulação e Plano de Guerra"):
+                if orcamento > 0 and ticket > 0 and meta_fat > 0:
+                    vendas_nec = int(meta_fat / ticket)
+                    roas_nec = meta_fat / orcamento
+                    
+                    st.markdown("---")
+                    m_col1, m_col2, m_col3 = st.columns(3)
+                    m_col1.metric("Vendas Necessárias", f"{vendas_nec} vendas")
+                    m_col2.metric("ROAS Alvo Necessário", f"{roas_nec:.2f}x")
+                    m_col3.metric("Margem de Investimento", f"{(orcamento/meta_fat)*100:.1f}% da meta")
+                    
+                    with st.spinner("O NeuraX Growth Engine está desenhando seu plano de ação estratégico..."):
+                        prompt = (
+                            f"Atue como um Chief Marketing Officer (CMO) e Growth Hacker sênior aplicando o tom de voz: '{user_tone}'.\n"
+                            f"O operador possui um orçamento de R$ {orcamento:.2f}, um produto com ticket de R$ {ticket:.2f} e uma meta de faturamento de R$ {meta_fat:.2f} (precisa de {vendas_nec} vendas, ROAS de {roas_nec:.2f}x).\n"
+                            "Elabore um Plano de Guerra tático e exclusivo de 4 semanas para atingir essa meta, contendo:\n"
+                            "1. Diagnóstico da Viabilidade da Meta com base nos números informados.\n"
+                            "2. Estratégia de Tráfego Pago (segmentação, canais recomendados e distribuição de verba).\n"
+                            "3. Plano Tático Semana a Semana (Semana 1 à Semana 4).\n"
+                            "4. Alertas de Riscos e KPIs essenciais para monitoramento diário."
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "NeuraX Growth Engine", resultado)
+                            st.success("Plano de Guerra gerado com sucesso!")
                             st.markdown(resultado)
                         except Exception as e:
                             st.error(f"Erro ao conectar com a Groq: {e}.")
