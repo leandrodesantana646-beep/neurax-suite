@@ -1,9 +1,9 @@
 import streamlit as st
 from groq import Groq
-import sqlite3
 import hashlib
 from datetime import datetime
 import pandas as pd
+from supabase import create_client, Client
 
 # Configuração inicial da página
 st.set_page_config(
@@ -12,10 +12,19 @@ st.set_page_config(
     layout="wide"
 )
 
+# Inicialização do Cliente Supabase via Secrets
+try:
+    SUPABASE_URL = st.secrets["supabase"]["url"]
+    SUPABASE_KEY = st.secrets["supabase"]["key"]
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except Exception as e:
+    st.error(f"Erro ao conectar com o Supabase. Verifique os Secrets: {e}")
+    supabase = None
+
 # Estilização visual customizada (Tema NeuraX Pro)
 st.markdown("""
     <style>
-    /* Oculta apenas o rodapé padrão do Streamlit */
+    /* Oculta o rodapé padrão do Streamlit */
     footer {visibility: hidden;}
     
     /* Ajuste de fontes e cores principais */
@@ -47,7 +56,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Funções de Criptografia e Banco de Dados SQLite
+# Funções de Criptografia e Banco de Dados Supabase
 def make_hash(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
@@ -56,82 +65,73 @@ def check_hash(password, hashed_text):
         return True
     return False
 
-def init_db():
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
-            password TEXT
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT,
-            tool_name TEXT,
-            content TEXT,
-            timestamp TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
-
 def add_user(username, password):
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('INSERT OR IGNORE INTO users(username, password) VALUES (?, ?)', (username, make_hash(password)))
-    conn.commit()
-    conn.close()
+    if not supabase:
+        return
+    try:
+        # Verifica se já existe
+        existing = supabase.table("users").select("username").eq("username", username).execute()
+        if not existing.data:
+            supabase.table("users").insert({"username": username, "password": make_hash(password)}).execute()
+    except Exception as e:
+        st.error(f"Erro ao cadastrar usuário: {e}")
 
 def login_user(username, password):
     if username.strip().lower() == "admin" and password.strip().lower() == "admin":
         return True
-
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT password FROM users WHERE username = ?', (username,))
-    data = cursor.fetchall()
-    conn.close()
-    if data:
-        if check_hash(password, data[0][0]):
-            return True
+    
+    if not supabase:
+        return False
+    try:
+        response = supabase.table("users").select("password").eq("username", username).execute()
+        data = response.data
+        if data:
+            if check_hash(password, data[0]["password"]):
+                return True
+    except Exception as e:
+        st.error(f"Erro ao realizar login: {e}")
     return False
 
 def save_history(username, tool_name, content):
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
-    cursor.execute('INSERT INTO history (username, tool_name, content, timestamp) VALUES (?, ?, ?, ?)', 
-                   (username, tool_name, content, timestamp))
-    conn.commit()
-    conn.close()
+    if not supabase:
+        return
+    try:
+        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+        supabase.table("history").insert({
+            "username": username,
+            "tool_name": tool_name,
+            "content": content,
+            "timestamp": timestamp
+        }).execute()
+    except Exception as e:
+        st.error(f"Erro ao salvar histórico: {e}")
 
 def get_history(username):
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT tool_name, content, timestamp FROM history WHERE username = ? ORDER BY id DESC', (username,))
-    data = cursor.fetchall()
-    conn.close()
-    return data
+    if not supabase:
+        return []
+    try:
+        response = supabase.table("history").select("tool_name, content, timestamp").eq("username", username).order("id", desc=True).execute()
+        return [(row["tool_name"], row["content"], row["timestamp"]) for row in response.data]
+    except Exception:
+        return []
 
 def get_all_users():
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT username FROM users')
-    data = cursor.fetchall()
-    conn.close()
-    return [row[0] for row in data]
+    if not supabase:
+        return []
+    try:
+        response = supabase.table("users").select("username").execute()
+        return [row["username"] for row in response.data]
+    except Exception:
+        return []
 
 def get_all_history_admin():
-    conn = sqlite3.connect('neurax_users.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT username, tool_name, timestamp FROM history ORDER BY id DESC')
-    data = cursor.fetchall()
-    conn.close()
-    return data
+    if not supabase:
+        return []
+    try:
+        response = supabase.table("history").select("username, tool_name, timestamp").order("id", desc=True).execute()
+        return [(row["username"], row["tool_name"], row["timestamp"]) for row in response.data]
+    except Exception:
+        return []
 
 # Gerenciamento de Sessão de Login
 if "logged_in" not in st.session_state:
