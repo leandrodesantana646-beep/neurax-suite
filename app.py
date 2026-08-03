@@ -252,6 +252,21 @@ else:
         ]
     )
     
+    # Seletor Avançado de Modelos de IA
+    st.sidebar.subheader("🤖 Modelo de IA")
+    model_choice = st.sidebar.selectbox(
+        "Selecione o Modelo",
+        [
+            "Llama-3.3-70b-versatile (Avançado / Profundo)",
+            "Llama-3.1-8b-instant (Ultra-Rápido)"
+        ]
+    )
+    
+    if "70b" in model_choice:
+        model_name = "llama-3.3-70b-versatile"
+    else:
+        model_name = "llama-3.1-8b-instant"
+    
     st.sidebar.markdown("---")
     
     # Carregamento da API Key da Groq
@@ -366,8 +381,6 @@ else:
 
     # FERRAMENTAS DE IA
     elif client:
-        model_name = "llama-3.3-70b-versatile"
-
         if escolha == "🗺️ Arquiteto de Funis de Vendas":
             st.header("🗺️ Arquiteto de Funis de Vendas Inteligente")
             st.write("Projete estratégias comerciais completas combinadas com um diagrama visual interativo.")
