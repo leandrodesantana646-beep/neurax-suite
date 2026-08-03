@@ -24,7 +24,7 @@ except Exception as e:
 # Estilização visual customizada (Tema NeuraX Pro - Dark Moderno & Elegante)
 st.markdown("""
     <style>
-    @import url('[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap)');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
@@ -230,7 +230,7 @@ else:
         groq_api_key = st.sidebar.text_input("Insira sua Groq API Key (gsk_...)", type="password")
 
     if not groq_api_key:
-        st.warning("⚠️ Insira uma chave válida da Groq um pouco mais acima ou no menu lateral para ativar as ferramentas de IA.")
+        st.warning("⚠️ Insira uma chave válida da Groq no menu lateral para ativar as ferramentas de IA.")
         client = None
     else:
         try:
@@ -339,8 +339,7 @@ else:
                         except Exception as e:
                             st.error(f"Erro ao conectar com a Groq: {e}.")
 
-        elif escolha == "💰 
-                        try:        elif escolha == "💰 Precificação Inteligente":
+        elif escolha == "💰 Precificação Inteligente":
             st.header("💰 Calculadora de Precificação Inteligente com IA")
             produto = st.text_input("Nome do Produto ou Serviço")
             custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
@@ -359,15 +358,6 @@ else:
                             "4. Orientações estratégicas e uma chamada para ação (CTA) forte para o profissional."
                         )
                         try:
-                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                            resultado = completion.choices[0].message.content
-                            st.session_state["generation_count"] += 1
-                            save_history(st.session_state["username"], "Precificação Inteligente", resultado)
-                            st.success("Análise concluída!")
-                            st.markdown(resultado)
-                        except Exception as e:
-                            st.error(f"Erro ao conectar com a Groq: {e}.")
-
                             completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
                             resultado = completion.choices[0].message.content
                             st.session_state["generation_count"] += 1
