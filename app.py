@@ -416,6 +416,7 @@ else:
                         prompt = (
                             f"Atue como um Especialista em Tráfego Pago e Copywriting de alta conversão aplicando o tom de voz: '{user_tone}'.\n"
                             f"Crie copies de anúncios estruturadas para a plataforma '{anuncio_plataforma}', com o objetivo de '{anuncio_objetivo}', para o produto: '{anuncio_produto}' e público: '{anuncio_publico}'.\n"
+                            "IMPORTANTE: Escreva a resposta estritamente em português do Brasil correto, fluido e natural, garantindo ausência de erros ortográficos (como 'confort' ou 'poteencial') e evitando termos em inglês desnecessários.\n"
                             "Sua resposta deve conter obrigatoriamente:\n"
                             "1. 3 Opções de Títulos / Headlines magnéticas.\n"
                             "2. 2 Opções de Textos Principais / Corpo do Anúncio estruturados (com foco em gancho, agitação de dor/desejo e solução).\n"
