@@ -270,8 +270,9 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # MENU DE FERRAMENTAS MODERNO COM AS NOVAS ADIÇÕES
+    # MENU DE FERRAMENTAS MODERNO COM DASHBOARD PESSOAL
     menu_options = [
+        "📊 Meu Painel de Produtividade",
         "🗺️ Arquiteto de Funis de Vendas",
         "💰 Precificação Inteligente",
         "🎯 Gerador de Anúncios (Meta/Google)",
@@ -320,6 +321,29 @@ else:
             st.dataframe(df_history, use_container_width=True)
         else:
             st.info("Nenhuma atividade registrada na plataforma ainda.")
+
+    elif escolha == "📊 Meu Painel de Produtividade":
+        st.header(f"📊 Painel de Produtividade de {st.session_state['username']}")
+        st.write("Acompanhe o seu desempenho, volume de uso e ferramentas favoritas no ecossistema.")
+        
+        user_history = get_history(st.session_state["username"])
+        total_geracoes = len(user_history)
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total de Conteúdos Gerados", total_geracoes)
+        c2.metric("Gerações nesta Sessão", st.session_state["generation_count"])
+        c3.metric("Status da Conta", "Ativa (Pro)")
+        
+        st.markdown("---")
+        st.subheader("📈 Distribuição de Ferramentas Utilizadas")
+        
+        if user_history:
+            tools_list = [item[0] for item in user_history]
+            df_tools = pd.DataFrame(tools_list, columns=["Ferramenta"]).value_counts().reset_index()
+            df_tools.columns = ["Ferramenta", "Quantidade"]
+            st.bar_chart(df_tools.set_index("Ferramenta"))
+        else:
+            st.info("Você ainda não utilizou nenhuma ferramenta nesta conta. Selecione uma ferramenta ao lado para começar!")
 
     elif escolha == "📂 Meu Histórico":
         st.header("📂 Histórico de Gerações")
@@ -385,7 +409,7 @@ else:
                         prompt = (
                             f"Atue como um Especialista em Finanças e Precificação aplicando o tom de voz: '{user_tone}'.\n"
                             f"Elabore uma análise detalhada e estruturada de precificação para o produto/serviço: '{produto}', com custo de R$ {custo:.2f} e margem de lucro de {margem}%.\n"
-                            "Sua resposta deve ser estritamente em Markdown limpo, sem erros matemáticos colados, contendo:\n"
+                            "Sua resposta deve ser estritamente em Markdown limpo, contendo:\n"
                             "1. O detalhamento claro do custo.\n"
                             "2. A aplicação correta da margem de lucro e o preço de venda final formatado de forma legível (ex: R$ 00,00).\n"
                             "3. A análise de impacto do lucro para o negócio.\n"
@@ -416,7 +440,7 @@ else:
                         prompt = (
                             f"Atue como um Especialista em Tráfego Pago e Copywriting de alta conversão aplicando o tom de voz: '{user_tone}'.\n"
                             f"Crie copies de anúncios estruturadas para a plataforma '{anuncio_plataforma}', com o objetivo de '{anuncio_objetivo}', para o produto: '{anuncio_produto}' e público: '{anuncio_publico}'.\n"
-                            "IMPORTANTE: Escreva a resposta estritamente em português do Brasil correto, fluido e natural, garantindo ausência de erros ortográficos (como 'confort' ou 'poteencial') e evitando termos em inglês desnecessários.\n"
+                            "IMPORTANTE: Escreva a resposta estritamente em português do Brasil correto, fluido e natural, sem erros ortográficos e sem termos em inglês desnecessários.\n"
                             "Sua resposta deve conter obrigatoriamente:\n"
                             "1. 3 Opções de Títulos / Headlines magnéticas.\n"
                             "2. 2 Opções de Textos Principais / Corpo do Anúncio estruturados (com foco em gancho, agitação de dor/desejo e solução).\n"
