@@ -209,7 +209,7 @@ if "generation_count" not in st.session_state:
 if not st.session_state["logged_in"]:
     st.title("🚀 NeuraX Suite Pro")
     st.markdown("### Ecossistema Avançado de Inteligência Artificial")
-    st.write("Faça login ou crie sua conta para acessar ferramentas profissionais de alta performance.")
+    st.write("Faça login ou crie sua conta para acessar ferramentas profissionais e soluções para o dia a dia.")
     
     auth_mode = st.selectbox("Escolha a opção", ["Login", "Cadastrar"])
     
@@ -248,7 +248,8 @@ else:
             "Persuasivo & Direto (Foco em Conversão)",
             "Técnico & Profissional (Autoridade Sênior)",
             "Divertido & Descontraído (Engajamento)",
-            "Inspirador & Emocional (Storytelling)"
+            "Inspirador & Emocional (Storytelling)",
+            "Empático & Prático (Foco em Resolução de Problemas)"
         ]
     )
     
@@ -285,7 +286,7 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # MENU DE FERRAMENTAS MODERNO COM DASHBOARD PESSOAL
+    # MENU DE FERRAMENTAS COMPLETO (Marketing + Universal)
     menu_options = [
         "📊 Meu Painel de Produtividade",
         "🗺️ Arquiteto de Funis de Vendas",
@@ -296,6 +297,10 @@ else:
         "📸 Planejador Instagram",
         "✉️ Gerador de E-mail Comercial",
         "🎬 Gerador de Roteiro para Vídeos",
+        "⚖️ Assistente de Burocracias & Documentos",
+        "💸 Consultor de Finanças Pessoais",
+        "🍳 Assistente de Despensa & Rotina",
+        "🎓 Simulador de Entrevistas & Carreira",
         "📂 Meu Histórico"
     ]
     
@@ -362,7 +367,7 @@ else:
 
     elif escolha == "📂 Meu Histórico":
         st.header("📂 Histórico de Gerações")
-        st.write("Consulte abaixo todas as análises, copies, funis e roteiros salvos.")
+        st.write("Consulte abaixo todas as análises, copies, funis, documentos e roteiros salvos.")
         
         user_history = get_history(st.session_state["username"])
         
@@ -596,6 +601,141 @@ else:
                             st.session_state["generation_count"] += 1
                             save_history(st.session_state["username"], "Roteiro para Vídeos", resultado)
                             st.success("Roteiro pronto!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        # --- NOVAS FRENTES UNIVERSAIS ---
+        elif escolha == "⚖️ Assistente de Burocracias & Documentos":
+            st.header("⚖️ Assistente de Burocracias e Documentos")
+            st.write("Resolva questões burocráticas, crie cartas de contestação, contratos simples ou e-mails formais com facilidade.")
+            
+            doc_tipo = st.selectbox("Qual é a finalidade?", [
+                "Contestação de Cobrança Indevida / Multa",
+                "Contrato Simples (Prestação de Serviços / Aluguel)",
+                "Notificação Extrajudicial",
+                "E-mail Formal de Reclamação / Procon / Suporte",
+                "Outro Documento / Carta"
+            ])
+            doc_detalhes = st.text_area("Descreva os detalhes da situação (nomes, valores, datas, o que aconteceu):")
+            
+            if st.button("Gerar Documento ou Carta"):
+                if doc_detalhes:
+                    with st.spinner("Redigindo documento com precisão e clareza..."):
+                        prompt = (
+                            f"Atue como um Especialista em Redação Profissional e Resolução de Conflitos aplicando o tom de voz: '{user_tone}'.\n"
+                            f"Elabore um texto formal, claro e estruturado para a seguinte finalidade: '{doc_tipo}'.\n"
+                            f"Detalhes fornecidos pelo usuário: '{doc_detalhes}'.\n"
+                            "Sua resposta deve conter:\n"
+                            "1. Cabeçalho ou introdução formal adequada.\n"
+                            "2. Corpo do texto detalhado, argumentativo e respeitoso, cobrindo todos os pontos necessários.\n"
+                            "3. Fechamento formal e orientações de próximos passos para o usuário."
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Assistente de Burocracias", resultado)
+                            st.success("Documento gerado com sucesso!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "💸 Consultor de Finanças Pessoais":
+            st.header("💸 Consultor de Finanças Pessoais e Dívidas")
+            st.write("Organize seu orçamento familiar, trace estratégias de quitação de dívidas e recupere sua saúde financeira.")
+            
+            fin_objetivo = st.selectbox("Qual é o seu principal objetivo financeiro?", [
+                "Quitação de Dívidas (Estratégia Bola de Neve/Avalanche)",
+                "Criação de Orçamento Familiar Realista",
+                "Planejamento de Reserva de Emergência",
+                "Dicas para Cortar Gastos Supérfluos"
+            ])
+            fin_renda = st.number_input("Renda Mensal Líquida (R$)", min_value=0.0, value=3500.0, step=100.0)
+            fin_detalhes = st.text_area("Descreva sua situação atual (dívidas pendentes, gastos fixos principais ou dúvidas):")
+            
+            if st.button("Gerar Plano Financeiro Personalizado"):
+                with st.spinner("Analisando finanças e desenhando estratégia financeira..."):
+                    prompt = (
+                        f"Atue como um Consultor Financeiro Pessoal e Planejador sênior aplicando o tom de voz: '{user_tone}'.\n"
+                        f"Elabore um plano prático, estruturado e realista para o objetivo: '{fin_objetivo}', considerando renda mensal de R$ {fin_renda:.2f}.\n"
+                        f"Informações adicionais do usuário: '{fin_detalhes}'.\n"
+                        "Sua resposta deve conter:\n"
+                        "1. Diagnóstico e orientações iniciais.\n"
+                        "2. Plano de ação passo a passo para as próximas semanas/meses.\n"
+                        "3. Tabela ou divisão sugerida de alocação de recursos (ex: Regra 50-30-20 adaptada).\n"
+                        "4. Dicas práticas de economia diária."
+                    )
+                    try:
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Finanças Pessoais", resultado)
+                        st.success("Plano financeiro gerado com sucesso!")
+                        st.markdown(resultado)
+                    except Exception as e:
+                        st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "🍳 Assistente de Despensa & Rotina":
+            st.header("🍳 Assistente de Despensa e Rotina Alimentar")
+            st.write("Descubra o que cozinhar com o que você tem na geladeira e organize cardápios saudáveis e econômicos.")
+            
+            despensa_ingredientes = st.text_input("Ingredientes disponíveis na geladeira/despensa (ex: arroz, frango, tomate, ovos):")
+            despensa_restricoes = st.multiselect("Restrições ou preferências alimentares:", ["Nenhuma", "Vegetariano", "Vegano", "Sem Glúten", "Sem Lactose", "Low Carb", "Fitness / Proteico"])
+            despensa_tipo = st.selectbox("O que você precisa?", ["Receita Rápida com os Ingredientes", "Cardápio Semanal Econômico", "Opções de Lanches Saudáveis"])
+            
+            if st.button("Criar Receita ou Cardápio"):
+                if despensa_ingredientes or despensa_tipo:
+                    with st.spinner("Criando opções deliciosas e inteligentes..."):
+                        restricoes_str = ", ".join(despensa_restricoes) if despensa_restricoes else "Nenhuma"
+                        prompt = (
+                            f"Atue como um Chef de Cozinha criativo e Nutricionista prático aplicando o tom de voz: '{user_tone}'.\n"
+                            f"Com base nos ingredientes informados: '{despensa_ingredientes}', restrições: '{restricoes_str}', e objetivo: '{despensa_tipo}', crie uma resposta completa.\n"
+                            "Sua resposta deve conter:\n"
+                            "1. Opção(ões) de pratos ou cardápio detalhado.\n"
+                            "2. Modo de preparo passo a passo simples e claro.\n"
+                            "3. Dicas de aproveitamento integral de alimentos para evitar desperdício."
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Assistente Despensa", resultado)
+                            st.success("Sugestão culinária gerada com sucesso!")
+                            st.markdown(resultado)
+                        except Exception as e:
+                            st.error(f"Erro ao conectar com a Groq: {e}.")
+
+        elif escolha == "🎓 Simulador de Entrevistas & Carreira":
+            st.header("🎓 Simulador de Entrevistas de Emprego & Carreira")
+            st.write("Prepare-se para entrevistas de emprego, simule perguntas difíceis e otimize sua trajetória profissional.")
+            
+            carreira_cargo = st.text_input("Qual é o cargo ou área da vaga desejada?")
+            carreira_tipo = st.selectbox("Escolha a modalidade de treino:", [
+                "Simulador de Entrevista (Perguntas Comportamentais & Técnicas)",
+                "Otimização e Revisão de Currículo / Perfil LinkedIn",
+                "Plano de Transição de Carreira"
+            ])
+            carreira_experiencia = st.text_area("Descreva brevemente sua experiência atual ou o desafio que está enfrentando:")
+            
+            if st.button("Iniciar Simulação / Análise de Carreira"):
+                if carreira_cargo:
+                    with st.spinner("Preparando simulador profissional e orientações estratégicas..."):
+                        prompt = (
+                            f"Atue como um Recrutador Sênior e Headhunter executivo aplicando o tom de voz: '{user_tone}'.\n"
+                            f"Crie um roteiro de simulação ou análise para a modalidade '{carreira_tipo}', voltado para o cargo: '{carreira_cargo}'.\n"
+                            f"Contexto do usuário: '{carreira_experiencia}'.\n"
+                            "Sua resposta deve conter:\n"
+                            "1. Perguntas desafiadoras comuns para essa vaga (com orientações de resposta).\n"
+                            "2. Feedback estruturado ou gabarito de excelência para se destacar da concorrência.\n"
+                            "3. Dicas de postura e valorização profissional."
+                        )
+                        try:
+                            completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                            resultado = completion.choices[0].message.content
+                            st.session_state["generation_count"] += 1
+                            save_history(st.session_state["username"], "Simulador Carreira", resultado)
+                            st.success("Simulação / Análise gerada com sucesso!")
                             st.markdown(resultado)
                         except Exception as e:
                             st.error(f"Erro ao conectar com a Groq: {e}.")
