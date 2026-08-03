@@ -1,6 +1,5 @@
 streamlit
 groq
 pandas
-streamlit
 supabase
-PyPDF2
+pypdf
