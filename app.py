@@ -29,7 +29,7 @@ try:
 except Exception as e:
     supabase = None
 
-# Estilização visual customizada
+# Estilização visual customizada (com ajuste de posição para o chat no celular)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -39,6 +39,12 @@ st.markdown("""
     }
     
     .stApp { background-color: #0b0f19; color: #f3f4f6; }
+    
+    /* Eleva a caixa de chat para cima do teclado no celular */
+    [data-testid="stChatInput"] {
+        bottom: 25px !important;
+    }
+    
     footer {visibility: hidden;}
     h1, h2, h3 { color: #38bdf8 !important; font-weight: 700; }
     
@@ -126,10 +132,6 @@ def update_password(username, new_password):
         return False
 
 def send_recovery_email(to_email, code):
-    """
-    Configuração SMTP Real. Substitua pelas credenciais do seu provedor (Gmail, SendGrid, Resend, etc.)
-    ou utilize uma App Password do Gmail.
-    """
     try:
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
@@ -253,7 +255,6 @@ def export_to_pdf(content):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=11)
-    # Limpeza básica de caracteres especiais para compatibilidade com PDF padrão
     clean_content = content.encode('latin-1', 'ignore').decode('latin-1')
     for line in clean_content.split('\n'):
         pdf.multi_cell(0, 8, txt=line)
@@ -297,7 +298,7 @@ if not st.session_state["logged_in"]:
             else:
                 st.warning("Preencha todos os campos.")
                 
-    else: # Esqueci minha senha
+    else:
         st.markdown("### 🔑 Recuperação de Senha")
         if "reset_stage" not in st.session_state:
             st.session_state["reset_stage"] = 1
@@ -404,7 +405,6 @@ else:
 
     client = Groq(api_key=groq_api_key) if groq_api_key else None
 
-    # Carrega perfil de longo prazo
     current_profile = get_user_profile(st.session_state["username"])
     profile_context = (
         f"\n[DADOS DE CONTEXTO DO USUÁRIO]:\n"
@@ -414,7 +414,6 @@ else:
         f"- Objetivos Principais: {current_profile.get('goals', 'Não informado')}\n"
     )
 
-    # MENU DE FERRAMENTAS COMPLETO (Com Chat Geral)
     menu_options = [
         "📊 Meu Painel de Produtividade",
         "💬 Chat Geral com o NeuraX",
@@ -447,8 +446,6 @@ else:
         st.session_state["logged_in"] = False
         st.session_state["username"] = ""
         st.rerun()
-
-    # --- EXECUÇÃO DAS FERRAMENTAS ---
 
     if escolha == "🛠️ Painel Administrativo":
         st.header("🛠️ Painel Administrativo - NeuraX Suite")
@@ -496,7 +493,6 @@ else:
         st.header("💬 Chat Geral com o NeuraX")
         st.write("Converse livremente com o assistente inteligente. O chat considera suas configurações de Tom de Voz e a sua Memória de Longo Prazo.")
         
-        # Exibe mensagens do chat
         for message in st.session_state["chat_messages"]:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
@@ -590,7 +586,6 @@ else:
                                 st.success("Análise Concluída com Sucesso!")
                                 st.markdown(resultado)
                                 
-                                # Botões de Exportação
                                 col_ex1, col_ex2 = st.columns(2)
                                 with col_ex1:
                                     st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="analise_pdf.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
@@ -783,7 +778,6 @@ else:
         if not user_history:
             st.info("Nenhum histórico encontrado.")
         else:
-            # Filtro por ferramenta
             ferramentas_disponiveis = ["Todas"] + list(set([item[1] for item in user_history]))
             filtro_ferramenta = st.selectbox("Filtrar por Ferramenta", ferramentas_disponiveis)
             
