@@ -339,7 +339,7 @@ if not st.session_state["logged_in"]:
 else:
     # Sidebar
     st.sidebar.title("⚡ NeuraX")
-    st.sidebar.write(f"Operador: **{st.session_state['username']}**")
+    st.sidebar.write(f"Usuário: **{st.session_state['username']}**")
     
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
