@@ -161,7 +161,6 @@ def update_password(username, new_password):
 
 def send_email_smtp(to_email, subject, body, attachment_bytes=None, attachment_name="relatorio.pdf"):
     try:
-        # Configurações SMTP seguras (Pode ser ajustado via st.secrets)
         smtp_server = st.secrets.get("smtp", {}).get("server", "smtp.gmail.com")
         smtp_port = int(st.secrets.get("smtp", {}).get("port", 587))
         sender_email = st.secrets.get("smtp", {}).get("email", "seu-email@gmail.com")
@@ -405,6 +404,7 @@ else:
         "💬 Chat Geral com o NeuraX",
         "👤 Meu Perfil & Contexto (Memória)",
         "📂 Analista de Arquivos & PDFs",
+        "🏛️ Conselho de Gigantes (Board de IAs)",
         "⚡ Gestor de Tarefas Inteligente",
         "🧠 Mentor de Saúde Mental",
         "📚 Tutor Universal & Estudos",
@@ -412,6 +412,7 @@ else:
         "💰 Precificação Inteligente",
         "🎯 Gerador de Anúncios (Meta/Google)",
         "🚀 NeuraX Growth Engine",
+        "💸 Gerador de Renda Extra & Negócios",
         "💬 Gerador de Copy WhatsApp",
         "📸 Planejador Instagram",
         "✉️ Gerador de E-mail Comercial",
@@ -440,7 +441,7 @@ else:
         all_history = get_all_history_admin()
         
         total_tokens = sum([item[3] for item in all_history])
-        estimated_cost = (total_tokens / 1000000) * 0.70  # Custo médio aproximado por 1M tokens
+        estimated_cost = (total_tokens / 1000000) * 0.70
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -491,7 +492,6 @@ else:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
                 
-        # Entrada de Voz com st.audio_input
         audio_file = st.audio_input("🎙️ Falar com o NeuraX")
         voice_query = None
         if audio_file and client:
@@ -528,7 +528,6 @@ else:
                         completion = client.chat.completions.create(model=model_name, messages=messages_payload)
                         response_text = completion.choices[0].message.content
                         
-                        # Estimativa de tokens
                         approx_tokens = len(final_query.split()) + len(response_text.split())
                         
                         st.markdown(response_text)
@@ -582,6 +581,92 @@ else:
                     except Exception as e:
                         st.error(f"Erro: {e}")
 
+    elif escolha == "🏛️ Conselho de Gigantes (Board de IAs)":
+        st.header("🏛️ Conselho de Gigantes - Board de IAs de Elite")
+        st.write("Submeta um desafio crítico e veja 4 lendas de negócios (O Visionário, O Estrategista Financeiro, O Mestre de Growth e o Crítico Implacável) debatendo o seu problema com base no seu perfil cadastrado.")
+        
+        desafio_board = st.text_area("Qual é o seu dilema ou projeto atual para ser julgado pelo Conselho?")
+        
+        if st.button("Convocar o Conselho de Gigantes"):
+            if not desafio_board or not client:
+                st.warning("Insira o seu desafio e verifique sua chave da Groq.")
+            else:
+                with st.spinner("Convocando os conselheiros e cruzando dados do seu perfil..."):
+                    prompt = (
+                        f"Atue simultaneamente como um Conselho de Administração de Elite composto por 4 personas brilhantes:\n"
+                        f"1. O Visionario (focado em disrupção, inovação e escala massiva)\n"
+                        f"2. O Estrategista Financeiro (focado em fluxo de caixa, risco zero e margem de lucro)\n"
+                        f"3. O Mestre de Growth (focado em aquisição agressiva, tráfego e conversão)\n"
+                        f"4. O Crítico Implacável (Advogado do Diabo, focado em achar falhas e pontos cegos)\n\n"
+                        f"{profile_context}\n"
+                        f"Desafio submetido pelo usuário: {desafio_board}\n\n"
+                        f"Estruture a resposta exatamente assim:\n"
+                        f"- **Parecer do Visionário**\n"
+                        f"- **Parecer do Estrategista Financeiro**\n"
+                        f"- **Parecer do Mestre de Growth**\n"
+                        f"- **Alerta do Crítico Implacável**\n"
+                        f"- **Consenso do Conselho & Plano de Ação Imediato**"
+                    )
+                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                    resultado = completion.choices[0].message.content
+                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    
+                    st.session_state["generation_count"] += 1
+                    save_history(st.session_state["username"], "Conselho de Gigantes", resultado, tokens=approx_tokens)
+                    st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="conselho_gigantes.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="conselho_gigantes.pdf", mime="application/pdf")
+                        
+                    st.markdown("---")
+                    st.markdown("### 📧 Enviar Relatório por E-mail")
+                    destinatario_email = st.text_input("E-mail de destino", value=st.session_state["username"] if "@" in st.session_state["username"] else "")
+                    if st.button("Enviar PDF por E-mail agora"):
+                        if destinatario_email:
+                            pdf_bytes = export_to_pdf(resultado)
+                            enviado = send_email_smtp(destinatario_email, "NeuraX Suite - Conselho de Gigantes", "Olá,\n\nSegue em anexo a ata da reunião do Conselho de Gigantes gerada pelo NeuraX Suite Pro.", pdf_bytes, "conselho_gigantes.pdf")
+                            if enviado:
+                                st.success("E-mail enviado com sucesso!")
+                            else:
+                                st.error("Erro ao enviar e-mail. Verifique as credenciais SMTP no st.secrets.")
+                        else:
+                            st.warning("Insira um endereço de e-mail válido.")
+
+    elif escolha == "💸 Gerador de Renda Extra & Negócios":
+        st.header("💸 Gerador de Renda Extra & Negócios Digitais")
+        st.write("Descubra caminhos práticos para monetizar suas habilidades e gerar novas fontes de receita.")
+        nicho_foco = st.text_input("Qual é a sua principal habilidade ou área de interesse?", value=current_profile.get("niche", ""))
+        capital_inicial = st.selectbox("Quanto você tem disponível para investir?", ["Zero (Começar do zero)", "Baixo (Até R$ 500)", "Médio (R$ 500 a R$ 2.000)", "Alto (Acima de R$ 2.000)"])
+        
+        if st.button("Gerar Plano de Renda Extra"):
+            if not client:
+                st.warning("Configure sua chave da Groq no menu lateral.")
+            else:
+                with st.spinner("Mapeando oportunidades de faturamento..."):
+                    prompt = (
+                        f"Atue como um Especialista em Monetização e Negócios Digitais (Tom: '{user_tone}').\n"
+                        f"{profile_context}\n"
+                        f"O usuário quer gerar renda extra na área de '{nicho_foco}' com capital inicial '{capital_inicial}'. "
+                        f"Crie um plano prático com 3 modelos de negócios viáveis (ex: prestação de serviços, infoprodutos, afiliados), "
+                        f"passo a passo para os primeiros 30 dias e sugestões de captação de clientes."
+                    )
+                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                    resultado = completion.choices[0].message.content
+                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    
+                    st.session_state["generation_count"] += 1
+                    save_history(st.session_state["username"], "Gerador de Renda Extra", resultado, tokens=approx_tokens)
+                    st.markdown(resultado)
+                    
+                    col_ex1, col_ex2 = st.columns(2)
+                    with col_ex1:
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="renda_extra.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    with col_ex2:
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="renda_extra.pdf", mime="application/pdf")
+
     elif escolha in [
         "⚡ Gestor de Tarefas Inteligente", "🧠 Mentor de Saúde Mental", "📚 Tutor Universal & Estudos",
         "🗺️ Arquiteto de Funis de Vendas", "💰 Precificação Inteligente", "🎯 Gerador de Anúncios (Meta/Google)",
@@ -609,7 +694,6 @@ else:
                     with col_ex2:
                         st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="relatorio.pdf", mime="application/pdf")
                         
-                    # Recurso de Envio Real de E-mail para o relatório gerado
                     st.markdown("---")
                     st.markdown("### 📧 Enviar Relatório por E-mail")
                     destinatario_email = st.text_input("E-mail de destino", value=st.session_state["username"] if "@" in st.session_state["username"] else "")
