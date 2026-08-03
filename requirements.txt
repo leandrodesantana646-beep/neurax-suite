@@ -5,3 +5,4 @@ supabase
 pypdf
 python-docx
 fpdf2
+mercadopago==2.2.0
