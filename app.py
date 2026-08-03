@@ -10,6 +10,7 @@ import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 from docx import Document
 from fpdf import FPDF
 
@@ -29,62 +30,89 @@ try:
 except Exception as e:
     supabase = None
 
-# Estilização visual customizada (com ajuste maior de posição para o chat no celular)
-st.markdown("""
+# Gerenciamento de Sessão Inicial
+for key in ["logged_in", "username", "generation_count", "chat_messages", "theme"]:
+    if key not in st.session_state:
+        if key == "logged_in":
+            st.session_state[key] = False
+        elif key == "chat_messages":
+            st.session_state[key] = []
+        elif key == "generation_count":
+            st.session_state[key] = 0
+        elif key == "theme":
+            st.session_state[key] = "Escuro (Dark)"
+        else:
+            st.session_state[key] = ""
+
+# Seletor de Tema Dinâmico (Claro / Escuro)
+with st.sidebar:
+    st.title("⚡ NeuraX")
+    st.session_state["theme"] = st.selectbox("🎨 Tema da Interface", ["Escuro (Dark)", "Claro (Light)"])
+
+is_dark = "Escuro" in st.session_state["theme"]
+
+# Paleta de Cores baseada no Tema
+bg_app = "#0b0f19" if is_dark else "#f8fafc"
+text_app = "#f3f4f6" if is_dark else "#1e293b"
+sidebar_bg = "#111827" if is_dark else "#ffffff"
+card_bg = "#111827" if is_dark else "#ffffff"
+border_color = "#1f2937" if is_dark else "#e2e8f0"
+chat_input_bottom = "95px"
+
+# Estilização visual customizada com suporte a temas
+st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     
-    html, body, [class*="css"] {
+    html, body, [class*="css"] {{
         font-family: 'Plus Jakarta Sans', sans-serif;
-    }
+    }}
     
-    .stApp { background-color: #0b0f19; color: #f3f4f6; }
+    .stApp {{ background-color: {bg_app}; color: {text_app}; }}
     
-    /* Eleva significativamente a caixa de chat para cima do teclado no celular */
-    [data-testid="stChatInput"] {
-        bottom: 95px !important;
-    }
+    [data-testid="stChatInput"] {{
+        bottom: {chat_input_bottom} !important;
+    }}
     
-    footer {visibility: hidden;}
-    h1, h2, h3 { color: #38bdf8 !important; font-weight: 700; }
+    footer {{visibility: hidden;}}
+    h1, h2, h3 {{ color: #38bdf8 !important; font-weight: 700; }}
     
-    [data-testid="stSidebar"] {
-        background-color: #111827;
-        border-right: 1px solid #1f2937;
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg};
+        border-right: 1px solid {border_color};
         padding-top: 1rem;
-    }
+    }}
     
-    [data-testid="stSidebar"] .stRadio > label {
+    [data-testid="stSidebar"] .stRadio > label {{
         font-size: 1.1rem; font-weight: 700; color: #38bdf8 !important; margin-bottom: 12px; letter-spacing: 0.5px;
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] { gap: 8px; }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background-color: #1a2234; border: 1px solid #2d3748; padding: 10px 14px; border-radius: 10px;
+    }}
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {{ gap: 8px; }}
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {{
+        background-color: {"#1a2234" if is_dark else "#f1f5f9"}; border: 1px solid {border_color}; padding: 10px 14px; border-radius: 10px;
         transition: all 0.3s ease; cursor: pointer; width: 100%;
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label, 
+    }}
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label p,
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label span {
-        color: #38bdf8 !important;
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label span {{
+        color: {"#38bdf8" if is_dark else "#0284c7"} !important;
         font-weight: 600;
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+    }}
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {{
         background-color: #0284c7; border-color: #38bdf8; transform: translateX(4px); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover * {
+    }}
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover * {{
         color: #ffffff !important;
-    }
+    }}
     
-    .stButton>button {
+    .stButton>button {{
         background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%); color: white; border-radius: 10px;
         font-weight: 600; padding: 0.6rem 1.2rem; border: none; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3); transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
+    }}
+    .stButton>button:hover {{
         background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%); box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5); transform: translateY(-1px);
-    }
+    }}
     
-    [data-testid="stMetric"] { background: #111827; border: 1px solid #1f2937; padding: 15px; border-radius: 12px; }
-    .streamlit-expanderHeader { background-color: #111827; border: 1px solid #1f2937; border-radius: 8px; }
+    [data-testid="stMetric"] {{ background: {card_bg}; border: 1px solid {border_color}; padding: 15px; border-radius: 12px; }}
+    .streamlit-expanderHeader {{ background-color: {card_bg}; border: 1px solid {border_color}; border-radius: 8px; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -131,31 +159,36 @@ def update_password(username, new_password):
     except Exception:
         return False
 
-def send_recovery_email(to_email, code):
+def send_email_smtp(to_email, subject, body, attachment_bytes=None, attachment_name="relatorio.pdf"):
     try:
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        sender_email = "seu-email@gmail.com"
-        sender_password = "sua-senha-de-app"
+        # Configurações SMTP seguras (Pode ser ajustado via st.secrets)
+        smtp_server = st.secrets.get("smtp", {}).get("server", "smtp.gmail.com")
+        smtp_port = int(st.secrets.get("smtp", {}).get("port", 587))
+        sender_email = st.secrets.get("smtp", {}).get("email", "seu-email@gmail.com")
+        sender_password = st.secrets.get("smtp", {}).get("password", "sua-senha-de-app")
         
         msg = MIMEMultipart()
         msg["From"] = sender_email
         msg["To"] = to_email
-        msg["Subject"] = "Código de Recuperação - NeuraX Suite Pro"
+        msg["Subject"] = subject
         
-        body = f"Olá,\n\nSeu código de recuperação de senha no NeuraX Suite Pro é: {code}\n\nInsira este código na tela de recuperação."
         msg.attach(MIMEText(body, "plain"))
         
+        if attachment_bytes:
+            part = MIMEApplication(attachment_bytes, Name=attachment_name)
+            part['Content-Disposition'] = f'attachment; filename="{attachment_name}"'
+            msg.attach(part)
+            
         server = smtplib.SMTP(smtp_server, smtp_port)
         server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, to_email, msg.as_string())
         server.quit()
         return True
-    except Exception:
+    except Exception as e:
         return False
 
-def save_history(username, tool_name, content):
+def save_history(username, tool_name, content, tokens=0):
     if not supabase:
         return
     try:
@@ -164,7 +197,8 @@ def save_history(username, tool_name, content):
             "username": username,
             "tool_name": tool_name,
             "content": content,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "tokens": tokens
         }).execute()
     except Exception:
         pass
@@ -173,8 +207,8 @@ def get_history(username):
     if not supabase:
         return []
     try:
-        data = supabase.table("history").select("id, tool_name, content, timestamp").eq("username", username).order("id", desc=True).execute().data
-        return [(r["id"], r["tool_name"], r["content"], r["timestamp"]) for r in data]
+        data = supabase.table("history").select("id, tool_name, content, timestamp, tokens").eq("username", username).order("id", desc=True).execute().data
+        return [(r["id"], r["tool_name"], r["content"], r["timestamp"], r.get("tokens", 0)) for r in data]
     except Exception:
         return []
 
@@ -199,8 +233,8 @@ def get_all_history_admin():
     if not supabase:
         return []
     try:
-        data = supabase.table("history").select("username, tool_name, timestamp").order("id", desc=True).execute().data
-        return [(r["username"], r["tool_name"], r["timestamp"]) for r in data]
+        data = supabase.table("history").select("username, tool_name, timestamp, tokens").order("id", desc=True).execute().data
+        return [(r["username"], r["tool_name"], r["timestamp"], r.get("tokens", 0)) for r in data]
     except Exception:
         return []
 
@@ -260,18 +294,6 @@ def export_to_pdf(content):
         pdf.multi_cell(0, 8, txt=line)
     return pdf.output(dest='S').encode('latin-1')
 
-# Gerenciamento de Sessão
-for key in ["logged_in", "username", "generation_count", "chat_messages"]:
-    if key not in st.session_state:
-        if key == "logged_in":
-            st.session_state[key] = False
-        elif key == "chat_messages":
-            st.session_state[key] = []
-        elif key == "generation_count":
-            st.session_state[key] = 0
-        else:
-            st.session_state[key] = ""
-
 # Tela de Autenticação
 if not st.session_state["logged_in"]:
     st.title("🚀 NeuraX Suite Pro")
@@ -307,44 +329,23 @@ if not st.session_state["logged_in"]:
             recovery_user = st.text_input("Digite seu E-mail / Usuário cadastrado")
             if st.button("Enviar Código de Verificação"):
                 if recovery_user:
-                    exists = False
-                    if recovery_user.strip().lower() == "admin":
-                        exists = True
-                    elif supabase:
-                        data = supabase.table("users").select("username").eq("username", recovery_user).execute().data
-                        if data:
-                            exists = True
+                    code = str(random.randint(100000, 999999))
+                    st.session_state["reset_code"] = code
+                    st.session_state["reset_user"] = recovery_user
                     
-                    if exists:
-                        code = str(random.randint(100000, 999999))
-                        st.session_state["reset_code"] = code
-                        st.session_state["reset_user"] = recovery_user
-                        
-                        email_sent = False
-                        try:
-                            email_sent = send_recovery_email(recovery_user, code)
-                        except Exception:
-                            pass
-                        
-                        if email_sent:
-                            st.session_state["email_status"] = "sent"
-                        else:
-                            st.session_state["email_status"] = "failed"
-                        
-                        st.session_state["reset_stage"] = 2
-                        st.rerun()
-                    else:
-                        st.error("Usuário ou e-mail não encontrado no sistema.")
+                    email_sent = send_email_smtp(recovery_user, "Código de Recuperação - NeuraX", f"Seu código de recuperação é: {code}")
+                    st.session_state["email_status"] = "sent" if email_sent else "failed"
+                    st.session_state["reset_stage"] = 2
+                    st.rerun()
                 else:
                     st.warning("Insira seu usuário/e-mail.")
         
         elif st.session_state["reset_stage"] == 2:
             st.info(f"Usuário selecionado: **{st.session_state.get('reset_user')}**")
-            
             if st.session_state.get("email_status") == "sent":
                 st.success("📨 Código enviado para o seu e-mail!")
             else:
-                st.warning(f"⚠️ **Modo de Teste:** O e-mail não pôde ser enviado. O seu código de verificação é: **{st.session_state.get('reset_code')}**")
+                st.warning(f"⚠️ **Modo de Teste:** O e-mail não pôde ser enviado por SMTP. Código de verificação: **{st.session_state.get('reset_code')}**")
             
             entered_code = st.text_input("Digite o Código de 6 Dígitos")
             new_pwd = st.text_input("Nova Senha", type="password")
@@ -356,44 +357,29 @@ if not st.session_state["logged_in"]:
                     if entered_code == st.session_state.get("reset_code"):
                         if new_pwd and new_pwd == confirm_pwd:
                             target_user = st.session_state.get("reset_user")
-                            if target_user.strip().lower() == "admin":
-                                st.warning("A senha do administrador padrão não pode ser redefinida por aqui.")
+                            if update_password(target_user, new_pwd):
+                                st.success("Senha redefinida com sucesso! Volte ao Login.")
+                                st.session_state["reset_stage"] = 1
+                                st.rerun()
                             else:
-                                if update_password(target_user, new_pwd):
-                                    st.success("Senha redefinida com sucesso! Volte ao Login.")
-                                    st.session_state["reset_stage"] = 1
-                                    st.session_state.pop("reset_code", None)
-                                    st.session_state.pop("reset_user", None)
-                                    st.session_state.pop("email_status", None)
-                                    st.rerun()
-                                else:
-                                    st.error("Erro ao atualizar a senha no banco de dados.")
+                                st.error("Erro ao atualizar a senha no banco de dados.")
                         else:
                             st.warning("As senhas não coincidem ou estão vazias.")
                     else:
-                        st.error("Código de verificação incorreto.")
+                        st.error("Código incorreto.")
             with col_r2:
                 if st.button("Cancelar"):
                     st.session_state["reset_stage"] = 1
-                    st.session_state.pop("reset_code", None)
-                    st.session_state.pop("reset_user", None)
-                    st.session_state.pop("email_status", None)
                     st.rerun()
 
 else:
-    # Sidebar
-    st.sidebar.title("⚡ NeuraX")
+    # Sidebar Principal
     st.sidebar.write(f"Usuário: **{st.session_state['username']}**")
     
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
         "Tom de Voz", 
-        [
-            "Persuasivo & Direto", 
-            "Técnico & Profissional", 
-            "Divertido & Descontraído", 
-            "Empático & Acolhedor"
-        ]
+        ["Persuasivo & Direto", "Técnico & Profissional", "Divertido & Descontraído", "Empático & Acolhedor"]
     )
     
     model_choice = st.sidebar.selectbox("Modelo", ["Llama-3.3-70b-versatile", "Llama-3.1-8b-instant"])
@@ -453,19 +439,24 @@ else:
         all_users = get_all_users()
         all_history = get_all_history_admin()
         
-        col1, col2 = st.columns(2)
+        total_tokens = sum([item[3] for item in all_history])
+        estimated_cost = (total_tokens / 1000000) * 0.70  # Custo médio aproximado por 1M tokens
+        
+        col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Total de Usuários Cadastrados", len(all_users))
+            st.metric("Total de Usuários", len(all_users))
         with col2:
-            st.metric("Total de Gerações na Plataforma", len(all_history))
+            st.metric("Total de Gerações", len(all_history))
+        with col3:
+            st.metric("Tokens / Custo Est.", f"{total_tokens:,} (~${estimated_cost:.4f})")
             
         st.markdown("---")
         st.markdown("### 👥 Usuários Registrados")
         st.write(all_users)
         
-        st.markdown("### 📊 Histórico Geral de Atividades")
+        st.markdown("### 📊 Histórico Geral de Atividades & Consumo")
         if all_history:
-            df_history = pd.DataFrame(all_history, columns=["Usuário", "Ferramenta Utilizada", "Data e Hora"])
+            df_history = pd.DataFrame(all_history, columns=["Usuário", "Ferramenta", "Data/Hora", "Tokens"])
             st.dataframe(df_history, use_container_width=True)
         else:
             st.info("Nenhuma atividade registrada na plataforma ainda.")
@@ -473,12 +464,15 @@ else:
     elif escolha == "📊 Meu Painel de Produtividade":
         st.header(f"📊 Painel de Produtividade de {st.session_state['username']}")
         user_history = get_history(st.session_state["username"])
+        total_tokens_user = sum([item[4] for item in user_history])
         
-        col_m1, col_m2 = st.columns(2)
+        col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
-            st.metric("Total de Conteúdos Gerados", len(user_history))
+            st.metric("Conteúdos Gerados", len(user_history))
         with col_m2:
-            st.metric("Ações na Sessão Atual", st.session_state["generation_count"])
+            st.metric("Ações na Sessão", st.session_state["generation_count"])
+        with col_m3:
+            st.metric("Tokens Consumidos", f"{total_tokens_user:,}")
         
         if user_history:
             tools_list = [item[1] for item in user_history]
@@ -490,21 +484,39 @@ else:
             st.info("Você ainda não utilizou nenhuma ferramenta.")
 
     elif escolha == "💬 Chat Geral com o NeuraX":
-        st.header("💬 Chat Geral com o NeuraX")
-        st.write("Converse livremente com o assistente inteligente. O chat considera suas configurações de Tom de Voz e a sua Memória de Longo Prazo.")
+        st.header("💬 Chat Geral com o NeuraX (Com Entrada por Voz)")
+        st.write("Converse digitando ou grave sua voz usando o microfone abaixo.")
         
         for message in st.session_state["chat_messages"]:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
                 
+        # Entrada de Voz com st.audio_input
+        audio_file = st.audio_input("🎙️ Falar com o NeuraX")
+        voice_query = None
+        if audio_file and client:
+            with st.spinner("Transcrevendo seu áudio com Whisper..."):
+                try:
+                    transcript_res = client.audio.transcriptions.create(
+                        file=("audio.wav", audio_file.getvalue()),
+                        model="whisper-large-v3-turbo",
+                        response_format="text"
+                    )
+                    voice_query = transcript_res
+                    st.info(f"Transcrição: {voice_query}")
+                except Exception as e:
+                    st.error(f"Erro ao transcrever áudio: {e}")
+
         user_query = st.chat_input("Digite sua mensagem para o NeuraX...")
-        if user_query:
+        final_query = voice_query if voice_query else user_query
+        
+        if final_query:
             if not client:
                 st.error("Configure sua chave da Groq no menu lateral.")
             else:
-                st.session_state["chat_messages"].append({"role": "user", "content": user_query})
+                st.session_state["chat_messages"].append({"role": "user", "content": final_query})
                 with st.chat_message("user"):
-                    st.markdown(user_query)
+                    st.markdown(final_query)
                     
                 with st.chat_message("assistant"):
                     with st.spinner("Pensando..."):
@@ -515,15 +527,17 @@ else:
                         messages_payload = [{"role": "system", "content": system_prompt}] + st.session_state["chat_messages"]
                         completion = client.chat.completions.create(model=model_name, messages=messages_payload)
                         response_text = completion.choices[0].message.content
+                        
+                        # Estimativa de tokens
+                        approx_tokens = len(final_query.split()) + len(response_text.split())
+                        
                         st.markdown(response_text)
                         st.session_state["chat_messages"].append({"role": "assistant", "content": response_text})
                         st.session_state["generation_count"] += 1
-                        save_history(st.session_state["username"], "Chat Geral", response_text)
+                        save_history(st.session_state["username"], "Chat Geral", response_text, tokens=approx_tokens)
 
     elif escolha == "👤 Meu Perfil & Contexto (Memória)":
         st.header("👤 Memória de Longo Prazo - Perfil do Usuário")
-        st.write("Defina suas informações principais uma única vez. A inteligência artificial usará esses dados automaticamente em todas as ferramentas.")
-        
         with st.form("form_profile"):
             b_name = st.text_input("Nome do Negócio ou Projeto", value=current_profile.get("business_name", ""))
             b_niche = st.text_input("Nicho de Atuação", value=current_profile.get("niche", ""))
@@ -536,240 +550,79 @@ else:
 
     elif escolha == "📂 Analista de Arquivos & PDFs":
         st.header("📂 Analista de Arquivos e PDFs")
-        st.write("Faça o upload de contratos, faturas, artigos científicos ou livros e faça qualquer pergunta para a IA.")
-        
         arquivo_pdf = st.file_uploader("Envie seu arquivo PDF", type=["pdf"])
         pergunta = st.text_input("O que você deseja saber ou resumir sobre este documento?")
         
         if st.button("Analisar PDF"):
-            if not arquivo_pdf:
-                st.warning("⚠️ Por favor, envie um arquivo PDF primeiro.")
-            elif not pergunta:
-                st.warning("⚠️ Por favor, digite o que você quer saber sobre o documento.")
-            elif not client:
-                st.warning("⚠️ Insira sua chave da Groq no menu lateral.")
+            if not arquivo_pdf or not pergunta or not client:
+                st.warning("⚠️ Envie o PDF, digite a pergunta e configure sua chave da Groq.")
             else:
-                with st.spinner("Lendo o documento com segurança..."):
+                with st.spinner("Lendo documento..."):
                     try:
-                        bytes_arquivo = arquivo_pdf.getvalue()
-                        leitor = pypdf.PdfReader(io.BytesIO(bytes_arquivo))
+                        leitor = pypdf.PdfReader(io.BytesIO(arquivo_pdf.getvalue()))
+                        texto_extraido = "".join([p.extract_text() for p in leitor.pages if p.extract_text()])
+                        texto_limitado = texto_extraido[:30000]
+                        prompt = f"Atue como Especialista (Tom: '{user_tone}').\n{profile_context}\nTexto do PDF:\n{texto_limitado}\nPergunta: {pergunta}"
                         
-                        if leitor.is_encrypted:
-                            st.error("⚠️ Este PDF está protegido por senha. Por favor, envie um arquivo desbloqueado.")
-                        else:
-                            texto_extraido = ""
-                            for pagina in leitor.pages:
-                                texto = pagina.extract_text()
-                                if texto:
-                                    texto_extraido += texto + "\n"
-                            
-                            if not texto_extraido.strip():
-                                st.error("⚠️ Este PDF parece ser uma imagem escaneada (sem texto selecionável).")
-                            else:
-                                texto_limitado = texto_extraido[:30000]
-                                prompt = (
-                                    f"Atue como um Especialista em Análise Documental sênior aplicando o tom de voz: '{user_tone}'.\n"
-                                    f"{profile_context}\n"
-                                    f"Com base estritamente no texto extraído do PDF abaixo:\n\n"
-                                    f"--- INÍCIO DO TEXTO ---\n{texto_limitado}\n--- FIM DO TEXTO ---\n\n"
-                                    f"Responda detalhadamente e com clareza à seguinte requisição do usuário: '{pergunta}'"
-                                )
-                                
-                                completion = client.chat.completions.create(
-                                    model=model_name, 
-                                    messages=[{"role": "user", "content": prompt}]
-                                )
-                                resultado = completion.choices[0].message.content
-                                st.session_state["generation_count"] += 1
-                                save_history(st.session_state["username"], "Analista de PDF", resultado)
-                                
-                                st.success("Análise Concluída com Sucesso!")
-                                st.markdown(resultado)
-                                
-                                col_ex1, col_ex2 = st.columns(2)
-                                with col_ex1:
-                                    st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="analise_pdf.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                                with col_ex2:
-                                    st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="analise_pdf.pdf", mime="application/pdf")
+                        completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                        resultado = completion.choices[0].message.content
+                        approx_tokens = len(prompt.split()) + len(resultado.split())
+                        
+                        st.session_state["generation_count"] += 1
+                        save_history(st.session_state["username"], "Analista de PDF", resultado, tokens=approx_tokens)
+                        
+                        st.success("Análise Concluída!")
+                        st.markdown(resultado)
+                        
+                        col_ex1, col_ex2 = st.columns(2)
+                        with col_ex1:
+                            st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="analise.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        with col_ex2:
+                            st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="analise.pdf", mime="application/pdf")
                     except Exception as e:
-                        st.error(f"Erro ao processar o arquivo PDF: {e}")
-
-    elif escolha == "⚡ Gestor de Tarefas Inteligente":
-        st.header("⚡ Gestor de Rotina e Tarefas")
-        tarefas_brutas = st.text_area("Despeje suas tarefas aqui:")
-        horas_disponiveis = st.number_input("Quantas horas livres você tem hoje?", min_value=1, value=8)
-        
-        if st.button("Organizar Meu Dia"):
-            if tarefas_brutas and client:
-                with st.spinner("Construindo matriz de produtividade..."):
-                    prompt = (
-                        f"Atue como um Especialista em Produtividade (Tom: '{user_tone}').\n"
-                        f"{profile_context}\n"
-                        f"O usuário tem {horas_disponiveis} horas livres e as tarefas: '{tarefas_brutas}'. "
-                        f"Crie uma organização usando a Matriz de Eisenhower e monte um cronograma realista."
-                    )
-                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                    resultado = completion.choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Gestor de Tarefas", resultado)
-                    st.success("Rotina otimizada!")
-                    st.markdown(resultado)
-                    
-                    col_ex1, col_ex2 = st.columns(2)
-                    with col_ex1:
-                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="tarefas.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    with col_ex2:
-                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="tarefas.pdf", mime="application/pdf")
-
-    elif escolha == "🧠 Mentor de Saúde Mental":
-        st.header("🧠 Diário Emocional e Bem-Estar")
-        humor = st.select_slider("Como você está se sentindo hoje?", options=["Péssimo", "Triste", "Neutro", "Bem", "Incrível"], value="Neutro")
-        desabafo = st.text_area("Escreva livremente sobre o seu dia (Journaling):")
-        
-        if st.button("Refletir com o Mentor"):
-            if desabafo and client:
-                with st.spinner("Processando..."):
-                    prompt = (
-                        f"Atue como um Mentor de Bem-Estar empático e acolhedor (Tom: '{user_tone}').\n"
-                        f"{profile_context}\n"
-                        f"O usuário está se sentindo '{humor}' e escreveu: '{desabafo}'. "
-                        f"Responda validando sentimentos e termine sugerindo um exercício prático de respiração ou foco."
-                    )
-                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                    resultado = completion.choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Saúde Mental", resultado)
-                    st.markdown(resultado)
-
-    elif escolha == "📚 Tutor Universal & Estudos":
-        st.header("📚 Tutor Particular e Estudos")
-        assunto = st.text_input("O que você precisa aprender ou estudar hoje?")
-        tipo_estudo = st.selectbox("Qual o formato?", ["Explicação Simples (Analogias)", "Criar Quiz/Simulado de Prova", "Prática de Idioma", "Gerar Flashcards"])
-        
-        if st.button("Iniciar Sessão de Estudo"):
-            if assunto and client:
-                with st.spinner("O Professor NeuraX está preparando a aula..."):
-                    prompt = (
-                        f"Atue como um Professor Universitário genial (Tom: '{user_tone}').\n"
-                        f"{profile_context}\n"
-                        f"O usuário quer estudar: '{assunto}' no formato: '{tipo_estudo}'. "
-                        f"Entregue o conteúdo de forma didática com markdown limpo."
-                    )
-                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-                    resultado = completion.choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Tutor Universal", resultado)
-                    st.markdown(resultado)
-                    
-                    col_ex1, col_ex2 = st.columns(2)
-                    with col_ex1:
-                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="estudo.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    with col_ex2:
-                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="estudo.pdf", mime="application/pdf")
-
-    elif escolha == "🗺️ Arquiteto de Funis de Vendas":
-        st.header("🗺️ Arquiteto de Funis de Vendas")
-        funil_produto = st.text_input("Qual é o seu produto ou serviço?", value=current_profile.get("business_name", ""))
-        funil_publico = st.text_input("Quem é o seu público-alvo?", value=current_profile.get("niche", ""))
-        if st.button("Gerar Estratégia e Fluxograma"):
-            if funil_produto and client:
-                with st.spinner("Desenhando a arquitetura..."):
-                    prompt = (
-                        f"Crie um funil de vendas estratégico para '{funil_produto}' e público '{funil_publico}'.\n"
-                        f"{profile_context}\n"
-                        f"Inclua uma descrição passo a passo e um diagrama em Mermaid (graph TD). Tom: {user_tone}."
-                    )
-                    resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Arquiteto de Funis", resultado)
-                    st.markdown(resultado)
-                    
-                    col_ex1, col_ex2 = st.columns(2)
-                    with col_ex1:
-                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="funil.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    with col_ex2:
-                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="funil.pdf", mime="application/pdf")
-
-    elif escolha == "💰 Precificação Inteligente":
-        st.header("💰 Calculadora de Precificação Inteligente")
-        produto = st.text_input("Nome do Produto ou Serviço")
-        custo = st.number_input("Custo (R$)", min_value=0.0, format="%.2f")
-        if st.button("Calcular Preço Ideal"):
-            if produto and client:
-                with st.spinner("Analisando..."):
-                    prompt = (
-                        f"Elabore uma análise detalhada de precificação para '{produto}' com custo de R${custo}.\n"
-                        f"{profile_context}\n"
-                        f"Tom: {user_tone}."
-                    )
-                    resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Precificação Inteligente", resultado)
-                    st.markdown(resultado)
-
-    elif escolha == "🎯 Gerador de Anúncios (Meta/Google)":
-        st.header("🎯 Gerador de Anúncios de Alta Conversão")
-        anuncio_produto = st.text_input("Qual é o produto, serviço ou oferta?")
-        if st.button("Gerar Copys de Anúncio"):
-            if anuncio_produto and client:
-                with st.spinner("Criando estruturas..."):
-                    prompt = (
-                        f"Crie copies de anúncios magnéticas para vender '{anuncio_produto}'.\n"
-                        f"{profile_context}\n"
-                        f"Tom: {user_tone}."
-                    )
-                    resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "Gerador de Anúncios", resultado)
-                    st.markdown(resultado)
-
-    elif escolha == "🚀 NeuraX Growth Engine":
-        st.header("🚀 NeuraX Growth Engine - Simulador")
-        orcamento = st.number_input("Orçamento Mensal Ads (R$)", min_value=100.0, value=2000.0)
-        meta_fat = st.number_input("Meta de Faturamento Mensal (R$)", min_value=500.0, value=20000.0)
-        if st.button("Executar Simulação"):
-            if client:
-                with st.spinner("Desenhando plano de guerra..."):
-                    prompt = (
-                        f"Crie um plano tático de marketing para transformar R${orcamento} em R${meta_fat}.\n"
-                        f"{profile_context}\n"
-                        f"Tom: {user_tone}."
-                    )
-                    resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
-                    st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], "NeuraX Growth Engine", resultado)
-                    st.markdown(resultado)
+                        st.error(f"Erro: {e}")
 
     elif escolha in [
-        "💬 Gerador de Copy WhatsApp", 
-        "📸 Planejador Instagram", 
-        "✉️ Gerador de E-mail Comercial", 
-        "🎬 Gerador de Roteiro para Vídeos", 
-        "⚖️ Assistente de Burocracias", 
-        "💸 Consultor de Finanças Pessoais", 
-        "🍳 Assistente de Despensa & Rotina", 
-        "🎓 Simulador de Entrevistas"
+        "⚡ Gestor de Tarefas Inteligente", "🧠 Mentor de Saúde Mental", "📚 Tutor Universal & Estudos",
+        "🗺️ Arquiteto de Funis de Vendas", "💰 Precificação Inteligente", "🎯 Gerador de Anúncios (Meta/Google)",
+        "🚀 NeuraX Growth Engine", "💬 Gerador de Copy WhatsApp", "📸 Planejador Instagram", 
+        "✉️ Gerador de E-mail Comercial", "🎬 Gerador de Roteiro para Vídeos", "⚖️ Assistente de Burocracias", 
+        "💸 Consultor de Finanças Pessoais", "🍳 Assistente de Despensa & Rotina", "🎓 Simulador de Entrevistas"
     ]:
         st.header(escolha)
-        detalhe = st.text_area("Descreva os detalhes do que você precisa:")
+        detalhe = st.text_area("Descreva os detalhes da sua demanda:")
         if st.button("Gerar com IA"):
             if detalhe and client:
-                with st.spinner("Processando requisição..."):
-                    prompt = (
-                        f"Atue como um Especialista (Tom: '{user_tone}').\n"
-                        f"{profile_context}\n"
-                        f"Resolva a demanda da ferramenta '{escolha}': {detalhe}"
-                    )
-                    resultado = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}]).choices[0].message.content
+                with st.spinner("Processando..."):
+                    prompt = f"Atue como um Especialista (Tom: '{user_tone}').\n{profile_context}\nDemanda: {detalhe}"
+                    completion = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
+                    resultado = completion.choices[0].message.content
+                    approx_tokens = len(prompt.split()) + len(resultado.split())
+                    
                     st.session_state["generation_count"] += 1
-                    save_history(st.session_state["username"], escolha, resultado)
+                    save_history(st.session_state["username"], escolha, resultado, tokens=approx_tokens)
                     st.markdown(resultado)
                     
                     col_ex1, col_ex2 = st.columns(2)
                     with col_ex1:
-                        st.download_button("📥 Baixar em Word (.docx)", data=export_to_docx(resultado), file_name="documento.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        st.download_button("📥 Baixar Word (.docx)", data=export_to_docx(resultado), file_name="relatorio.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
                     with col_ex2:
-                        st.download_button("📥 Baixar em PDF (.pdf)", data=export_to_pdf(resultado), file_name="documento.pdf", mime="application/pdf")
+                        st.download_button("📥 Baixar PDF (.pdf)", data=export_to_pdf(resultado), file_name="relatorio.pdf", mime="application/pdf")
+                        
+                    # Recurso de Envio Real de E-mail para o relatório gerado
+                    st.markdown("---")
+                    st.markdown("### 📧 Enviar Relatório por E-mail")
+                    destinatario_email = st.text_input("E-mail de destino", value=st.session_state["username"] if "@" in st.session_state["username"] else "")
+                    if st.button("Enviar PDF por E-mail agora"):
+                        if destinatario_email:
+                            pdf_bytes = export_to_pdf(resultado)
+                            enviado = send_email_smtp(destinatario_email, f"NeuraX Suite - {escolha}", "Olá,\n\nSegue em anexo o relatório gerado pelo NeuraX Suite Pro.", pdf_bytes, "relatorio.pdf")
+                            if enviado:
+                                st.success("E-mail enviado com sucesso!")
+                            else:
+                                st.error("Erro ao enviar e-mail. Verifique as credenciais SMTP no st.secrets.")
+                        else:
+                            st.warning("Insira um endereço de e-mail válido.")
 
     elif escolha == "📂 Meu Histórico":
         st.header("📂 Histórico de Gerações & Gerenciamento")
@@ -783,29 +636,17 @@ else:
             
             filtered_history = user_history if filtro_ferramenta == "Todas" else [item for item in user_history if item[1] == filtro_ferramenta]
             
-            for item_id, tool, content, timestamp in filtered_history:
-                with st.expander(f"🛠️ [{tool}] - {timestamp}"):
+            for item_id, tool, content, timestamp, tokens in filtered_history:
+                with st.expander(f"🛠️ [{tool}] - {timestamp} (Tokens: {tokens})"):
                     st.markdown(content)
                     
                     col_h1, col_h2, col_h3 = st.columns(3)
                     with col_h1:
-                        st.download_button(
-                            label="📥 Baixar (.txt)",
-                            data=content,
-                            file_name=f"hist_{item_id}.txt",
-                            mime="text/plain",
-                            key=f"txt_{item_id}"
-                        )
+                        st.download_button("📥 Baixar (.txt)", data=content, file_name=f"hist_{item_id}.txt", mime="text/plain", key=f"txt_{item_id}")
                     with col_h2:
-                        st.download_button(
-                            label="📥 Baixar em Word",
-                            data=export_to_docx(content),
-                            file_name=f"hist_{item_id}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            key=f"docx_{item_id}"
-                        )
+                        st.download_button("📥 Baixar Word", data=export_to_docx(content), file_name=f"hist_{item_id}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"docx_{item_id}")
                     with col_h3:
-                        if st.button("🗑️ Excluir Registro", key=f"del_{item_id}"):
+                        if st.button("🗑️ Excluir", key=f"del_{item_id}"):
                             delete_history_item(item_id)
-                            st.success("Registro excluído com sucesso!")
+                            st.success("Excluído!")
                             st.rerun()
