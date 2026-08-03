@@ -29,7 +29,7 @@ try:
 except Exception as e:
     supabase = None
 
-# Estilização visual customizada (com ajuste de posição para o chat no celular)
+# Estilização visual customizada (com ajuste maior de posição para o chat no celular)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -40,9 +40,9 @@ st.markdown("""
     
     .stApp { background-color: #0b0f19; color: #f3f4f6; }
     
-    /* Eleva a caixa de chat para cima do teclado no celular */
+    /* Eleva significativamente a caixa de chat para cima do teclado no celular */
     [data-testid="stChatInput"] {
-        bottom: 25px !important;
+        bottom: 95px !important;
     }
     
     footer {visibility: hidden;}
