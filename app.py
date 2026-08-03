@@ -26,7 +26,7 @@ try:
 except Exception as e:
     supabase = None
 
-# Estilização visual customizada
+# Estilização visual customizada (Letras do menu em azul)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -49,12 +49,21 @@ st.markdown("""
         font-size: 1.1rem; font-weight: 700; color: #38bdf8 !important; margin-bottom: 12px; letter-spacing: 0.5px;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] { gap: 8px; }
-    [data-testid="stSidebar"] .stRadio label {
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
         background-color: #1a2234; border: 1px solid #2d3748; padding: 10px 14px; border-radius: 10px;
         transition: all 0.3s ease; cursor: pointer; width: 100%;
     }
-    [data-testid="stSidebar"] .stRadio label:hover {
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label, 
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label p,
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label span {
+        color: #38bdf8 !important;
+        font-weight: 600;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
         background-color: #0284c7; border-color: #38bdf8; transform: translateX(4px); box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover * {
+        color: #ffffff !important;
     }
     
     .stButton>button {
@@ -117,8 +126,8 @@ def send_recovery_email(to_email, code):
     try:
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
-        sender_email = "seu-email@gmail.com"        # Substitua pelo seu e-mail do Gmail se quiser testar
-        sender_password = "sua-senha-de-app"        # Substitua pela sua senha de app de 16 dígitos
+        sender_email = "seu-email@gmail.com"
+        sender_password = "sua-senha-de-app"
         
         msg = MIMEMultipart()
         msg["From"] = sender_email
