@@ -272,7 +272,7 @@ def save_user_profile(username, business_name, niche, budget, goals):
     except Exception as e:
         st.error(f"Erro ao salvar perfil: {e}")
 
-# Funções de Exportação Avançada (Word e PDF)
+# Funções de Exportação Avançada (Word e PDF corrigidas)
 def export_to_docx(content):
     doc = Document()
     doc.add_heading("NeuraX Suite Pro - Relatório", 0)
@@ -287,10 +287,18 @@ def export_to_docx(content):
 def export_to_pdf(content):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=11)
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_left_margin(10)
+    pdf.set_right_margin(10)
+    pdf.set_font("Arial", size=10)
+    
     clean_content = content.encode('latin-1', 'ignore').decode('latin-1')
     for line in clean_content.split('\n'):
-        pdf.multi_cell(0, 8, txt=line)
+        if not line.strip():
+            pdf.ln(5)
+        else:
+            pdf.multi_cell(190, 6, txt=line)
+            
     return pdf.output(dest='S').encode('latin-1')
 
 # Tela de Autenticação
