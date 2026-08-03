@@ -1,4 +1,4 @@
-         import streamlit as st
+import streamlit as st
 from groq import Groq
 import hashlib
 from datetime import datetime
@@ -850,5 +850,3 @@ else:
                             delete_history_item(item_id)
                             st.success("Excluído!")
                             st.rerun()
-                   
-                            
