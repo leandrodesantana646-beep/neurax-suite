@@ -321,10 +321,8 @@ else:
             if st.button("Gerar Estratégia e Fluxograma"):
                 if funil_produto and funil_publico:
                     with st.spinner("Desenhando a arquitetura do funil e o fluxograma visual..."):
-                        prompt = (
-                            f"Atue como um Estrategista de Marketing Digital sênior aplicando o tom de voz: '{user_tone}'. "
-                            f"Crie um funil de vendas estratégico completo para o produto: '{funil_produto}', "
-                            f"com ticket '{funil_ticket}', voltado para o público: '{funil_publico}'.\n"
-                            "Sua resposta deve conter obrigatoriamente:\n"
-                            "1. A estratégia detalhada por etapas (Tráfego/Atração, Página de Captura/Conversão, Oferta/Checkout, Recuperação/Upsell).\n"
-                            "2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (em bloco ```mermaid ... 
+                        prompt = f"""Atue como um Estrategista de Marketing Digital sênior aplicando o tom de voz: '{user_tone}'.
+Crie um funil de vendas estratégico completo para o produto: '{funil_produto}', com ticket '{funil_ticket}', voltado para o público: '{funil_publico}'.
+Sua resposta deve conter obrigatoriamente:
+1. A estratégia detalhada por etapas (Tráfego/Atração, Página de Captura/Conversão, Oferta/Checkout, Recuperação/Upsell).
+2. Um diagrama de fluxo utilizando a sintaxe nativa do Mermaid (em bloco ```mermaid ... 
