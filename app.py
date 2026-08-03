@@ -21,7 +21,7 @@ except Exception as e:
     st.error(f"Erro ao conectar com o Supabase. Verifique os Secrets: {e}")
     supabase = None
 
-# Estilização visual customizada (Tema NeuraX Pro - Dark Moderno & Elegante)
+# Estilização visual customizada (Tema NeuraX Pro - Dark Moderno & Elegante com Menu Moderno)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -49,6 +49,37 @@ st.markdown("""
     [data-testid="stSidebar"] {
         background-color: #111827;
         border-right: 1px solid #1f2937;
+        padding-top: 1rem;
+    }
+    
+    /* Customização moderna para o Menu Radio da Sidebar (Estilo Cards Interativos) */
+    [data-testid="stSidebar"] .stRadio > label {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #38bdf8 !important;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
+        gap: 8px;
+    }
+    
+    [data-testid="stSidebar"] .stRadio label {
+        background-color: #1a2234;
+        border: 1px solid #2d3748;
+        padding: 10px 14px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        width: 100%;
+    }
+    
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background-color: #0284c7;
+        border-color: #38bdf8;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
     }
     
     /* Botões com efeito neon e gradiente */
@@ -239,7 +270,7 @@ else:
             st.error(f"Erro ao inicializar o cliente Groq: {e}")
             client = None
 
-    # MENU DE FERRAMENTAS
+    # MENU DE FERRAMENTAS MODERNO
     menu_options = [
         "🗺️ Arquiteto de Funis de Vendas",
         "💰 Precificação Inteligente",
@@ -254,8 +285,10 @@ else:
     if usuario_logado == "admin":
         menu_options.insert(0, "🛠️ Painel Administrativo")
 
-    escolha = st.sidebar.selectbox("Navegue pelas Ferramentas", menu_options)
+    # Substituição do selectbox por um Radio estilizado em formato de cartões modernos
+    escolha = st.sidebar.radio("⚡ Menu de Ferramentas", menu_options)
     
+    st.sidebar.markdown("---")
     if st.sidebar.button("Sair da Conta"):
         st.session_state["logged_in"] = False
         st.session_state["username"] = ""
