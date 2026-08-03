@@ -296,7 +296,7 @@ def verify_generation_permission(current_user, user_plan):
         if len(user_history) >= 1:
             st.error("🔒 **Seu teste gratuito de 1 uso já foi utilizado!**")
             st.warning("Para continuar gerando conteúdos e desbloquear acesso total e ilimitado a todas as ferramentas e agentes de IA, assine o plano por apenas **R$ 29,99/mês**.")
-            st.markdown("[💳 Assinar Plano PRO (R$ 29,99/mês)](https://seu-link-de-pagamento.com)", unsafe_allow_html=True)
+            st.markdown("[💳 Assinar Plano PRO (R$ 29,99/mês)](https://mpago.la/2WjVnvA)", unsafe_allow_html=True)
             return False
     return True
 
@@ -421,7 +421,7 @@ else:
     if user_plan == "free":
         st.sidebar.info("🎁 Você tem direito a **1 teste gratuito** no app.")
         st.sidebar.markdown("⚡ **Assine o Plano PRO por R$ 29,99/mês**")
-        st.sidebar.markdown("[👉 Clique aqui para assinar](https://seu-link-de-pagamento.com)", unsafe_allow_html=True)
+        st.sidebar.markdown("[👉 Clique aqui para assinar](https://mpago.la/2WjVnvA)", unsafe_allow_html=True)
 
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
