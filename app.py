@@ -115,10 +115,11 @@ def update_password(username, new_password):
 
 def send_recovery_email(to_email, code):
     try:
-        smtp_server = st.secrets["smtp"]["server"]
-        smtp_port = int(st.secrets["smtp"]["port"])
-        sender_email = st.secrets["smtp"]["email"]
-        sender_password = st.secrets["smtp"]["password"]
+        # COLE SEU GMAIL E SUA SENHA DE APP DIRETAMENTE AQUI:
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "seu-email@gmail.com"        # Substitua pelo seu e-mail do Gmail
+        sender_password = "sua-senha-de-app"        # Substitua pela sua senha de app de 16 dígitos
         
         msg = MIMEMultipart()
         msg["From"] = sender_email
