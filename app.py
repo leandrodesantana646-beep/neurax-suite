@@ -13,6 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from docx import Document
 from fpdf import FPDF
+import mercadopago
 
 # Configuração inicial da página
 st.set_page_config(
@@ -29,6 +30,47 @@ try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as e:
     supabase = None
+
+# Inicialização do Mercado Pago via Secrets
+try:
+    MP_ACCESS_TOKEN = st.secrets["mercadopago"]["access_token"]
+    mp = mercadopago.SDK(MP_ACCESS_TOKEN)
+except Exception as e:
+    mp = None
+
+# Funções de Integração com o Mercado Pago
+def gerar_link_pagamento(username):
+    if not mp:
+        return "https://www.mercadopago.com.br"
+    try:
+        preference_data = {
+            "items": [
+                {
+                    "title": "NeuraX Suite Pro - Plano Mensal",
+                    "quantity": 1,
+                    "unit_price": 29.99,
+                    "currency_id": "BRL"
+                }
+            ],
+            "external_reference": username,  # Associa o pagamento ao nome do usuário
+        }
+        resposta = mp.preference().create(preference_data)
+        return resposta["response"]["init_point"]
+    except Exception:
+        return "https://www.mercadopago.com.br"
+
+def verificar_pagamento(username):
+    if not mp:
+        return False
+    try:
+        filtros = {"external_reference": username, "status": "approved"}
+        busca = mp.payment().search(filtros)
+        results = busca.get("response", {}).get("results", [])
+        if results:
+            return True
+    except Exception:
+        pass
+    return False
 
 # Gerenciamento de Sessão Inicial
 for key in ["logged_in", "username", "generation_count", "chat_messages", "theme"]:
@@ -295,12 +337,14 @@ def verify_generation_permission(current_user, user_plan):
         user_history = get_history(current_user)
         if len(user_history) >= 1:
             st.error("🔒 **Seu teste gratuito de 1 uso já foi utilizado!**")
-            st.warning("Para continuar gerando conteúdos e desbloquear acesso total e ilimitado a todas as ferramentas e agentes de IA, assine o plano por apenas **R$ 29,99/mês**.")
-            st.markdown("[💳 Assinar Plano PRO (R$ 29,99/mês)](https://mpago.la/2WjVnvA)", unsafe_allow_html=True)
+            st.warning("Para continuar gerando conteúdos e desbloquear acesso total e ilimitado, assine o plano por apenas **R$ 29,99/mês**.")
+            
+            link_pago = gerar_link_pagamento(current_user)
+            st.markdown(f"[💳 Assinar Plano PRO (R$ 29,99/mês)]({link_pago})", unsafe_allow_html=True)
             return False
     return True
 
-# Funções de Exportação Avançada (Word e PDF modernizadas)
+# Funções de Exportação Avançada (Word e PDF)
 def export_to_docx(content):
     doc = Document()
     doc.add_heading("NeuraX Suite Pro - Relatório", 0)
@@ -418,10 +462,26 @@ else:
     st.sidebar.write(f"Usuário: **{current_user}**")
     st.sidebar.markdown(f"Plano Atual: **{user_plan.upper()}**")
     
+    # Bloco de Assinatura Automática Mercado Pago na Sidebar
     if user_plan == "free":
         st.sidebar.info("🎁 Você tem direito a **1 teste gratuito** no app.")
         st.sidebar.markdown("⚡ **Assine o Plano PRO por R$ 29,99/mês**")
-        st.sidebar.markdown("[👉 Clique aqui para assinar](https://mpago.la/2WjVnvA)", unsafe_allow_html=True)
+        
+        link_checkout = gerar_link_pagamento(current_user)
+        st.sidebar.markdown(f"[👉 Clique aqui para assinar]({link_checkout})", unsafe_allow_html=True)
+        
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("Fez o pagamento? Confirme abaixo:")
+        if st.sidebar.button("🔄 Já paguei! Liberar Acesso"):
+            with st.spinner("Verificando pagamento com o Mercado Pago..."):
+                if verificar_pagamento(current_user):
+                    if supabase:
+                        supabase.table("users").update({"plan": "pro"}).eq("username", current_user).execute()
+                    st.sidebar.success("🎉 Pagamento Aprovado! Você agora é PRO.")
+                    st.balloons()
+                    st.rerun()
+                else:
+                    st.sidebar.error("⚠️ Pagamento ainda não localizado. Se pagou via Pix, aguarde 10 segundos e tente novamente.")
 
     st.sidebar.subheader("⚙️ Preferências de IA")
     user_tone = st.sidebar.selectbox(
@@ -672,8 +732,8 @@ else:
                     st.markdown(res_p3)
                     status.update(label="✅ Agente 3 (Copywriter) Concluído!", state="complete", expanded=False)
 
-                # Agente 4: Crítico & Considador Master
-                with st.status("⚖️ Agente 4 (Crítico & Considador): Revisando falhas e gerando o Plano Master final...", expanded=True) as status:
+                # Agente 4: Crítico & Consolidador Master
+                with st.status("⚖️ Agente 4 (Crítico & Consolidador): Revisando falhas e gerando o Plano Master final...", expanded=True) as status:
                     prompt_p4 = f"Atue como um Diretor Executivo implacável.\nAnalise o trabalho conjunto do Pesquisador, Estrategista e Copywriter.\nRemova inconsistências, adicione salvaguardas e entregue o **Plano Master Final** formatado.\n\nPesquisa:\n{res_p1}\n\nEstratégia:\n{res_p2}\n\nCopy:\n{res_p3}"
                     resultado_final = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt_p4}]).choices[0].message.content
                     total_tokens_flow += len(prompt_p4.split()) + len(resultado_final.split())
