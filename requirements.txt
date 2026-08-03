@@ -3,5 +3,4 @@ groq
 pandas
 streamlit
 supabase
-
-
+PyPDF2
