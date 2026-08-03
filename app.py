@@ -115,10 +115,9 @@ def update_password(username, new_password):
 
 def send_recovery_email(to_email, code):
     try:
-        # COLE SEU GMAIL E SUA SENHA DE APP DIRETAMENTE AQUI:
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
-        sender_email = "seu-email@gmail.com"        # Substitua pelo seu e-mail do Gmail
+        sender_email = "seu-email@gmail.com"        # Substitua pelo seu e-mail do Gmail se quiser testar
         sender_password = "sua-senha-de-app"        # Substitua pela sua senha de app de 16 dígitos
         
         msg = MIMEMultipart()
@@ -274,9 +273,9 @@ if not st.session_state["logged_in"]:
                             pass
                         
                         if email_sent:
-                            st.success("📨 Código enviado para o seu e-mail!")
+                            st.session_state["email_status"] = "sent"
                         else:
-                            st.info(f"💡 [Simulação/Desenvolvimento] Seu código de verificação é: **{code}**")
+                            st.session_state["email_status"] = "failed"
                         
                         st.session_state["reset_stage"] = 2
                         st.rerun()
@@ -286,7 +285,13 @@ if not st.session_state["logged_in"]:
                     st.warning("Insira seu usuário/e-mail.")
         
         elif st.session_state["reset_stage"] == 2:
-            st.info(f"Enviamos um código de verificação para: **{st.session_state.get('reset_user')}**")
+            st.info(f"Usuário selecionado: **{st.session_state.get('reset_user')}**")
+            
+            if st.session_state.get("email_status") == "sent":
+                st.success("📨 Código enviado para o seu e-mail!")
+            else:
+                st.warning(f"⚠️ **Modo de Teste:** O e-mail não pôde ser enviado. O seu código de verificação é: **{st.session_state.get('reset_code')}**")
+            
             entered_code = st.text_input("Digite o Código de 6 Dígitos")
             new_pwd = st.text_input("Nova Senha", type="password")
             confirm_pwd = st.text_input("Confirme a Nova Senha", type="password")
@@ -305,6 +310,7 @@ if not st.session_state["logged_in"]:
                                     st.session_state["reset_stage"] = 1
                                     st.session_state.pop("reset_code", None)
                                     st.session_state.pop("reset_user", None)
+                                    st.session_state.pop("email_status", None)
                                     st.rerun()
                                 else:
                                     st.error("Erro ao atualizar a senha no banco de dados.")
@@ -317,6 +323,7 @@ if not st.session_state["logged_in"]:
                     st.session_state["reset_stage"] = 1
                     st.session_state.pop("reset_code", None)
                     st.session_state.pop("reset_user", None)
+                    st.session_state.pop("email_status", None)
                     st.rerun()
 
 else:
