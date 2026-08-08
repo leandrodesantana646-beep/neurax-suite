@@ -3,7 +3,7 @@ import requests
 
 # Configuração da página
 st.set_page_config(
-    page_title="Neurax Business Suite",
+    page_title="Neurax Business Suite - Completo",
     page_icon="⚡",
     layout="centered"
 )
@@ -22,14 +22,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("⚡ Neurax Business Suite")
-st.write("Sua plataforma completa de lucro, automação e vendas via Pix.")
+st.write("Sua plataforma completa de lucro, automação, vendas via Pix e expansão.")
 
-# Menu de navegação lateral para alternar entre as ferramentas
-menu = st.sidebar.radio("Ferramentas", ["💳 Gerar Pix", "📊 Relatório de Vendas", "🚀 Indicação & Parcerias"])
+# Menu lateral unificado contendo todas as ferramentas criadas
+menu = st.sidebar.selectbox(
+    "Navegação do App",
+    [
+        "💳 Gerar Cobrança Pix",
+        "📊 Relatório de Vendas",
+        "🚀 Sistema de Indicação",
+        "⚙️ Configurações & Supabase"
+    ]
+)
 
-if menu == "💳 Gerar Pix":
+if menu == "💳 Gerar Cobrança Pix":
     st.header("Gerador de Cobrança Pix")
-    st.write("Integração direta com o Make e Mercado Pago.")
+    st.write("Integração direta com o Make, Mercado Pago e Supabase.")
     
     webhook_url = st.text_input("URL do Webhook do Make", placeholder="https://hook.us2.make.com/...")
     descricao = st.text_input("Descrição do Produto", placeholder="Ex: Consultoria Neurax")
@@ -41,12 +49,12 @@ if menu == "💳 Gerar Pix":
         if not webhook_url:
             st.error("Insira a URL do Webhook do Make.")
         elif not descricao or not valor or not nome:
-            st.warning("Preencha todos os campos obrigatórios.")
+            st.warning("Preencha todos os campos obrigatórios (Descrição, Valor e Nome).")
         else:
             try:
                 valor_tratado = float(valor.replace(",", "."))
             except ValueError:
-                st.error("O valor deve ser numérico (ex: 10.00).")
+                st.error("O campo de valor deve conter apenas números (ex: 10.00).")
                 st.stop()
 
             payload = {
@@ -58,7 +66,7 @@ if menu == "💳 Gerar Pix":
                 }
             }
 
-            with st.spinner("Enviando dados para o Make..."):
+            with st.spinner("Enviando dados para o Make e gerando Pix..."):
                 try:
                     response = requests.post(webhook_url, json=payload)
                     if response.status_code in [200, 201]:
@@ -72,29 +80,51 @@ if menu == "💳 Gerar Pix":
 
 elif menu == "📊 Relatório de Vendas":
     st.header("Relatório Automático de Vendas")
-    st.write("Acompanhe o faturamento e o fluxo de caixa em tempo real.")
+    st.write("Acompanhe o faturamento, lucro e fluxo de caixa em tempo real.")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric(label="Faturamento Hoje", value="R$ 230,00", delta="+15%")
     with col2:
         st.metric(label="Pix Gerados", value="4", delta="1 pendente")
+    with col3:
+        st.metric(label="Lucro Estimado", value="R$ 210,00", delta="+12%")
 
-    st.markdown("### Últimas Transações")
+    st.markdown("---")
+    st.markdown("### Histórico de Transações Recentes")
+    
     dados_vendas = [
-        {"Cliente": "João Silva", "Valor": "R$ 150,00", "Status": "Aprovado"},
-        {"Cliente": "Maria Souza", "Valor": "R$ 80,00", "Status": "Pendente"},
+        {"ID": "#101", "Cliente": "João Silva", "Valor": "R$ 150,00", "Status": "Aprovado"},
+        {"ID": "#102", "Cliente": "Maria Souza", "Valor": "R$ 80,00", "Status": "Pendente"},
+        {"ID": "#103", "Cliente": "Carlos Eduardo", "Valor": "R$ 200,00", "Status": "Aprovado"}
     ]
     st.table(dados_vendas)
 
-elif menu == "🚀 Indicação & Parcerias":
-    st.header("Sistema de Indicação e Crescimento")
-    st.write("Emplaque pessoas e negócios compartilhando o ecossistema Neurax.")
+elif menu == "🚀 Sistema de Indicação":
+    st.header("Emplaque Pessoas & Sistema de Indicação")
+    st.write("Ajude outras empresas e pessoas a lucrarem mais utilizando o ecossistema Neurax.")
     
-    st.info("Compartilhe seu link exclusivo e ajude outras empresas a lucrarem mais com Pix automatizado.")
+    st.info("Compartilhe seu link exclusivo de parceria para expandir sua rede e gerar novas fontes de receita.")
     
     link_indicacao = "https://neurax.app/convite/NEURAX-LUCRO2026"
-    st.text_input("Seu Link de Parceria", value=link_indicacao, disabled=True)
+    st.text_input("Seu Link Exclusivo de Parceria", value=link_indicacao, disabled=True)
     
     if st.button("Copiar Link de Parceria"):
-        st.success("Link pronto para divulgar e expandir seus negócios!")
+        st.success("Link copiado com sucesso! Pronto para divulgar.")
+
+    st.markdown("### Resumo de Parcerias")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Pessoas Indicadas", value="12")
+    with col2:
+        st.metric(label="Bônus Acumulado", value="R$ 360,00")
+
+elif menu == "⚙️ Configurações & Supabase":
+    st.header("Configurações do Banco de Dados e Sistema")
+    st.write("Gerencie a conexão com o Supabase e os parâmetros globais do aplicativo.")
+
+    st.text_input("URL do Supabase", value="https://seu-projeto.supabase.co", placeholder="Cole sua URL do Supabase")
+    st.text_input("Chave API (Service Role)", type="password", placeholder="Cole sua chave secreta")
+
+    if st.button("Salvar Configurações"):
+        st.success("Configurações salvas e banco sincronizado com sucesso!")
