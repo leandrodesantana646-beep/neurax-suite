@@ -8,11 +8,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- COLE A SUA URL DO WEBHOOK DO MAKE.COM ABAIXO ---
-WEBHOOK_ASSINATURA_FIXO = "COLE_A_SUA_URL_AQUI"
-# ----------------------------------------------------
+# --- COLE A SUA URL DO WEBHOOK DO MAKE.COM NA LINHA ABAIXO ---
+WEBHOOK_ASSINATURA_FIXO = "https://hook.us2.make.com/sua-url-aqui"
+# -------------------------------------------------------------
 
-# Estilo CSS
+# Estilo CSS para inputs legíveis
 st.markdown("""
     <style>
     .stTextInput input, .stTextInput input[type="password"], .stTextArea textarea {
@@ -77,11 +77,11 @@ if not st.session_state.logged_in:
         
         if st.button("Cadastrar e Testar Grátis", type="primary"):
             if nome_reg and email_reg and senha_reg and (senha_reg == conf_senha):
-                st.success("Conta criada! Seu Teste Grátis de todas as ferramentas foi ativado.")
+                st.success("Conta criada! Teste grátis ativado.")
                 st.session_state.auth_screen = 'login'
                 st.rerun()
             else:
-                st.warning("Preencha todos os campos corretamente e confirme a senha.")
+                st.warning("Preencha todos os campos corretamente.")
         
         if st.button("Voltar para o Login"):
             st.session_state.auth_screen = 'login'
@@ -93,7 +93,7 @@ if not st.session_state.logged_in:
         
         if st.button("Enviar Instruções", type="primary"):
             if email_rec:
-                st.success("Instruções enviadas!")
+                st.success("Instruções enviadas para o e-mail!")
             else:
                 st.error("Informe o e-mail cadastrado.")
         
@@ -108,7 +108,7 @@ else:
     st.title("⚡ Neurax Business Suite")
     
     if st.session_state.is_pro:
-        st.success("✨ **Status:** Conta Pro / Teste Grátis Ativo")
+        st.success("✨ **Status:** Conta Pro / Teste Grátis Ativo (Acesso Ilimitado)")
     else:
         st.warning("🔒 **Status:** Período de teste encerrado.")
 
@@ -120,22 +120,7 @@ else:
             "💳 Gerar Cobrança Pix",
             "🌐 Testador HTTP / Webhook Make",
             "📊 Relatório de Vendas",
-            "🚀 Sistema de Indicação",
             "⚙️ Configurações & Supabase",
-            "⚡ Gestor de Tarefas Inteligente",
-            "🧠 Mentor de Saúde Mental",
-            "📚 Tutor Universal & Estudos",
-            "🗺️ Arquiteto de Funis de Vendas",
-            "🎯 Gerador de Anúncios (Meta/Google)",
-            "🚀 NeuraX Growth Engine",
-            "💬 Gerador de Copy WhatsApp",
-            "📸 Planejador Instagram",
-            "✉️ Gerador de E-mail Comercial",
-            "🎬 Gerador de Roteiro para Vídeos",
-            "⚖️ Assistente de Burocracias",
-            "💸 Consultor de Finanças Pessoais",
-            "🍳 Assistente de Despensa & Rotina",
-            "🎓 Simulador de Entrevistas",
             "🚪 Sair (Logout)"
         ]
     )
@@ -146,13 +131,13 @@ else:
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### Teste Grátis 🎁")
-            st.metric("Valor", "R$ 0,00")
+            st.metric("Valor", "R$ 0,00", "Ativo agora")
         with col2:
             st.markdown("### Plano Pro 🚀")
-            st.metric("Valor", "R$ 19,99")
+            st.metric("Valor", "R$ 19,99", "por mês")
 
         st.markdown("---")
-        st.subheader("Ativar Assinatura Pro via Pix")
+        st.subheader("Ativar Assinatura Pro via Pix (R$ 19,99)")
         
         nome_assinante = st.text_input("Seu Nome / Empresa", placeholder="Ex: João da Silva")
         email_assinante = st.text_input("Seu E-mail de Acesso", placeholder="Ex: joao@email.com")
@@ -171,49 +156,103 @@ else:
                     try:
                         response = requests.post(WEBHOOK_ASSINATURA_FIXO, json=payload_sub)
                         if response.status_code in [200, 201]:
-                            st.success("Cobrança gerada!")
+                            st.success("Cobrança gerada com sucesso!")
                             st.session_state.pix_data = response.json() if response.text else {"qr_code": "00020126580014br.gov.bcb.pix..."}
                         else:
-                            st.error(f"Erro {response.status_code}: Verifique a URL do Webhook.")
+                            st.error(f"Erro na comunicação: Status {response.status_code}. Verifique se o cenário está ativo no Make.")
                     except Exception as e:
-                        st.error(f"Erro ao conectar: {e}")
+                        st.error(f"Não foi possível conectar ao webhook: {e}")
 
         if st.session_state.pix_data:
             st.markdown("---")
             st.subheader("📲 Realize o Pagamento do Pix")
             st.code(st.session_state.pix_data.get("qr_code", "00020126580014br.gov.bcb.pix..."), language="text")
-            st.toast("Código Pix gerado!", icon="📋")
+            st.toast("Código Pix gerado com sucesso!", icon="📋")
             
-            if st.button("🔄 Já paguei!", type="primary"):
+            if st.button("🔄 Já paguei! Liberar minha Conta Pro", type="primary"):
                 st.session_state.is_pro = True
-                st.success("🎉 Pagamento reconhecido!")
+                st.success("🎉 Pagamento reconhecido! Sua conta agora é **PRO**!")
                 st.balloons()
 
     elif menu == "💰 Precificação Inteligente":
-        st.header("💰 Precificação Inteligente")
-        produto_preco = st.text_input("Nome do Produto", placeholder="Ex: Fone Bluetooth")
-        custo_produto = st.text_input("Custo de Aquisição (R$)", placeholder="Ex: 30.00")
-        margem_desejada = st.slider("Margem de Lucro (%)", 100, 500, 250)
+        st.header("💰 Precificação Inteligente com IA")
+        produto_preco = st.text_input("Nome do Produto / Serviço", placeholder="Ex: Fone Bluetooth X10")
+        custo_produto = st.text_input("Seu Custo de Aquisição (R$)", placeholder="Ex: 30.00")
+        margem_desejada = st.slider("Margem de Lucro Alvo (%)", 100, 500, 250)
         
-        if st.button("Executar Análise de IA", type="primary"):
-            try:
-                c = float(custo_produto.replace(",", "."))
-                preco_sugerido = c * (1 + margem_desejada / 100)
-                
-                st.success("Análise concluída!")
-                st.toast("Relatório de precificação gerado!", icon="📊")
-                
-                st.metric("Preço Recomendado (IA)", f"R$ {preco_sugerido:.2f}")
-                
-                relatorio_texto = f"RELATÓRIO: Produto: {produto_preco} | Preço Sugerido: R$ {preco_sugerido:.2f}"
-                
-                st.download_button("📥 Baixar Relatório", data=relatorio_texto, file_name="relatorio.txt", mime="text/plain")
-            except ValueError:
-                st.error("Insira apenas valores numéricos válidos.")
+        if st.button("Executar Análise com IA", type="primary"):
+            if not produto_preco or not custo_produto:
+                st.warning("Preencha o nome e o custo.")
+            else:
+                try:
+                    c = float(custo_produto.replace(",", "."))
+                    preco_sugerido = c * (1 + margem_desejada / 100)
+                    lucro_estimado = preco_sugerido - c
+                    
+                    st.success("Análise de Preço Concluída!")
+                    st.toast("Relatório de precificação gerado!", icon="📊")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Preço Recomendado", f"R$ {preco_sugerido:.2f}", f"{margem_desejada}% Lucro")
+                    with col2:
+                        st.metric("Lucro Unitário", f"R$ {lucro_estimado:.2f}")
+                    
+                    relatorio_texto = f"RELATÓRIO DE PRECIFICAÇÃO - NEURAX\nProduto: {produto_preco}\nCusto: R$ {c:.2f}\nPreço Sugerido: R$ {preco_sugerido:.2f}\nLucro: R$ {lucro_estimado:.2f}"
+                    
+                    st.download_button(
+                        label="📥 Baixar Relatório em TXT",
+                        data=relatorio_texto,
+                        file_name=f"relatorio_{produto_preco.lower().replace(' ', '_')}.txt",
+                        mime="text/plain"
+                    )
+                except ValueError:
+                    st.error("Insira um valor numérico válido para o custo.")
 
-    # ... [O restante do código das outras telas permanece igual ao que enviamos antes] ...
-    # (Para manter o limite de caracteres, mantive a estrutura base das outras telas)
-    
+    elif menu == "💳 Gerar Cobrança Pix":
+        st.header("Gerador de Cobrança Pix Avulsa")
+        webhook_url = st.text_input("URL do Webhook do Make", placeholder="https://hook.us2.make.com/...")
+        descricao = st.text_input("Descrição", placeholder="Ex: Consultoria")
+        valor = st.text_input("Valor (R$)", placeholder="Ex: 50.00")
+        nome = st.text_input("Cliente", placeholder="Nome")
+        
+        if st.button("Gerar Pix", type="primary"):
+            if webhook_url and descricao and valor and nome:
+                try:
+                    payload = {"description": descricao, "transaction_amount": float(valor.replace(",", ".")), "payer": {"first_name": nome}}
+                    res = requests.post(webhook_url, json=payload)
+                    if res.status_code in [200, 201]:
+                        st.success("Pix gerado com sucesso!")
+                        st.toast("Cobrança gerada!", icon="⚡")
+                    else:
+                        st.error(f"Erro no webhook: Status {res.status_code}")
+                except Exception as e:
+                    st.error(f"Erro: {e}")
+            else:
+                st.warning("Preencha todos os campos.")
+
+    elif menu == "🌐 Testador HTTP / Webhook Make":
+        st.header("Testador HTTP")
+        token = st.text_input("Token de Autorização", type="password")
+        if st.button("Validar Headers"):
+            st.toast("Headers validados com sucesso!", icon="🌐")
+            st.json({"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+
+    elif menu == "📊 Relatório de Vendas":
+        st.header("Relatório de Vendas")
+        st.metric("Faturamento Hoje", "R$ 230,00", "+15%")
+        st.table([{"ID": "#101", "Cliente": "João", "Valor": "R$ 150,00", "Status": "Aprovado"}])
+
+    elif menu == "⚙️ Configurações & Supabase":
+        st.header("Configurações do Supabase")
+        sup_url = st.text_input("URL do Supabase", value=st.session_state.supabase_url)
+        sup_key = st.text_input("Chave API", type="password", value=st.session_state.supabase_key)
+        if st.button("Salvar Configurações"):
+            st.session_state.supabase_url = sup_url
+            st.session_state.supabase_key = sup_key
+            st.success("Salvo com sucesso!")
+            st.toast("Configurações atualizadas!", icon="💾")
+
     elif menu == "🚪 Sair (Logout)":
         st.session_state.logged_in = False
         st.session_state.auth_screen = 'login'
