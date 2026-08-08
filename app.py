@@ -25,10 +25,10 @@ st.markdown("""
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'auth_screen' not in st.session_state:
-    st.session_state.auth_screen = 'login'  # Opções: 'login', 'register', 'forgot'
+    st.session_state.auth_screen = 'login'
 
 # ==========================================
-# TELAS DE AUTENTICAÇÃO (LOGIN / CADASTRO / ESQUECEU A SENHA)
+# TELAS DE AUTENTICAÇÃO (LOGIN / CADASTRO)
 # ==========================================
 if not st.session_state.logged_in:
     st.title("⚡ Neurax Business Suite")
@@ -94,12 +94,12 @@ if not st.session_state.logged_in:
 # ==========================================
 else:
     st.title("⚡ Neurax Business Suite")
-    st.write("Ecossistema completo de lucro, automação, pagamentos Pix e ferramentas inteligentes.")
+    st.write("Ecossistema completo de lucro, automação, assinaturas e ferramentas inteligentes.")
 
-    # Menu lateral contendo TODAS as ferramentas unificadas
     menu = st.sidebar.selectbox(
         "Navegação do App",
         [
+            "💳 Assinatura & Planos",
             "💳 Gerar Cobrança Pix",
             "🌐 Testador HTTP / Webhook Make",
             "📊 Relatório de Vendas",
@@ -124,7 +124,56 @@ else:
         ]
     )
 
-    if menu == "💳 Gerar Cobrança Pix":
+    if menu == "💳 Assinatura & Planos":
+        st.header("💳 Assinatura Mensal Neurax Business")
+        st.write("Garanta acesso ilimitado a todas as ferramentas, automações e recursos de lucro por mês.")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("### Plano Free")
+            st.markdown("- Acesso básico\n- Recursos limitados\n- Suporte padrão")
+            st.metric("Valor", "R$ 0,00", "Plano Atual")
+        with col2:
+            st.markdown("### Plano Pro 🚀")
+            st.markdown("- **Todas as 15+ ferramentas**\n- Automações via Pix ilimitadas\n- Relatórios avançados\n- Suporte prioritário")
+            st.metric("Valor", "R$ 19,99", "por mês")
+
+        st.markdown("---")
+        st.subheader("Ativar ou Renovar Assinatura Pro")
+        
+        webhook_assinatura = st.text_input("URL do Webhook do Make (Assinaturas)", placeholder="https://hook.us2.make.com/...")
+        nome_assinante = st.text_input("Seu Nome / Empresa", placeholder="Ex: João da Silva")
+        email_assinante = st.text_input("Seu E-mail de Acesso", placeholder="Ex: joao@email.com")
+
+        if st.button("Gerar Pix de Assinatura (R$ 19,99)", type="primary"):
+            if not webhook_assinatura:
+                st.error("Insira a URL do Webhook do Make para assinaturas.")
+            elif not nome_assinante or not email_assinante:
+                st.warning("Preencha seu nome e e-mail.")
+            else:
+                payload_sub = {
+                    "description": "Assinatura Mensal - Neurax Business Pro",
+                    "transaction_amount": 19.99,
+                    "type": "monthly_subscription",
+                    "payer": {
+                        "first_name": nome_assinante,
+                        "email": email_assinante
+                    }
+                }
+
+                with st.spinner("Processando assinatura e gerando Pix..."):
+                    try:
+                        response = requests.post(webhook_assinatura, json=payload_sub)
+                        if response.status_code in [200, 201]:
+                            st.success("Cobrança de assinatura gerada com sucesso!")
+                            st.json(response.json() if response.text else {"status": "Assinatura Iniciada"})
+                        else:
+                            st.error(f"Erro na comunicação: Status {response.status_code}")
+                            st.text(response.text)
+                    except Exception as e:
+                        st.error(f"Não foi possível conectar ao webhook: {e}")
+
+    elif menu == "💳 Gerar Cobrança Pix":
         st.header("Gerador de Cobrança Pix")
         st.write("Integração direta com o Make, Mercado Pago e Supabase.")
         
@@ -230,7 +279,7 @@ else:
         st.header("Configurações do Banco de Dados e Sistema")
         st.write("Gerencie a conexão com o Supabase e os parâmetros globais do aplicativo.")
 
-        st.text_input("URL do Supabase", value="https://seu-projeto.supabase.co", placeholder="Cole sua URL do Supabase")
+        st.text_input("URL du Supabase", value="https://seu-projeto.supabase.co", placeholder="Cole sua URL do Supabase")
         st.text_input("Chave API (Service Role)", type="password", placeholder="Cole sua chave secreta")
 
         if st.button("Salvar Configurações"):
