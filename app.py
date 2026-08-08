@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 # --- COLE A SUA URL DO WEBHOOK DO MAKE.COM NA LINHA ABAIXO ---
-WEBHOOK_ASSINATURA_FIXO = https://hook.us2.make.com/o7y6dcny8eujjx07vorwwj2rur58x971
+WEBHOOK_ASSINATURA_FIXO = "https://hook.us2.make.com/o7y6dcny8eujjx07vorwwj2rur58x971
 # -------------------------------------------------------------
 
 # Estilo CSS para inputs legíveis
