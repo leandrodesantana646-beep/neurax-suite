@@ -1,101 +1,100 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurax - Cobrança Pix</title>
+import streamlit as st
+import requests
+
+# Configuração da página
+st.set_page_config(
+    page_title="Neurax Business Suite",
+    page_icon="⚡",
+    layout="centered"
+)
+
+# Estilo CSS para garantir letras pretas e fundo legível nos inputs
+st.markdown("""
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-        body {
-            background-color: #f4f6f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            padding: 20px;
-        }
-        .neurax-container {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        h2 {
-            color: #333333;
-            font-size: 20px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            font-size: 14px;
-            color: #333333;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        /* CAMPO DE TEXTO COM LETRA PRETA GARANTIDA */
-        input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            color: #000000 !important;
-            background-color: #ffffff !important;
-            border: 1px solid #cccccc;
-            border-radius: 8px;
-            outline: none;
-        }
-        input::placeholder {
-            color: #888888;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:active {
-            background-color: #4338ca;
-        }
+    .stTextInput input {
+        color: #000000 !important;
+        background-color: #ffffff !important;
+    }
+    .main {
+        background-color: #f4f6f9;
+    }
     </style>
-</head>
-<body>
+""", unsafe_allow_html=True)
 
-    <div class="neurax-container">
-        <h2>Neurax - Gerar Pix</h2>
-        
-        <div class="input-group">
-            <label for="descricao">Descrição do Produto</label>
-            <input type="text" id="descricao" placeholder="Ex: Consultoria">
-        </div>
+st.title("⚡ Neurax Business Suite")
+st.write("Sua plataforma completa de lucro, automação e vendas via Pix.")
 
-        <div class="input-group">
-            <label for="valor">Valor (R$)</label>
-            <input type="text" id="valor" placeholder="Ex: 150.00">
-        </div>
+# Menu de navegação lateral para alternar entre as ferramentas
+menu = st.sidebar.radio("Ferramentas", ["💳 Gerar Pix", "📊 Relatório de Vendas", "🚀 Indicação & Parcerias"])
 
-        <div class="input-group">
-            <label for="nome">Nome do Cliente</label>
-            <input type="text" id="nome" placeholder="Ex: João Silva">
-        </div>
+if menu == "💳 Gerar Pix":
+    st.header("Gerador de Cobrança Pix")
+    st.write("Integração direta com o Make e Mercado Pago.")
+    
+    webhook_url = st.text_input("URL do Webhook do Make", placeholder="https://hook.us2.make.com/...")
+    descricao = st.text_input("Descrição do Produto", placeholder="Ex: Consultoria Neurax")
+    valor = st.text_input("Valor (R$)", placeholder="Ex: 10.00")
+    nome = st.text_input("Nome do Cliente", placeholder="Ex: João Silva")
+    email = st.text_input("E-mail do Cliente", placeholder="Ex: cliente@email.com")
 
-        <button onclick="alert('Dados prontos para enviar ao Make!')">Gerar Cobrança</button>
-    </div>
+    if st.button("Gerar Cobrança Pix", type="primary"):
+        if not webhook_url:
+            st.error("Insira a URL do Webhook do Make.")
+        elif not descricao or not valor or not nome:
+            st.warning("Preencha todos os campos obrigatórios.")
+        else:
+            try:
+                valor_tratado = float(valor.replace(",", "."))
+            except ValueError:
+                st.error("O valor deve ser numérico (ex: 10.00).")
+                st.stop()
 
-</body>
-</html>
+            payload = {
+                "description": descricao,
+                "transaction_amount": valor_tratado,
+                "payer": {
+                    "first_name": nome,
+                    "email": email if email else "cliente@email.com"
+                }
+            }
+
+            with st.spinner("Enviando dados para o Make..."):
+                try:
+                    response = requests.post(webhook_url, json=payload)
+                    if response.status_code in [200, 201]:
+                        st.success("Cobrança gerada e integrada com sucesso!")
+                        st.json(response.json() if response.text else {"status": "Sucesso"})
+                    else:
+                        st.error(f"Erro na comunicação: Status {response.status_code}")
+                        st.text(response.text)
+                except Exception as e:
+                    st.error(f"Não foi possível conectar ao webhook: {e}")
+
+elif menu == "📊 Relatório de Vendas":
+    st.header("Relatório Automático de Vendas")
+    st.write("Acompanhe o faturamento e o fluxo de caixa em tempo real.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Faturamento Hoje", value="R$ 230,00", delta="+15%")
+    with col2:
+        st.metric(label="Pix Gerados", value="4", delta="1 pendente")
+
+    st.markdown("### Últimas Transações")
+    dados_vendas = [
+        {"Cliente": "João Silva", "Valor": "R$ 150,00", "Status": "Aprovado"},
+        {"Cliente": "Maria Souza", "Valor": "R$ 80,00", "Status": "Pendente"},
+    ]
+    st.table(dados_vendas)
+
+elif menu == "🚀 Indicação & Parcerias":
+    st.header("Sistema de Indicação e Crescimento")
+    st.write("Emplaque pessoas e negócios compartilhando o ecossistema Neurax.")
+    
+    st.info("Compartilhe seu link exclusivo e ajude outras empresas a lucrarem mais com Pix automatizado.")
+    
+    link_indicacao = "https://neurax.app/convite/NEURAX-LUCRO2026"
+    st.text_input("Seu Link de Parceria", value=link_indicacao, disabled=True)
+    
+    if st.button("Copiar Link de Parceria"):
+        st.success("Link pronto para divulgar e expandir seus negócios!")
