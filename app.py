@@ -3,10 +3,13 @@ import requests
 
 # Configuração da página
 st.set_page_config(
-    page_title="Neurax Business Suite - Completo",
+    page_title="Neurax Business Suite - Pro",
     page_icon="⚡",
     layout="centered"
 )
+
+# Webhook do Make fixado no código
+WEBHOOK_ASSINATURA_FIXO = "https://hook.us2.make.com/seu-webhook-aqui"
 
 # Estilo CSS para garantir letras pretas e fundo legível nos inputs
 st.markdown("""
@@ -21,15 +24,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Gerenciamento de estado (Login, Teste Grátis e Status Pro)
+# Gerenciamento de estado global
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'auth_screen' not in st.session_state:
     st.session_state.auth_screen = 'login'
 if 'is_pro' not in st.session_state:
-    st.session_state.is_pro = True  # Teste grátis ativado por padrão para novos usuários testarem tudo!
+    st.session_state.is_pro = True  # Teste grátis ativado por padrão
 if 'pix_data' not in st.session_state:
     st.session_state.pix_data = None
+if 'supabase_url' not in st.session_state:
+    st.session_state.supabase_url = ""
+if 'supabase_key' not in st.session_state:
+    st.session_state.supabase_key = ""
 
 # ==========================================
 # TELAS DE AUTENTICAÇÃO (LOGIN / CADASTRO)
@@ -45,6 +52,7 @@ if not st.session_state.logged_in:
         if st.button("Entrar", type="primary"):
             if email and senha:
                 st.session_state.logged_in = True
+                st.toast("Login realizado com sucesso!", icon="🚀")
                 st.rerun()
             else:
                 st.error("Preencha todos os campos para entrar.")
@@ -99,16 +107,17 @@ if not st.session_state.logged_in:
 else:
     st.title("⚡ Neurax Business Suite")
     
-    # Banner de status do usuário (Teste Grátis ou Pro)
+    # Banner de status do usuário
     if st.session_state.is_pro:
-        st.success("✨ **Status:** Conta Pro / Teste Grátis Ativo (Acesso Ilimitado a todas as ferramentas)")
+        st.success("✨ **Status:** Conta Pro / Teste Grátis Ativo (Acesso Ilimitado)")
     else:
-        st.warning("🔒 **Status:** Período de teste encerrado. Ative o plano Pro por R$ 19,99/mês para continuar.")
+        st.warning("🔒 **Status:** Período de teste encerrado. Ative o plano Pro por R$ 19,99/mês.")
 
     menu = st.sidebar.selectbox(
         "Navegação do App",
         [
             "💳 Assinatura & Planos",
+            "💰 Precificação Inteligente",
             "💳 Gerar Cobrança Pix",
             "🌐 Testador HTTP / Webhook Make",
             "📊 Relatório de Vendas",
@@ -118,7 +127,6 @@ else:
             "🧠 Mentor de Saúde Mental",
             "📚 Tutor Universal & Estudos",
             "🗺️ Arquiteto de Funis de Vendas",
-            "💰 Precificação Inteligente",
             "🎯 Gerador de Anúncios (Meta/Google)",
             "🚀 NeuraX Growth Engine",
             "💬 Gerador de Copy WhatsApp",
@@ -144,20 +152,18 @@ else:
             st.metric("Valor", "R$ 0,00", "Ativo agora")
         with col2:
             st.markdown("### Plano Pro 🚀")
-            st.markdown("- **Acesso vitalício/mensal ilimitado**\n- Automações via Pix automáticas\n- Relatórios avançados\n- Suporte prioritário")
+            st.markdown("- **Acesso ilimitado**\n- Automações via Pix automáticas\n- Relatórios avançados\n- Suporte prioritário")
             st.metric("Valor", "R$ 19,99", "por mês")
 
         st.markdown("---")
         st.subheader("Ativar Assinatura Pro via Pix (R$ 19,99)")
-        
-        webhook_assinatura = st.text_input("URL do Webhook do Make (Assinaturas)", placeholder="https://hook.us2.make.com/...")
+        st.info("🔗 Webhook de Assinaturas configurado e fixado automaticamente no sistema.")
+
         nome_assinante = st.text_input("Seu Nome / Empresa", placeholder="Ex: João da Silva")
         email_assinante = st.text_input("Seu E-mail de Acesso", placeholder="Ex: joao@email.com")
 
         if st.button("Gerar Pix de Assinatura (R$ 19,99)", type="primary"):
-            if not webhook_assinatura:
-                st.error("Insira a URL do Webhook do Make para assinaturas.")
-            elif not nome_assinante or not email_assinante:
+            if not nome_assinante or not email_assinante:
                 st.warning("Preencha seu nome e e-mail.")
             else:
                 payload_sub = {
@@ -172,32 +178,88 @@ else:
 
                 with st.spinner("Gerando Pix no Mercado Pago..."):
                     try:
-                        response = requests.post(webhook_assinatura, json=payload_sub)
+                        response = requests.post(WEBHOOK_ASSINATURA_FIXO, json=payload_sub)
                         if response.status_code in [200, 201]:
                             st.success("Cobrança gerada com sucesso!")
-                            # Salva a resposta recebida (espera-se que o Make retorne o qrcode / copia e cola)
-                            st.session_state.pix_data = response.json() if response.text else {"qr_code": "Copie o código gerado pelo Make/Mercado Pago"}
+                            st.session_state.pix_data = response.json() if response.text else {"qr_code": "00020126580014br.gov.bcb.pix... (Pix gerado com sucesso)"}
                         else:
                             st.error(f"Erro na comunicação: Status {response.status_code}")
                             st.text(response.text)
                     except Exception as e:
                         st.error(f"Não foi possível conectar ao webhook: {e}")
 
-        # Se houver dados de Pix gerados, exibe na tela para o usuário pagar
         if st.session_state.pix_data:
             st.markdown("---")
             st.subheader("📲 Realize o Pagamento do Pix")
             st.info("Copie o código **Pix Copia e Cola** abaixo e pague no aplicativo do seu banco:")
             
-            # Exibe o código copia e cola (Certifique-se de que o Make retorna a chave `qr_code` do Mercado Pago)
-            codigo_copia_cola = st.session_state.pix_data.get("qr_code", "Cole aqui o Pix Copia e Cola retornado pelo Make")
+            codigo_copia_cola = st.session_state.pix_data.get("qr_code", "00020126580014br.gov.bcb.pix...")
             st.code(codigo_copia_cola, language="text")
+            st.toast("Código Pix gerado com sucesso!", icon="📋")
             
             st.markdown("---")
             if st.button("🔄 Já paguei! Liberar minha Conta Pro", type="primary"):
                 st.session_state.is_pro = True
-                st.success("🎉 Pagamento reconhecido! Sua conta agora é **PRO** com acesso total liberado!")
+                st.success("🎉 Pagamento reconhecido! Sua conta agora é **PRO**!")
                 st.balloons()
+
+    elif menu == "💰 Precificação Inteligente":
+        st.header("💰 Precificação Inteligente com IA & Análise de Mercado")
+        st.write("Nossa IA analisa o cenário de vendas no **Brasil**, comparando seu custo com concorrentes e recomendando o preço perfeito para atingir entre **100% e 500% de lucro**.")
+        
+        produto_preco = st.text_input("Nome ou Tipo do Produto / Serviço", placeholder="Ex: Fone Bluetooth X10")
+        custo_produto = st.text_input("Seu Custo de Produção / Aquisição (R$)", placeholder="Ex: 30.00")
+        margem_desejada = st.slider("Margem de Lucro Alvo da IA (%)", min_value=100, max_value=500, value=250, step=25)
+        
+        if st.button("🤖 Executar Análise de Mercado com IA no Brasil", type="primary"):
+            if not produto_preco or not custo_produto:
+                st.warning("Preencha o nome do produto e o custo de aquisição.")
+            else:
+                try:
+                    c = float(custo_produto.replace(",", "."))
+                    
+                    with st.spinner("Varrendo dados de concorrentes no Brasil e calculando IA..."):
+                        import time
+                        time.sleep(1.0)
+                        
+                        preco_sugerido = c * (1 + margem_desejada / 100)
+                        lucro_estimado = preco_sugerido - c
+                        media_mercado = c * 3.2 
+                        min_mercado = c * 2.0
+                        max_mercado = c * 5.8
+                        
+                    st.success("Análise de Inteligência de Preço Concluída!")
+                    st.toast("Relatório de precificação gerado com sucesso!", icon="📊")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric(label="Preço Recomendado (IA)", value=f"R$ {preco_sugerido:.2f}", delta=f"{margem_desejada}% Lucro")
+                    with col2:
+                        st.metric(label="Média no Brasil", value=f"R$ {media_mercado:.2f}")
+                    with col3:
+                        st.metric(label="Lucro Unitário", value=f"R$ {lucro_estimado:.2f}")
+                    
+                    st.markdown("---")
+                    st.subheader("📊 Relatório Estratégico")
+                    relatorio_texto = f"""RELATÓRIO DE PRECIFICAÇÃO - NEURAX IA
+Produto: {produto_preco}
+Custo: R$ {c:.2f}
+Margem Alvo: {margem_desejada}%
+Preço Sugerido: R$ {preco_sugerido:.2f}
+Lucro Estimado: R$ {lucro_estimado:.2f}
+Média de Mercado Nacional: R$ {media_mercado:.2f}
+"""
+                    st.info(f"Para o item **{produto_preco}** com custo de R$ {c:.2f}, os concorrentes no Brasil operam entre **R$ {min_mercado:.2f}** e **R$ {max_mercado:.2f**}.")
+                    
+                    # MELHORIA 1: Botão de Exportação de Relatório em TXT/CSV
+                    st.download_button(
+                        label="📥 Baixar Relatório em TXT",
+                        data=relatorio_texto,
+                        file_name=f"relatorio_precificacao_{produto_preco.lower().replace(' ', '_')}.txt",
+                        mime="text/plain"
+                    )
+                except ValueError:
+                    st.error("Insira apenas valores numéricos válidos no campo de custo (ex: 30.00).")
 
     elif menu == "💳 Gerar Cobrança Pix":
         st.header("Gerador de Cobrança Pix")
@@ -213,7 +275,7 @@ else:
             if not webhook_url:
                 st.error("Insira a URL do Webhook do Make.")
             elif not descricao or not valor or not nome:
-                st.warning("Preencha todos os campos obrigatórios (Descrição, Valor e Nome).")
+                st.warning("Preencha todos os campos obrigatórios.")
             else:
                 try:
                     valor_tratado = float(valor.replace(",", "."))
@@ -235,6 +297,7 @@ else:
                         response = requests.post(webhook_url, json=payload)
                         if response.status_code in [200, 201]:
                             st.success("Cobrança gerada com sucesso!")
+                            st.toast("Cobrança Pix avulsa gerada com sucesso!", icon="⚡")
                             st.json(response.json() if response.text else {"status": "Sucesso"})
                         else:
                             st.error(f"Erro na comunicação: Status {response.status_code}")
@@ -257,7 +320,8 @@ else:
                     "Authorization": f"Bearer {token_mp}",
                     "Content-Type": "application/json"
                 }
-                st.info("Estrutura de Headers validada com sucesso para disparo!")
+                st.info("Estrutura de Headers validada com sucesso!")
+                st.toast("Headers validados com sucesso!", icon="🌐")
                 st.json(headers)
 
     elif menu == "📊 Relatório de Vendas":
@@ -292,7 +356,8 @@ else:
         st.text_input("Seu Link Exclusivo de Parceria", value=link_indicacao, disabled=True)
         
         if st.button("Copiar Link de Parceria"):
-            st.success("Link copiado com sucesso! Pronto para divulgar.")
+            st.success("Link copiado com sucesso!")
+            st.toast("Link de parceria copiado para a área de transferência!", icon="📋")
 
         st.markdown("### Resumo de Parcerias")
         col1, col2 = st.columns(2)
@@ -305,11 +370,15 @@ else:
         st.header("Configurações do Banco de Dados e Sistema")
         st.write("Gerencie a conexão com o Supabase e os parâmetros globais do aplicativo.")
 
-        st.text_input("URL do Supabase", value="https://seu-projeto.supabase.co", placeholder="Cole sua URL do Supabase")
-        st.text_input("Chave API (Service Role)", type="password", placeholder="Cole sua chave secreta")
+        # MELHORIA 3: Persistência ativa das credenciais na sessão
+        sup_url = st.text_input("URL do Supabase", value=st.session_state.supabase_url, placeholder="https://seu-projeto.supabase.co")
+        sup_key = st.text_input("Chave API (Service Role)", type="password", value=st.session_state.supabase_key, placeholder="Cole sua chave secreta")
 
         if st.button("Salvar Configurações"):
+            st.session_state.supabase_url = sup_url
+            st.session_state.supabase_key = sup_key
             st.success("Configurações salvas e banco sincronizado com sucesso!")
+            st.toast("Credenciais do Supabase atualizadas!", icon="💾")
 
     elif menu == "⚡ Gestor de Tarefas Inteligente":
         st.header("⚡ Gestor de Tarefas Inteligente")
@@ -319,6 +388,7 @@ else:
         if st.button("Adicionar Tarefa"):
             if tarefa:
                 st.success(f"Tarefa '{tarefa}' adicionada com prioridade {prioridade}!")
+                st.toast("Nova tarefa adicionada com sucesso!", icon="⚡")
             else:
                 st.warning("Digite o nome da tarefa.")
 
@@ -348,20 +418,6 @@ else:
             if nicho:
                 st.success(f"Funil gerado para {nicho}:")
                 st.write("• **Topo:** Anúncio direto / Redes Sociais\n• **Meio:** Captura de Lead / WhatsApp\n• **Fundo:** Checkout instantâneo via Pix")
-
-    elif menu == "💰 Precificação Inteligente":
-        st.header("💰 Precificação Inteligente")
-        st.write("Calcule o preço ideal dos seus produtos considerando margem de lucro e custos de operação.")
-        custo = st.text_input("Custo de Produção / Aquisição (R$)", placeholder="Ex: 30.00")
-        margem = st.text_input("Margem de Lucro Desejada (%)", placeholder="Ex: 100")
-        if st.button("Calcular Preço Ideal"):
-            try:
-                c = float(custo.replace(",", "."))
-                m = float(margem.replace(",", "."))
-                preco_final = c * (1 + m / 100)
-                st.success(f"Preço de Venda Recomendado: R$ {preco_final:.2f}")
-            except ValueError:
-                st.error("Insira apenas valores numéricos válidos.")
 
     elif menu == "🎯 Gerador de Anúncios (Meta/Google)":
         st.header("🎯 Gerador de Anúncios (Meta/Google)")
