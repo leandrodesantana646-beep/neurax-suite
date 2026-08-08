@@ -21,11 +21,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Gerenciamento de estado para Login/Cadastro
+# Gerenciamento de estado (Login, Teste Grátis e Status Pro)
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'auth_screen' not in st.session_state:
     st.session_state.auth_screen = 'login'
+if 'is_pro' not in st.session_state:
+    st.session_state.is_pro = True  # Teste grátis ativado por padrão para novos usuários testarem tudo!
+if 'pix_data' not in st.session_state:
+    st.session_state.pix_data = None
 
 # ==========================================
 # TELAS DE AUTENTICAÇÃO (LOGIN / CADASTRO)
@@ -56,15 +60,15 @@ if not st.session_state.logged_in:
                 st.rerun()
 
     elif st.session_state.auth_screen == 'register':
-        st.subheader("📝 Criar Nova Conta")
+        st.subheader("📝 Criar Nova Conta (Com Teste Grátis)")
         nome_reg = st.text_input("Nome Completo", placeholder="Seu Nome", key="reg_nome")
         email_reg = st.text_input("E-mail", placeholder="seu@email.com", key="reg_email")
         senha_reg = st.text_input("Senha", type="password", placeholder="********", key="reg_senha")
         conf_senha = st.text_input("Confirmar Senha", type="password", placeholder="********", key="reg_conf")
         
-        if st.button("Cadastrar", type="primary"):
+        if st.button("Cadastrar e Testar Grátis", type="primary"):
             if nome_reg and email_reg and senha_reg and (senha_reg == conf_senha):
-                st.success("Conta criada com sucesso! Faça o login.")
+                st.success("Conta criada! Seu Teste Grátis de todas as ferramentas foi ativado.")
                 st.session_state.auth_screen = 'login'
                 st.rerun()
             else:
@@ -94,7 +98,12 @@ if not st.session_state.logged_in:
 # ==========================================
 else:
     st.title("⚡ Neurax Business Suite")
-    st.write("Ecossistema completo de lucro, automação, assinaturas e ferramentas inteligentes.")
+    
+    # Banner de status do usuário (Teste Grátis ou Pro)
+    if st.session_state.is_pro:
+        st.success("✨ **Status:** Conta Pro / Teste Grátis Ativo (Acesso Ilimitado a todas as ferramentas)")
+    else:
+        st.warning("🔒 **Status:** Período de teste encerrado. Ative o plano Pro por R$ 19,99/mês para continuar.")
 
     menu = st.sidebar.selectbox(
         "Navegação do App",
@@ -130,16 +139,16 @@ else:
         
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("### Plano Free")
-            st.markdown("- Acesso básico\n- Recursos limitados\n- Suporte padrão")
-            st.metric("Valor", "R$ 0,00", "Plano Atual")
+            st.markdown("### Teste Grátis 🎁")
+            st.markdown("- Acesso completo liberado\n- Teste todas as 15+ ferramentas\n- Sem compromisso")
+            st.metric("Valor", "R$ 0,00", "Ativo agora")
         with col2:
             st.markdown("### Plano Pro 🚀")
-            st.markdown("- **Todas as 15+ ferramentas**\n- Automações via Pix ilimitadas\n- Relatórios avançados\n- Suporte prioritário")
+            st.markdown("- **Acesso vitalício/mensal ilimitado**\n- Automações via Pix automáticas\n- Relatórios avançados\n- Suporte prioritário")
             st.metric("Valor", "R$ 19,99", "por mês")
 
         st.markdown("---")
-        st.subheader("Ativar ou Renovar Assinatura Pro")
+        st.subheader("Ativar Assinatura Pro via Pix (R$ 19,99)")
         
         webhook_assinatura = st.text_input("URL do Webhook do Make (Assinaturas)", placeholder="https://hook.us2.make.com/...")
         nome_assinante = st.text_input("Seu Nome / Empresa", placeholder="Ex: João da Silva")
@@ -161,17 +170,34 @@ else:
                     }
                 }
 
-                with st.spinner("Processando assinatura e gerando Pix..."):
+                with st.spinner("Gerando Pix no Mercado Pago..."):
                     try:
                         response = requests.post(webhook_assinatura, json=payload_sub)
                         if response.status_code in [200, 201]:
-                            st.success("Cobrança de assinatura gerada com sucesso!")
-                            st.json(response.json() if response.text else {"status": "Assinatura Iniciada"})
+                            st.success("Cobrança gerada com sucesso!")
+                            # Salva a resposta recebida (espera-se que o Make retorne o qrcode / copia e cola)
+                            st.session_state.pix_data = response.json() if response.text else {"qr_code": "Copie o código gerado pelo Make/Mercado Pago"}
                         else:
                             st.error(f"Erro na comunicação: Status {response.status_code}")
                             st.text(response.text)
                     except Exception as e:
                         st.error(f"Não foi possível conectar ao webhook: {e}")
+
+        # Se houver dados de Pix gerados, exibe na tela para o usuário pagar
+        if st.session_state.pix_data:
+            st.markdown("---")
+            st.subheader("📲 Realize o Pagamento do Pix")
+            st.info("Copie o código **Pix Copia e Cola** abaixo e pague no aplicativo do seu banco:")
+            
+            # Exibe o código copia e cola (Certifique-se de que o Make retorna a chave `qr_code` do Mercado Pago)
+            codigo_copia_cola = st.session_state.pix_data.get("qr_code", "Cole aqui o Pix Copia e Cola retornado pelo Make")
+            st.code(codigo_copia_cola, language="text")
+            
+            st.markdown("---")
+            if st.button("🔄 Já paguei! Liberar minha Conta Pro", type="primary"):
+                st.session_state.is_pro = True
+                st.success("🎉 Pagamento reconhecido! Sua conta agora é **PRO** com acesso total liberado!")
+                st.balloons()
 
     elif menu == "💳 Gerar Cobrança Pix":
         st.header("Gerador de Cobrança Pix")
@@ -208,7 +234,7 @@ else:
                     try:
                         response = requests.post(webhook_url, json=payload)
                         if response.status_code in [200, 201]:
-                            st.success("Cobrança gerada e integrada com sucesso!")
+                            st.success("Cobrança gerada com sucesso!")
                             st.json(response.json() if response.text else {"status": "Sucesso"})
                         else:
                             st.error(f"Erro na comunicação: Status {response.status_code}")
@@ -279,7 +305,7 @@ else:
         st.header("Configurações do Banco de Dados e Sistema")
         st.write("Gerencie a conexão com o Supabase e os parâmetros globais do aplicativo.")
 
-        st.text_input("URL du Supabase", value="https://seu-projeto.supabase.co", placeholder="Cole sua URL do Supabase")
+        st.text_input("URL do Supabase", value="https://seu-projeto.supabase.co", placeholder="Cole sua URL do Supabase")
         st.text_input("Chave API (Service Role)", type="password", placeholder="Cole sua chave secreta")
 
         if st.button("Salvar Configurações"):
