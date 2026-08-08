@@ -8,10 +8,9 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- COLE A SUA URL DO WEBHOOK DO MAKE.COM NA LINHA ABAIXO ---
+# --- COLE A SUA URL DO WEBHOOK DO MAKE.COM ABAIXO ---
 WEBHOOK_ASSINATURA_FIXO = "https://hook.us2.make.com/o7y6dcny8eujjx07vorwwj2rur58x971"
-
-# -------------------------------------------------------------
+# ----------------------------------------------------
 
 # Estilo CSS para inputs legíveis
 st.markdown("""
@@ -158,7 +157,10 @@ else:
                         response = requests.post(WEBHOOK_ASSINATURA_FIXO, json=payload_sub)
                         if response.status_code in [200, 201]:
                             st.success("Cobrança gerada com sucesso!")
-                            st.session_state.pix_data = response.json() if response.text else {"qr_code": "00020126580014br.gov.bcb.pix..."}
+                            try:
+                                st.session_state.pix_data = response.json()
+                            except:
+                                st.session_state.pix_data = {"qr_code": response.text if response.text else "00020126580014br.gov.bcb.pix..."}
                         else:
                             st.error(f"Erro na comunicação: Status {response.status_code}. Verifique se o cenário está ativo no Make.")
                     except Exception as e:
