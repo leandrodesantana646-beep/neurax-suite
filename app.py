@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import base64
 import uuid
+import json
+import os
 from io import BytesIO
 from PIL import Image
 
@@ -15,19 +17,14 @@ st.set_page_config(
 # Estilo visual avançado - Padrão SaaS Enterprise
 st.markdown("""
     <style>
-    /* Fundo geral da página */
     .main {
         background-color: #f8fafc;
     }
-    
-    /* Títulos e Tipografia */
     h1, h2, h3 {
         color: #0f172a !important;
         font-family: 'Inter', sans-serif;
         font-weight: 700;
     }
-    
-    /* Inputs de texto e senha com visual moderno */
     .stTextInput input, .stTextInput input[type="password"], .stTextArea textarea {
         color: #0f172a !important;
         background-color: #ffffff !important;
@@ -35,8 +32,6 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 10px !important;
     }
-    
-    /* Botões principais com destaque */
     .stButton button[kind="primary"] {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         color: white !important;
@@ -45,8 +40,6 @@ st.markdown("""
         border: none !important;
         box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
     }
-    
-    /* Sidebar customizada */
     [data-testid="stSidebar"] {
         background-color: #0f172a;
         color: #ffffff;
@@ -54,12 +47,32 @@ st.markdown("""
     [data-testid="stSidebar"] .stSelectbox label, [data-testid="stSidebar"] span {
         color: #f8fafc !important;
     }
-    
     div.stMarkdown {
         font-family: 'Inter', sans-serif;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Sistema de Persistência de Contas (Salva em arquivo JSON)
+USERS_FILE = "users.json"
+
+def carregar_usuarios():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "admin@neurax.com": {"senha": "123", "nome": "Administrador", "is_pro": False}
+    }
+
+def salvar_usuarios(users_dict):
+    try:
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(users_dict, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.error(f"Erro ao salvar usuário: {e}")
 
 # Gerenciamento de estado global
 if 'logged_in' not in st.session_state:
@@ -72,14 +85,14 @@ if 'pix_data' not in st.session_state:
     st.session_state.pix_data = None
 if 'current_user' not in st.session_state:
     st.session_state.current_user = None
-if 'users' not in st.session_state:
-    st.session_state.users = {
-        "admin@neurax.com": {"senha": "123", "nome": "Administrador", "is_pro": False}
-    }
+
+# Carrega os usuários salvos no arquivo
+users = carregar_usuarios()
+
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# Configuração segura do Token do Mercado Pago (via st.secrets ou padrão)
+# Configuração segura do Token do Mercado Pago
 try:
     ACCESS_TOKEN = st.secrets["MERCADO_PAGO_TOKEN"]
 except Exception:
@@ -97,10 +110,11 @@ if not st.session_state.logged_in:
         senha = st.text_input("Senha", type="password", placeholder="********", key="login_senha")
         
         if st.button("Entrar", type="primary"):
-            if email in st.session_state.users and st.session_state.users[email]["senha"] == senha:
+            users = carregar_usuarios()
+            if email in users and users[email]["senha"] == senha:
                 st.session_state.logged_in = True
                 st.session_state.current_user = email
-                st.session_state.is_pro = st.session_state.users[email]["is_pro"]
+                st.session_state.is_pro = users[email]["is_pro"]
                 st.toast("Login realizado com sucesso!", icon="🚀")
                 st.rerun()
             else:
@@ -124,18 +138,20 @@ if not st.session_state.logged_in:
         conf_senha = st.text_input("Confirmar Senha", type="password", placeholder="********", key="reg_conf")
         
         if st.button("Cadastrar", type="primary"):
+            users = carregar_usuarios()
             if not nome_reg or not email_reg or not senha_reg:
                 st.warning("Preencha todos os campos.")
             elif senha_reg != conf_senha:
                 st.error("As senhas não coincidem.")
-            elif email_reg in st.session_state.users:
+            elif email_reg in users:
                 st.error("Este e-mail já está cadastrado.")
             else:
-                st.session_state.users[email_reg] = {
+                users[email_reg] = {
                     "senha": senha_reg,
                     "nome": nome_reg,
                     "is_pro": False
                 }
+                salvar_usuarios(users)
                 st.success("Conta criada com sucesso! Faça login.")
                 st.session_state.auth_screen = 'login'
                 st.rerun()
@@ -149,7 +165,8 @@ if not st.session_state.logged_in:
         email_rec = st.text_input("E-mail", placeholder="seu@email.com", key="rec_email")
         
         if st.button("Enviar Instruções", type="primary"):
-            if email_rec in st.session_state.users:
+            users = carregar_usuarios()
+            if email_rec in users:
                 st.success("Instruções de recuperação enviadas para o seu e-mail!")
             else:
                 st.error("E-mail não encontrado.")
@@ -162,8 +179,9 @@ if not st.session_state.logged_in:
 # APLICATIVO PRINCIPAL (DESIGN ENTERPRISE + IA)
 # ==========================================
 else:
+    users = carregar_usuarios()
     user_email = st.session_state.current_user
-    user_data = st.session_state.users[user_email]
+    user_data = users.get(user_email, {"nome": "Usuário", "is_pro": False})
     
     st.title(f"⚡ Neurax Business Suite - Olá, {user_data['nome']}")
     
@@ -218,8 +236,6 @@ else:
 
             if st.button("Gerar Pix Oficial no Mercado Pago", type="primary"):
                 url = "https://api.mercadopago.com/v1/payments"
-                
-                # Cabeçalhos corrigidos com X-Idempotency-Key gerado por uuid
                 headers = {
                     "Authorization": f"Bearer {ACCESS_TOKEN}",
                     "Content-Type": "application/json",
@@ -266,8 +282,11 @@ else:
                 
                 st.text_area("Pix Copia e Cola:", value=st.session_state.pix_data.get("qr_code", ""), height=100)
                 
-                if st.button("Já paguei! Liberar Acesso Pro", type="primary"):
-                    st.session_state.users[user_email]["is_pro"] = True
+                if st.button("🔄 Já paguei! Liberar Acesso Pro", type="primary"):
+                    users = carregar_usuarios()
+                    if user_email in users:
+                        users[user_email]["is_pro"] = True
+                        salvar_usuarios(users)
                     st.session_state.is_pro = True
                     st.session_state.pix_data = None
                     st.balloons()
