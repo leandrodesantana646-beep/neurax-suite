@@ -115,7 +115,7 @@ if not st.session_state.logged_in:
     with col_brand:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("# ⚡ Neurax Master AI")
-        st.markdown("### O Aplicativo que Resolve Todos os Seus Seus Problemas e Garante seu Lucro.")
+        st.markdown("### O Aplicativo que Resolve Todos os Seus Problemas e Garante seu Lucro.")
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
         * 🧠 **Cérebro Único Absoluto:** Uma inteligência artificial sênior que resolve qualquer dúvida.
@@ -262,7 +262,8 @@ else:
         Compartilhe seu link exclusivo abaixo. A cada indicação confirmada, você ganha vantagens e créditos em nossa plataforma.
         """)
         
-        link_indicacao = f"https://neurax-master-ai.streamlit.app/?ref={user_data.get('codigo_indicacao', 'NRX')}"
+        # Link ATUALIZADO AQUI
+        link_indicacao = f"https://neurax-suite-bz6izlp5hikpysvm4oejvc.streamlit.app/?ref={user_data.get('codigo_indicacao', 'NRX')}"
         
         with st.container(border=True):
             st.subheader("Seu Link Exclusivo de Indicação")
