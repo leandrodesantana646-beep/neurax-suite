@@ -60,12 +60,24 @@ if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 users = carregar_usuarios()
 ref_code = st.query_params.get("ref")
 
+# --- CAPTURA DE RETORNO DO PAGAMENTO AUTOMÁTICO ---
+status_pagamento = st.query_params.get("status")
+if status_pagamento == "sucesso" and st.session_state.get('logged_in'):
+    user_email = st.session_state.current_user
+    if user_email in users and not users[user_email].get("is_pro", False):
+        users[user_email]["is_pro"] = True
+        salvar_usuarios(users)
+        st.balloons()
+        st.success("🎉 Pagamento confirmado com sucesso! Seu acesso PRO foi liberado automaticamente.")
+
 if not st.session_state.logged_in:
-    col_l1, col_l2 = st.columns([1, 4])
-    with col_l1:
-        if os.path.exists("logo.png"): st.image("logo.png", width=100)
-    with col_l2:
-        st.subheader("🔑 Acesse o Motor de Lucros")
+    # --- LOGOTIPO CENTRALIZADO NA TELA DE LOGIN ---
+    if os.path.exists("logo.png"):
+        col_c1, col_c2, col_c3 = st.columns([1, 1, 1])
+        with col_c2:
+            st.image("logo.png", use_container_width=True)
+            
+    st.subheader("🔑 Acesse o Motor de Lucros")
         
     email = st.text_input("E-mail")
     senha = st.text_input("Senha", type="password")
@@ -163,7 +175,7 @@ else:
         **Valor:** R$ 49,99 / mês
         """)
         st.link_button("Assinar R$ 49,99/mês", "https://mpago.la/2WjVnvA")
-        st.info("💡 Após a confirmação do pagamento, seu acesso Pro é liberado automaticamente pelo administrador.")
+        st.info("💡 Após concluir o pagamento no Mercado Pago, você retornará ao app e seu acesso PRO será liberado automaticamente.")
 
     elif menu == "🎁 Indique e Ganhe":
         st.header("🎁 Programa de Embaixadores")
