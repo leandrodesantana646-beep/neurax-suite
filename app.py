@@ -75,7 +75,7 @@ def salvar_usuarios(users_dict):
     except Exception as e:
         st.error(f"Erro ao salvar usuário: {e}")
 
-# Motor Central de Inteligência Artificial Avançado
+# Motor Central de Inteligência Artificial Avançado (Incluindo Recursos Enterprise)
 def motor_ia_neurax(prompt_contexto, acao):
     if acao == "precificacao":
         produto, custo, margem = prompt_contexto
@@ -133,6 +133,41 @@ def motor_ia_neurax(prompt_contexto, acao):
 - **Lucro Líquido Estimado:** R$ {lucro_projetado:,.2f}
 - **Parecer da IA:** Cenário altamente sustentável. O investimento adicional se paga em menos de 14 dias com base na taxa histórica de conversão."""
         return simulacao
+
+    # --- NOVOS RECURSOS ENTERPRISE ---
+    elif acao == "raio_x_negocio":
+        return """👑 **Chief AI Officer - Relatório de Saúde 360°:**
+- **Nota de Saúde Empresarial:** **88 / 100** 🟢 (Excelente nível de tração)
+- **Diagnóstico Executivo:** Operação com ótima margem bruta e fluxo de caixa estável, mas com gargalos pontuais na conversão de tráfego orgânico.
+- **As 3 Prioridades Absolutas da Semana:**
+  1. **Ajustar a Ancoragem de Preço:** Revisar o posicionamento do produto principal para capturar o público de maior ticket.
+  2. **Recuperação de Carrinho:** Lançar automação de recuperação via e-mail e WhatsApp para os leads dos últimos 7 dias.
+  3. **Otimização de Custos:** Podar ferramentas de software redundantes para elevar o lucro líquido em até 4%."""
+
+    elif acao == "quebra_obocoes":
+        obj, prod = prompt_contexto
+        return f"""🎯 **Argumento Cirúrgico de Quebra de Objeção por IA:**
+- **Objeção Detectada:** *"{obj}"*
+- **Produto Relacionado:** {prod}
+- **Script de Reversão Comportamental:**
+  *"Eu compreendo totalmente a sua cautela com o investimento inicial. No entanto, pense comigo: quanto o seu negócio deixa de faturar todos os dias por falta de automação e precisão? O {prod} foi desenhado justamente para se pagar nas primeiras semanas de uso através da economia de tempo e otimização de margens. Se você focar apenas no custo, deixa de ver o retorno exponencial. Vamos dar o primeiro passo hoje sem riscos?"*"""
+
+    elif acao == "pitch_deck":
+        nome_empresa = prompt_contexto
+        return f"""📊 **Estrutura de Pitch Deck para Investidores - {nome_empresa}:**
+- **Slide 1 (Capa):** {nome_empresa} - A Inteligência Definitiva para Gestão e Escala de Negócios.
+- **Slide 2 (O Problema):** Empreendedores perdem margens e tempo precioso operando no escuro, sem previsibilidade de caixa ou dados precisos.
+- **Slide 3 (A Solução):** Plataforma all-in-one guiada por IA que automatiza precificação, estoque e simulações financeiras em segundos.
+- **Slide 4 (Tamanho de Mercado - TAM/SAM/SOM):** Mercado multibilionário de software corporativo na América Latina.
+- **Slide 5 (Modelo de Negócios):** Receita recorrente previsível (SaaS B2B) com margem de lucro operacional superior a 80%.
+- **Slide 6 (Projeção e Captação):** Escala exponencial baseada em parcerias estratégicas e aquisição digital de baixo custo."""
+
+    elif acao == "co_marketing":
+        nicho = prompt_contexto
+        return f"""🤝 **Plano de Co-Marketing e Parcerias Estratégicas ({nicho}):**
+- **Parceiro Ideal:** Marcas, agências ou prestadores de serviços que atendem exatamente o mesmo público de *{nicho}*, mas sem concorrer diretamente com a sua solução.
+- **Estratégia de Parceria Cruzada:** Realização de um workshop ou webinar conjunto abordando "Como escalar operações com IA", cruzando as bases de leads.
+- **Plano de Ação:** Mapear 5 players estratégicos do mercado complementar, apresentar proposta de afiliação ou cruzamento de audiência com comissão agressiva de 35%."""
 
     return "IA processando solicitação..."
 
@@ -255,13 +290,17 @@ else:
         "Navegação com IA",
         [
             "🧠 Cérebro IA (Copiloto Universal)",
+            "👑 Chief AI Officer (Raio-X 360°)",
             "💳 Assinatura & Planos (Pix)",
             "💰 Precificação Inteligente por IA",
             "📊 Relatório Executivo de Caixa (IA)",
             "📈 Gráficos Preditivos de Faturamento",
             "🎬 Gerador de Criativos para Ads (IA)",
+            "🎯 Gerador de Quebra de Objeções",
             "📦 Gestão de Estoque Preditiva (IA)",
             "🔮 Simulador de Cenários de Negócio",
+            "📊 Construtor de Pitch Deck (Investidores)",
+            "🤝 Simulador de Co-Marketing & Parcerias",
             "🚀 Sistema de Indicação Viral (IA)",
             "⚙️ Configurações & Motor Neural",
             "🚪 Sair (Logout)"
@@ -290,7 +329,21 @@ else:
                     st.markdown(resposta_ia)
                     st.session_state.chat_history.append({"role": "assistant", "content": resposta_ia})
 
-    # 2. ASSINATURA & PLANOS
+    # 2. CHIEF AI OFFICER (RAIO-X 360°)
+    elif menu == "👑 Chief AI Officer (Raio-X 360°)":
+        st.header("👑 Chief AI Officer - Raio-X de Negócios 360°")
+        st.write("A IA atua como sua Diretoria Executiva virtual entregando notas de saúde e prioridades semanais.")
+        
+        if user_data['is_pro']:
+            if st.button("Executar Auditoria Executiva 360°", type="primary"):
+                with st.spinner("Cruzando dados de faturamento, estoque e mercado..."):
+                    relatorio_ceo = motor_ia_neurax(None, "raio_x_negocio")
+                    st.markdown(relatorio_ceo)
+                    st.download_button("📥 Baixar Relatório do CEO (PDF/TXT)", data=relatorio_ceo, file_name="raio_x_ceo.txt", mime="text/plain")
+        else:
+            st.warning("⚠️ O Chief AI Officer está disponível exclusivamente para assinantes Pro.")
+
+    # 3. ASSINATURA & PLANOS
     elif menu == "💳 Assinatura & Planos (Pix)":
         st.header("💳 Ativar Plano Pro com IA (R$ 19,99)")
         
@@ -358,7 +411,7 @@ else:
                     st.success("🎉 Pagamento confirmado pela IA! Acesso Pro liberado.")
                     st.rerun()
 
-    # 3. PRECIFICAÇÃO INTELIGENTE POR IA
+    # 4. PRECIFICAÇÃO INTELIGENTE POR IA
     elif menu == "💰 Precificação Inteligente por IA":
         st.header("💰 Precificação Preditiva Baseada em IA")
         st.write("O algoritmo de IA calcula o preço perfeito combinando seus custos com o comportamento de consumo do mercado.")
@@ -381,7 +434,7 @@ else:
             except ValueError:
                 st.error("Insira apenas números válidos no campo de custo.")
 
-    # 4. RELATÓRIO EXECUTIVO DE CAIXA (IA)
+    # 5. RELATÓRIO EXECUTIVO DE CAIXA (IA)
     elif menu == "📊 Relatório Executivo de Caixa (IA)":
         st.header("📊 Auditoria de Caixa Inteligente")
         if user_data['is_pro']:
@@ -393,13 +446,12 @@ else:
         else:
             st.warning("⚠️ O auditor financeiro por IA está disponível apenas para assinantes Pro.")
 
-    # 5. GRÁFICOS PREDITIVOS DE FATURAMENTO
+    # 6. GRÁFICOS PREDITIVOS DE FATURAMENTO
     elif menu == "📈 Gráficos Preditivos de Faturamento":
         st.header("📈 Projeção Gráfica Preditiva (IA)")
         if user_data['is_pro']:
             st.write("Análise temporal gerada por redes neurais baseada no histórico do seu segmento:")
             
-            # Dados simulados para o gráfico preditivo
             chart_data = pd.DataFrame(
                 {
                     "Faturamento Real": [32000, 35000, 41000, 45000, 48500, None, None],
@@ -412,7 +464,7 @@ else:
         else:
             st.warning("⚠️ Os gráficos preditivos avançados estão disponíveis apenas para assinantes Pro.")
 
-    # 6. GERADOR DE CRIATIVOS PARA ADS (IA)
+    # 7. GERADOR DE CRIATIVOS PARA ADS (IA)
     elif menu == "🎬 Gerador de Criativos para Ads (IA)":
         st.header("🎬 Fábrica de Anúncios e Criativos (IA)")
         st.write("Crie roteiros validados para Reels, TikTok ou campanhas de tráfego pago instantaneamente.")
@@ -428,7 +480,23 @@ else:
             else:
                 st.warning("Preencha o nome do produto e o público-alvo.")
 
-    # 7. GESTÃO DE ESTOQUE PREDITIVA (IA)
+    # 8. GERADOR DE QUEBRA DE OBJEÇÕES
+    elif menu == "🎯 Gerador de Quebra de Objeções":
+        st.header("🎯 Construtor Cirúrgico de Quebra de Objeções")
+        st.write("Insira a objeção enviada pelo cliente no WhatsApp ou reunião para a IA gerar o argumento de reversão perfeito.")
+        
+        obj_input = st.text_input("Objeção do Cliente", placeholder="Ex: 'Achei o preço muito alto' ou 'Vou pensar e te retorno'")
+        prod_obj = st.text_input("Nome do Produto", placeholder="Ex: Neurax Business Suite")
+        
+        if st.button("Gerar Argumento de Vendas", type="primary"):
+            if obj_input and prod_obj:
+                resposta_obj = motor_ia_neurax((obj_input, prod_obj), "quebra_obocoes")
+                st.markdown(resposta_obj)
+                st.download_button("📥 Baixar Script de Vendas", data=resposta_obj, file_name="quebra_obj.txt", mime="text/plain")
+            else:
+                st.warning("Preencha a objeção e o nome do produto.")
+
+    # 9. GESTÃO DE ESTOQUE PREDITIVA (IA)
     elif menu == "📦 Gestão de Estoque Preditiva (IA)":
         st.header("📦 Monitoramento Inteligente de Estoque")
         st.write("A IA analisa o ritmo das suas saídas diárias para evitar rupturas e perda de vendas.")
@@ -445,7 +513,7 @@ else:
             except ValueError:
                 st.error("Insira apenas valores numéricos válidos.")
 
-    # 8. SIMULADOR DE CENÁRIOS DE NEGÓCIO
+    # 10. SIMULADOR DE CENÁRIOS DE NEGÓCIO
     elif menu == "🔮 Simulador de Cenários de Negócio":
         st.header("🔮 Simulador Preditivo de Cenários")
         st.write("Simule o impacto financeiro de mudanças estratégicas em tempo real.")
@@ -457,7 +525,37 @@ else:
             simulacao_res = motor_ia_neurax((fat_base, var_trafego), "simulador_cenarios")
             st.markdown(simulacao_res)
 
-    # 9. SISTEMA DE INDICAÇÃO VIRAL (IA)
+    # 11. CONSTRUTOR DE PITCH DECK (INVESTIDORES)
+    elif menu == "📊 Construtor de Pitch Deck (Investidores)":
+        st.header("📊 Construtor de Pitch Deck para Investidores")
+        st.write("Estruture sua apresentação de captação de recursos profissional com auxílio de inteligência artificial.")
+        
+        empresa_input = st.text_input("Nome da Startup ou Empresa", placeholder="Ex: Neurax Corp")
+        
+        if st.button("Gerar Estrutura de Pitch Deck", type="primary"):
+            if empresa_input:
+                deck_res = motor_ia_neurax(empresa_input, "pitch_deck")
+                st.markdown(deck_res)
+                st.download_button("📥 Baixar Pitch Deck em Texto", data=deck_res, file_name="pitch_deck.txt", mime="text/plain")
+            else:
+                st.warning("Insira o nome da empresa.")
+
+    # 12. SIMULADOR DE CO-MARKETING & PARCERIAS
+    elif menu == "🤝 Simulador de Co-Marketing & Parcerias":
+        st.header("🤝 Simulador de Co-Marketing e Parcerias")
+        st.write("Descubra estratégias de crescimento orgânico cruzando sua audiência com marcas complementares.")
+        
+        nicho_co = st.text_input("Seu Nicho de Mercado", placeholder="Ex: Ferramentas de Gestão e Automação para PMEs")
+        
+        if st.button("Gerar Plano de Co-Marketing", type="primary"):
+            if nicho_co:
+                co_res = motor_ia_neurax(nicho_co, "co_marketing")
+                st.markdown(co_res)
+                st.download_button("📥 Baixar Plano Estratégico", data=co_res, file_name="co_marketing.txt", mime="text/plain")
+            else:
+                st.warning("Insira o seu nicho de mercado.")
+
+    # 13. SISTEMA DE INDICAÇÃO VIRAL (IA)
     elif menu == "🚀 Sistema de Indicação Viral (IA)":
         st.header("🚀 Programa de Indicação Otimizado por IA")
         st.write("A IA gera automaticamente copies persuasivos personalizados com o seu link para redes sociais.")
@@ -467,7 +565,7 @@ else:
         st.info(copy_gerada)
         st.success("Compartilhe este texto e ganhe bônus automáticos gerados pelo sistema neural de parcerias!")
 
-    # 10. CONFIGURAÇÕES & MOTOR NEURAL
+    # 14. CONFIGURAÇÕES & MOTOR NEURAL
     elif menu == "⚙️ Configurações & Motor Neural":
         st.header("⚙️ Configurações da Conta e Ajustes de IA")
         st.text_input("Nome cadastrado", value=user_data['nome'])
@@ -476,7 +574,7 @@ else:
         if st.button("Salvar Configurações"):
             st.success("Parâmetros da IA atualizados com sucesso!")
 
-    # 11. SAIR
+    # 15. SAIR
     elif menu == "🚪 Sair (Logout)":
         st.session_state.logged_in = False
         st.session_state.current_user = None
