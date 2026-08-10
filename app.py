@@ -33,7 +33,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-USERS_FILE = "users_neural_v9.json"
+USERS_FILE = "users_neural_v10.json"
 
 def carregar_usuarios():
     usuarios_padrao = {
@@ -59,7 +59,6 @@ def carregar_usuarios():
                     if email not in dados: 
                         dados[email] = info
                     else:
-                        # Garante chaves de limites e gastos para usuários antigos
                         if "limites" not in dados[email]:
                             dados[email]["limites"] = {"casa": 2000.0, "lazer": 500.0, "despesas": 1000.0}
                         if "gastos_atuais" not in dados[email]:
@@ -76,14 +75,45 @@ def salvar_usuarios(users_dict):
     except Exception as e:
         st.error(f"Erro ao salvar usuário: {e}")
 
-# MOTOR DE INTELIGÊNCIA E CONTROLE DE GASTOS
+# MOTOR DE INTELIGÊNCIA COM CONFIGURAÇÃO DE LIMITES E GASTOS VIA CHAT
 def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, users_dict):
     query = pergunta_ou_comando.lower()
     
-    # Detecta se é um registro de gasto (ex: "gastei 150 com lazer", "paguei 800 de casa")
+    # 1. DETECÇÃO DE ALTERAÇÃO DE LIMITES VIA CHAT (Ex: "mudar limite de casa para 3000")
+    if "limite" in query and any(c in query for c in ["casa", "lazer", "despesas"]):
+        numeros = re.findall(r'\d+[\d,.]*', query.replace('.', '').replace(',', '.'))
+        if numeros:
+            try:
+                novo_limite = float(numeros[0].replace(',', '.'))
+            except:
+                novo_limite = 0.0
+            
+            cat_alvo = "despesas"
+            if "casa" in query: cat_alvo = "casa"
+            elif "lazer" in query: cat_alvo = "lazer"
+            elif "despesas" in query: cat_alvo = "despesas"
+            
+            users_dict[user_email]["limites"][cat_alvo] = novo_limite
+            salvar_usuarios(users_dict)
+            
+            gasto_atual = users_dict[user_email]["gastos_atuais"][cat_alvo]
+            texto_resp = f"⚙️ **Limite Mensal Atualizado com Sucesso!**\n\n* **Categoria:** {cat_alvo.capitalize()}\n* **Novo Teto Definido:** R$ {novo_limite:,.2f}\n* **Gasto Atual na Categoria:** R$ {gasto_atual:,.2f}\n\nSeus parâmetros para as 3 categorias foram salvos automaticamente."
+
+            df_gastos = pd.DataFrame({
+                "Gasto Acumulado (R$)": [users_dict[user_email]["gastos_atuais"]["casa"], users_dict[user_email]["gastos_atuais"]["lazer"], users_dict[user_email]["gastos_atuais"]["despesas"]],
+                "Limite Mensal (R$)": [users_dict[user_email]["limites"]["casa"], users_dict[user_email]["limites"]["lazer"], users_dict[user_email]["limites"]["despesas"]]
+            }, index=["Casa", "Lazer", "Despesas"])
+
+            return {
+                "texto": texto_resp,
+                "grafico_tipo": "barras",
+                "grafico_titulo": "📊 Status Atualizado: Gastos vs. Novos Limites",
+                "grafico_dados": df_gastos
+            }
+
+    # 2. DETECÇÃO DE REGISTRO DE GASTO (Ex: "gastei 150 com lazer")
     palavras_chave_gasto = ["gastei", "paguei", "comprei", "conta de", "gasto"]
     if any(p in query for p in palavras_chave_gasto):
-        # Tenta extrair número
         numeros = re.findall(r'\d+[\d,.]*', query.replace('.', '').replace(',', '.'))
         if numeros:
             try:
@@ -91,7 +121,6 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
             except:
                 valor = 0.0
             
-            # Identifica a categoria
             categoria = "despesas"
             if any(c in query for c in ["casa", "aluguel", "luz", "água", "mercado", "supermercado", "condomínio"]):
                 categoria = "casa"
@@ -100,7 +129,6 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
             elif any(c in query for c in ["despesa", "geral", "carro", "gasolina", "farmácia", "roupa"]):
                 categoria = "despesas"
                 
-            # Atualiza o gasto do usuário
             users_dict[user_email]["gastos_atuais"][categoria] += valor
             gasto_atual = users_dict[user_email]["gastos_atuais"][categoria]
             limite_cat = users_dict[user_email]["limites"][categoria]
@@ -126,7 +154,7 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
                 "grafico_dados": df_gastos
             }
 
-    # Caso seja uma consulta de negócio normal ou pedido de IA
+    # 3. CONSULTA DE NEGÓCIOS / IA GERAL
     termo_limpo = pergunta_ou_comando.title()
     texto_gerado = f"""💼 **Auditoria e Plano de Lucratividade Estratégica**\n\n**1. Diagnóstico Inicial:**\nAnalisamos a sua solicitação (*"{pergunta_ou_comando}"*). O principal gargalo que impede o seu negócio de crescer é a alocação ineficiente de capital.\n\n**2. O Plano de Ação Imediato:**\n* **Foco no Caixa:** Proteja sua margem cortando custos operacionais desnecessários nas próximas 48 horas.\n* **Expansão Comercial:** Ative sua base de clientes antigos com ofertas diretas.\n\n**3. Projeção de Crescimento Financeiro:**\nCom a aplicação deste plano de eficiência, o seu fluxo de caixa tende a evoluir da seguinte forma:"""
 
@@ -159,7 +187,7 @@ if not st.session_state.logged_in:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
         * 🧠 **Cérebro Master Unificado:** Consultoria avançada para qualquer ramo.
-        * 💸 **Controle de Gastos Inteligente:** Basta digitar no chat para registrar gastos em Casa, Lazer e Despesas.
+        * 💸 **Controle de Gastos por Chat:** Digite gastos ou atualize limites de Casa, Lazer e Despesas na hora.
         * 🚨 **Alertas no WhatsApp:** Relatórios instantâneos caso você ultrapasse seus limites mensais.
         """)
     with col_form:
@@ -258,7 +286,7 @@ else:
 
     if menu == "⚡ Master IA & Controle de Gastos":
         st.markdown("### ⚡ Cérebro Master e Gestão de Orçamento")
-        st.markdown("<p style='color: #64748b; font-size: 13px;'>Dica: Digite perguntas de negócios ou registre gastos diretamente aqui (ex: <i>'Gastei 350 reais com lazer hoje'</i> ou <i>'Paguei 1200 de aluguel da casa'</i>).</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px;'>Dica: Registre gastos (ex: <i>'Gastei 250 com lazer'</i>) ou ajuste seus limites conversando (ex: <i>'Mudar limite de casa para 3500'</i>).</p>", unsafe_allow_html=True)
         
         pode_usar = user_data['is_pro'] or (not user_data['trial_usado'])
         
@@ -266,7 +294,7 @@ else:
             st.warning("⚠️ **Seu único teste gratuito já foi utilizado!** Para continuar tendo acesso ilimitado às respostas e relatórios financeiros da IA, ative sua Conta Pro.")
         else:
             if not user_data['is_pro']:
-                st.info("ℹ️ Você está utilizando o seu **1 teste gratuito exclusivo**. Aproveite para testar o controle de gastos agora!")
+                st.info("ℹ️ Você está utilizando o seu **1 teste gratuito exclusivo**. Aproveite para testar o sistema agora!")
 
             for i, message in enumerate(st.session_state.chat_history):
                 with st.chat_message(message["role"]):
@@ -288,7 +316,7 @@ else:
                         with col_d:
                             st.download_button("📥 Baixar Relatório (TXT)", data=message['content']['texto'], file_name=f"neurax_relatorio_{i}.txt", mime="text/plain", key=f"dl_{i}")
 
-            if prompt := st.chat_input("Ex: 'Gastei 250 com lazer' ou 'Como aumentar minhas vendas'"):
+            if prompt := st.chat_input("Ex: 'Gastei 250 com lazer' ou 'Mudar limite de casa para 3000'"):
                 st.session_state.chat_history.append({"role": "user", "content": prompt})
                 st.rerun()
 
@@ -301,7 +329,7 @@ else:
             st.text_input("Copie e envie para seus contatos:", value=link_indicacao, disabled=True)
             st.metric("Amigos já indicados", f"{user_data.get('amigos_indicados', 0)} pessoas")
         
-        encoded_share = urllib.parse.quote(f"Cara, você precisa testar o Neurax Master AI! Ele controla seus gastos divididos em Casa, Lazer e Despesas, manda alertas no WhatsApp e ainda projeta lucros em gráficos. Acesse por aqui: {link_indicacao}")
+        encoded_share = urllib.parse.quote(f"Cara, você precisa testar o Neurax Master AI! Ele controla gastos em Casa, Lazer e Despesas, permite ajustar limites direto no chat, manda alertas no WhatsApp e projeta lucros em gráficos. Acesse por aqui: {link_indicacao}")
         st.markdown(f'<br><a href="https://wa.me/?text={encoded_share}" target="_blank"><button style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🚀 Compartilhar com Amigos no WhatsApp</button></a>', unsafe_allow_html=True)
 
     elif menu == "👑 Painel do Administrador (Gestão)":
