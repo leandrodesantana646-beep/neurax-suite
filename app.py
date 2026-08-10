@@ -12,10 +12,10 @@ from PIL import Image
 st.set_page_config(
     page_title="Neurax Business Suite Pro - 100% IA Avançado",
     page_icon="⚡",
-    layout="centered"
+    layout="wide"
 )
 
-# Estilo visual avançado - Padrão SaaS Enterprise
+# Estilo visual avançado - Padrão SaaS Enterprise Global
 st.markdown("""
     <style>
     .main {
@@ -31,7 +31,7 @@ st.markdown("""
         background-color: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
-        padding: 10px !important;
+        padding: 12px !important;
     }
     .stButton button[kind="primary"] {
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
@@ -40,6 +40,13 @@ st.markdown("""
         font-weight: 600 !important;
         border: none !important;
         box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        width: 100%;
+        padding: 10px;
+    }
+    .stButton button {
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        width: 100%;
     }
     [data-testid="stSidebar"] {
         background-color: #0f172a;
@@ -75,7 +82,7 @@ def salvar_usuarios(users_dict):
     except Exception as e:
         st.error(f"Erro ao salvar usuário: {e}")
 
-# Motor Central de Inteligência Artificial Avançado (Incluindo Recursos Enterprise)
+# Motor Central de Inteligência Artificial Avançado
 def motor_ia_neurax(prompt_contexto, acao):
     if acao == "precificacao":
         produto, custo, margem = prompt_contexto
@@ -134,7 +141,6 @@ def motor_ia_neurax(prompt_contexto, acao):
 - **Parecer da IA:** Cenário altamente sustentável. O investimento adicional se paga em menos de 14 dias com base na taxa histórica de conversão."""
         return simulacao
 
-    # --- NOVOS RECURSOS ENTERPRISE ---
     elif acao == "raio_x_negocio":
         return """👑 **Chief AI Officer - Relatório de Saúde 360°:**
 - **Nota de Saúde Empresarial:** **88 / 100** 🟢 (Excelente nível de tração)
@@ -188,91 +194,116 @@ users = carregar_usuarios()
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# Configuração do Token do Mercado Pago
 try:
     ACCESS_TOKEN = st.secrets["MERCADO_PAGO_TOKEN"]
 except Exception:
     ACCESS_TOKEN = "APP_USR-ca30bf79-c48b-4cf3-9c30-ee6e3238e005"
 
 # ==========================================
-# TELAS DE AUTENTICAÇÃO
+# TELA DE ENTRADA MODERNA (SPLIT SCREEN SAAS)
 # ==========================================
 if not st.session_state.logged_in:
-    st.title("⚡ Neurax Business Suite (Powered by AI)")
+    col_brand, col_form = st.columns([1.1, 0.9], gap="large")
     
-    if st.session_state.auth_screen == 'login':
-        st.subheader("🔑 Entrar na sua Conta")
-        email = st.text_input("E-mail", placeholder="seu@email.com", key="login_email")
-        senha = st.text_input("Senha", type="password", placeholder="********", key="login_senha")
+    with col_brand:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("# ⚡ Neurax Business Suite")
+        st.markdown("### O Ecossistema Definitivo de Inteligência Artificial para Escala de Negócios.")
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("Entrar", type="primary"):
-            users = carregar_usuarios()
-            if email in users and users[email]["senha"] == senha:
-                st.session_state.logged_in = True
-                st.session_state.current_user = email
-                st.session_state.is_pro = users[email]["is_pro"]
-                st.toast("Autenticado com IA com sucesso!", icon="🚀")
-                st.rerun()
-            else:
-                st.error("E-mail ou senha incorretos.")
+        st.markdown("""
+        * 👑 **Chief AI Officer:** Raio-X executivo 360° e diretrizes semanais automáticas.
+        * 💰 **Precificação Preditiva:** Margens calculadas com base no comportamento de mercado.
+        * 📊 **Auditoria & Caixa:** Previsibilidade financeira e inteligência de fluxo.
+        * 🎯 **Fábrica de Vendas & Objeções:** Roteiros e reversão de clientes instantâneos.
+        * 📈 **Projeções Preditivas:** Gráficos e simulações para tomada de decisão sem riscos.
+        """)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Criar Nova Conta"):
-                st.session_state.auth_screen = 'register'
-                st.rerun()
-        with col2:
-            if st.button("Esqueceu a Senha?"):
-                st.session_state.auth_screen = 'forgot'
-                st.rerun()
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.info("💡 **Segurança de Nível Corporativo:** Seus dados e parâmetros financeiros operam sob criptografia neural avançada.")
 
-    elif st.session_state.auth_screen == 'register':
-        st.subheader("📝 Criar Nova Conta")
-        nome_reg = st.text_input("Nome Completo", placeholder="Seu Nome", key="reg_nome")
-        email_reg = st.text_input("E-mail", placeholder="seu@email.com", key="reg_email")
-        senha_reg = st.text_input("Senha", type="password", placeholder="********", key="reg_senha")
-        conf_senha = st.text_input("Confirmar Senha", type="password", placeholder="********", key="reg_conf")
-        
-        if st.button("Cadastrar", type="primary"):
-            users = carregar_usuarios()
-            if not nome_reg or not email_reg or not senha_reg:
-                st.warning("Preencha todos os campos.")
-            elif senha_reg != conf_senha:
-                st.error("As senhas não coincidem.")
-            elif email_reg in users:
-                st.error("Este e-mail já está cadastrado.")
-            else:
-                users[email_reg] = {
-                    "senha": senha_reg,
-                    "nome": nome_reg,
-                    "is_pro": False
-                }
-                salvar_usuarios(users)
-                st.success("Conta criada com IA! Faça login.")
-                st.session_state.auth_screen = 'login'
-                st.rerun()
-        
-        if st.button("Voltar para o Login"):
-            st.session_state.auth_screen = 'login'
-            st.rerun()
+    with col_form:
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.container(border=True):
+            if st.session_state.auth_screen == 'login':
+                st.subheader("🔑 Acesse sua Conta")
+                email = st.text_input("E-mail corporativo", placeholder="seu@email.com", key="login_email")
+                senha = st.text_input("Senha de acesso", type="password", placeholder="********", key="login_senha")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Entrar no Sistema", type="primary"):
+                    users = carregar_usuarios()
+                    if email in users and users[email]["senha"] == senha:
+                        st.session_state.logged_in = True
+                        st.session_state.current_user = email
+                        st.session_state.is_pro = users[email]["is_pro"]
+                        st.toast("Autenticado com IA com sucesso!", icon="🚀")
+                        st.rerun()
+                    else:
+                        st.error("E-mail ou senha incorretos.")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                col_sub1, col_sub2 = st.columns(2)
+                with col_sub1:
+                    if st.button("Criar Conta"):
+                        st.session_state.auth_screen = 'register'
+                        st.rerun()
+                with col_sub2:
+                    if st.button("Esqueceu a Senha?"):
+                        st.session_state.auth_screen = 'forgot'
+                        st.rerun()
 
-    elif st.session_state.auth_screen == 'forgot':
-        st.subheader("🔒 Recuperação de Senha por IA")
-        email_rec = st.text_input("E-mail", placeholder="seu@email.com", key="rec_email")
-        
-        if st.button("Enviar Instruções", type="primary"):
-            users = carregar_usuarios()
-            if email_rec in users:
-                st.success("Token de recuperação gerado por IA e enviado ao e-mail!")
-            else:
-                st.error("E-mail não encontrado.")
-        
-        if st.button("Voltar para o Login"):
-            st.session_state.auth_screen = 'login'
-            st.rerun()
+            elif st.session_state.auth_screen == 'register':
+                st.subheader("📝 Criar Nova Conta Pro")
+                nome_reg = st.text_input("Nome Completo", placeholder="Seu Nome", key="reg_nome")
+                email_reg = st.text_input("E-mail", placeholder="seu@email.com", key="reg_email")
+                senha_reg = st.text_input("Senha", type="password", placeholder="********", key="reg_senha")
+                conf_senha = st.text_input("Confirmar Senha", type="password", placeholder="********", key="reg_conf")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Cadastrar Gratuitamente", type="primary"):
+                    users = carregar_usuarios()
+                    if not nome_reg or not email_reg or not senha_reg:
+                        st.warning("Preencha todos os campos.")
+                    elif senha_reg != conf_senha:
+                        st.error("As senhas não coincidem.")
+                    elif email_reg in users:
+                        st.error("Este e-mail já está cadastrado.")
+                    else:
+                        users[email_reg] = {
+                            "senha": senha_reg,
+                            "nome": nome_reg,
+                            "is_pro": False
+                        }
+                        salvar_usuarios(users)
+                        st.success("Conta criada com IA! Faça login.")
+                        st.session_state.auth_screen = 'login'
+                        st.rerun()
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("← Voltar para o Login"):
+                    st.session_state.auth_screen = 'login'
+                    st.rerun()
+
+            elif st.session_state.auth_screen == 'forgot':
+                st.subheader("🔒 Recuperação de Senha")
+                email_rec = st.text_input("E-mail cadastrado", placeholder="seu@email.com", key="rec_email")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Enviar Instruções", type="primary"):
+                    users = carregar_usuarios()
+                    if email_rec in users:
+                        st.success("Token de recuperação gerado por IA e enviado ao e-mail!")
+                    else:
+                        st.error("E-mail não encontrado.")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("← Voltar para o Login"):
+                    st.session_state.auth_screen = 'login'
+                    st.rerun()
 
 # ==========================================
-# APLICATIVO PRINCIPAL (100% INTEGRADO COM IA)
+# APLICATIVO PRINCIPAL
 # ==========================================
 else:
     users = carregar_usuarios()
@@ -307,7 +338,6 @@ else:
         ]
     )
 
-    # 1. CÉREBRO IA
     if menu == "🧠 Cérebro IA (Copiloto Universal)":
         st.header("🧠 Neurax AI - Copiloto Executivo")
         st.write("Sua central de inteligência artificial pronta para resolver qualquer gargalo operacional.")
@@ -329,7 +359,6 @@ else:
                     st.markdown(resposta_ia)
                     st.session_state.chat_history.append({"role": "assistant", "content": resposta_ia})
 
-    # 2. CHIEF AI OFFICER (RAIO-X 360°)
     elif menu == "👑 Chief AI Officer (Raio-X 360°)":
         st.header("👑 Chief AI Officer - Raio-X de Negócios 360°")
         st.write("A IA atua como sua Diretoria Executiva virtual entregando notas de saúde e prioridades semanais.")
@@ -343,7 +372,6 @@ else:
         else:
             st.warning("⚠️ O Chief AI Officer está disponível exclusivamente para assinantes Pro.")
 
-    # 3. ASSINATURA & PLANOS
     elif menu == "💳 Assinatura & Planos (Pix)":
         st.header("💳 Ativar Plano Pro com IA (R$ 19,99)")
         
@@ -411,7 +439,6 @@ else:
                     st.success("🎉 Pagamento confirmado pela IA! Acesso Pro liberado.")
                     st.rerun()
 
-    # 4. PRECIFICAÇÃO INTELIGENTE POR IA
     elif menu == "💰 Precificação Inteligente por IA":
         st.header("💰 Precificação Preditiva Baseada em IA")
         st.write("O algoritmo de IA calcula o preço perfeito combinando seus custos com o comportamento de consumo do mercado.")
@@ -434,7 +461,6 @@ else:
             except ValueError:
                 st.error("Insira apenas números válidos no campo de custo.")
 
-    # 5. RELATÓRIO EXECUTIVO DE CAIXA (IA)
     elif menu == "📊 Relatório Executivo de Caixa (IA)":
         st.header("📊 Auditoria de Caixa Inteligente")
         if user_data['is_pro']:
@@ -446,7 +472,6 @@ else:
         else:
             st.warning("⚠️ O auditor financeiro por IA está disponível apenas para assinantes Pro.")
 
-    # 6. GRÁFICOS PREDITIVOS DE FATURAMENTO
     elif menu == "📈 Gráficos Preditivos de Faturamento":
         st.header("📈 Projeção Gráfica Preditiva (IA)")
         if user_data['is_pro']:
@@ -464,7 +489,6 @@ else:
         else:
             st.warning("⚠️ Os gráficos preditivos avançados estão disponíveis apenas para assinantes Pro.")
 
-    # 7. GERADOR DE CRIATIVOS PARA ADS (IA)
     elif menu == "🎬 Gerador de Criativos para Ads (IA)":
         st.header("🎬 Fábrica de Anúncios e Criativos (IA)")
         st.write("Crie roteiros validados para Reels, TikTok ou campanhas de tráfego pago instantaneamente.")
@@ -480,7 +504,6 @@ else:
             else:
                 st.warning("Preencha o nome do produto e o público-alvo.")
 
-    # 8. GERADOR DE QUEBRA DE OBJEÇÕES
     elif menu == "🎯 Gerador de Quebra de Objeções":
         st.header("🎯 Construtor Cirúrgico de Quebra de Objeções")
         st.write("Insira a objeção enviada pelo cliente no WhatsApp ou reunião para a IA gerar o argumento de reversão perfeito.")
@@ -496,7 +519,6 @@ else:
             else:
                 st.warning("Preencha a objeção e o nome do produto.")
 
-    # 9. GESTÃO DE ESTOQUE PREDITIVA (IA)
     elif menu == "📦 Gestão de Estoque Preditiva (IA)":
         st.header("📦 Monitoramento Inteligente de Estoque")
         st.write("A IA analisa o ritmo das suas saídas diárias para evitar rupturas e perda de vendas.")
@@ -513,7 +535,6 @@ else:
             except ValueError:
                 st.error("Insira apenas valores numéricos válidos.")
 
-    # 10. SIMULADOR DE CENÁRIOS DE NEGÓCIO
     elif menu == "🔮 Simulador de Cenários de Negócio":
         st.header("🔮 Simulador Preditivo de Cenários")
         st.write("Simule o impacto financeiro de mudanças estratégicas em tempo real.")
@@ -525,7 +546,6 @@ else:
             simulacao_res = motor_ia_neurax((fat_base, var_trafego), "simulador_cenarios")
             st.markdown(simulacao_res)
 
-    # 11. CONSTRUTOR DE PITCH DECK (INVESTIDORES)
     elif menu == "📊 Construtor de Pitch Deck (Investidores)":
         st.header("📊 Construtor de Pitch Deck para Investidores")
         st.write("Estruture sua apresentação de captação de recursos profissional com auxílio de inteligência artificial.")
@@ -540,7 +560,6 @@ else:
             else:
                 st.warning("Insira o nome da empresa.")
 
-    # 12. SIMULADOR DE CO-MARKETING & PARCERIAS
     elif menu == "🤝 Simulador de Co-Marketing & Parcerias":
         st.header("🤝 Simulador de Co-Marketing e Parcerias")
         st.write("Descubra estratégias de crescimento orgânico cruzando sua audiência com marcas complementares.")
@@ -555,7 +574,6 @@ else:
             else:
                 st.warning("Insira o seu nicho de mercado.")
 
-    # 13. SISTEMA DE INDICAÇÃO VIRAL (IA)
     elif menu == "🚀 Sistema de Indicação Viral (IA)":
         st.header("🚀 Programa de Indicação Otimizado por IA")
         st.write("A IA gera automaticamente copies persuasivos personalizados com o seu link para redes sociais.")
@@ -565,7 +583,6 @@ else:
         st.info(copy_gerada)
         st.success("Compartilhe este texto e ganhe bônus automáticos gerados pelo sistema neural de parcerias!")
 
-    # 14. CONFIGURAÇÕES & MOTOR NEURAL
     elif menu == "⚙️ Configurações & Motor Neural":
         st.header("⚙️ Configurações da Conta e Ajustes de IA")
         st.text_input("Nome cadastrado", value=user_data['nome'])
@@ -574,7 +591,6 @@ else:
         if st.button("Salvar Configurações"):
             st.success("Parâmetros da IA atualizados com sucesso!")
 
-    # 15. SAIR
     elif menu == "🚪 Sair (Logout)":
         st.session_state.logged_in = False
         st.session_state.current_user = None
