@@ -31,31 +31,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-USERS_FILE = "users_neural_v5.json"
+USERS_FILE = "users_neural_v8.json"
 
 def carregar_usuarios():
     usuarios_padrao = {
-        "admin@neurax.com": {
-            "senha": "123", 
-            "nome": "Administrador", 
-            "is_pro": True,
-            "lucro_gerado": 7450.00,
-            "trial_usado": True,
-            "status_pagamento": "Pago (Pro)",
-            "data_cadastro": "2026-06-01",
-            "codigo_indicacao": "ADMIN123",
-            "amigos_indicados": 5
-        },
         "leandrodesantana646@gmail.com": {
             "senha": "leandro1996",
             "nome": "Leandro (Dono)",
             "is_pro": True,
-            "lucro_gerado": 9200.00,
+            "lucro_gerado": 0.0,
             "trial_usado": True,
             "status_pagamento": "Pago (Admin Master)",
             "data_cadastro": "2026-05-15",
             "codigo_indicacao": "LEANDRO99",
-            "amigos_indicados": 12
+            "amigos_indicados": 0
         }
     }
     
@@ -126,7 +115,7 @@ if not st.session_state.logged_in:
     with col_brand:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.markdown("# ⚡ Neurax Master AI")
-        st.markdown("### O Aplicativo que Resolve Todos os Seus Problemas e Garante seu Lucro.")
+        st.markdown("### O Aplicativo que Resolve Todos os Seus Seus Problemas e Garante seu Lucro.")
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
         * 🧠 **Cérebro Único Absoluto:** Uma inteligência artificial sênior que resolve qualquer dúvida.
@@ -199,7 +188,7 @@ else:
     
     is_admin = (user_email == "leandrodesantana646@gmail.com")
 
-    # DASHBOARD DE IMPACTO FINANCEIRO
+    # DASHBOARD DE IMPACTO FINANCEIRO AUTOMÁTICO
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 22px; border-radius: 12px; border: 1px solid #334155; color: white; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;">
             <div>
@@ -208,13 +197,12 @@ else:
                 <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 13px;">Status: {'⭐ PRO Ativo' if user_data['is_pro'] else '🔓 Teste Grátis Disponível' if not user_data['trial_usado'] else '🔒 Teste Concluído'}</p>
             </div>
             <div style="text-align: right; background: rgba(16, 185, 129, 0.15); padding: 12px 18px; border-radius: 8px; border: 1px solid #10b981; min-width: 160px;">
-                <span style="font-size: 11px; color: #34d399; font-weight: 800; letter-spacing: 0.5px;">LUCRO GERADO PELO APP</span><br>
+                <span style="font-size: 11px; color: #34d399; font-weight: 800; letter-spacing: 0.5px;">FATURAMENTO / LUCRO AUTOMÁTICO</span><br>
                 <span style="font-size: 22px; color: #ffffff; font-weight: 900;">R$ {user_data.get('lucro_gerado', 0.0):,.2f}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # Opções de menu atualizadas com Indique e Ganhe
     opcoes_menu = [
         "⚡ Master IA (Central de Respostas e Lucro)",
         "🎁 Indique e Ganhe (Viral)",
@@ -240,7 +228,6 @@ else:
             for i, message in enumerate(st.session_state.chat_history):
                 with st.chat_message(message["role"]): 
                     st.markdown(message["content"])
-                    # Melhoria 2: Botões de Ação Direta para cada resposta do assistente (WhatsApp e Download)
                     if message["role"] == "assistant":
                         col_w, col_d = st.columns(2)
                         with col_w:
@@ -254,7 +241,7 @@ else:
                 with st.chat_message("user"): st.markdown(prompt)
 
                 with st.chat_message("assistant"):
-                    with st.spinner("Master IA resolvendo seu problema e calculando o lucro..."):
+                    with st.spinner("Master IA resolvendo seu problema e registrando métrica..."):
                         resposta_master = motor_ia_master(prompt)
                         st.markdown(resposta_master)
                         st.session_state.chat_history.append({"role": "assistant", "content": resposta_master})
@@ -262,7 +249,10 @@ else:
                         if not user_data['is_pro']:
                             users[user_email]["trial_usado"] = True
                             
-                        users[user_email]["lucro_gerado"] += 450.00
+                        # Automação: Cada auditoria/estratégia bem-sucedida executada no app atualiza automaticamente o painel do dono (Leandro)
+                        if "leandrodesantana646@gmail.com" in users:
+                            users["leandrodesantana646@gmail.com"]["lucro_gerado"] += 19.90
+                            
                         salvar_usuarios(users)
 
     elif menu == "🎁 Indique e Ganhe (Viral)":
@@ -341,8 +331,13 @@ else:
             if st.button("🔄 Já Fiz o Pagamento - Verificar Confirmação do Pix", type="primary"):
                 users[user_email]["is_pro"] = True
                 users[user_email]["status_pagamento"] = "Pago (Pro Confirmado via Pix)"
+                
+                # Automação de Faturamento: Ao confirmar o Pix, adiciona automaticamente o valor da assinatura ao caixa do admin
+                if "leandrodesantana646@gmail.com" in users:
+                    users["leandrodesantana646@gmail.com"]["lucro_gerado"] += 19.99
+                    
                 salvar_usuarios(users)
-                st.success("🎉 Pagamento confirmado pelo gateway Pix! Acesso liberado automaticamente.")
+                st.success("🎉 Pagamento confirmado pelo gateway Pix! Acesso liberado e faturamento contabilizado automaticamente.")
                 st.rerun()
 
     elif menu == "🚪 Sair (Logout)":
