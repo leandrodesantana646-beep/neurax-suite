@@ -6,20 +6,56 @@ from PIL import Image
 
 # Configuração da página
 st.set_page_config(
-    page_title="Neurax Business Suite AI Pro",
+    page_title="Neurax Business Suite Pro",
     page_icon="⚡",
     layout="centered"
 )
 
-# Estilo visual moderno e limpo
+# Estilo visual avançado - Padrão SaaS Enterprise
 st.markdown("""
     <style>
-    .stTextInput input, .stTextInput input[type="password"], .stTextArea textarea {
-        color: #000000 !important;
-        background-color: #ffffff !important;
-    }
+    /* Fundo geral da página */
     .main {
-        background-color: #f4f6f9;
+        background-color: #f8fafc;
+    }
+    
+    /* Títulos e Tipografia */
+    h1, h2, h3 {
+        color: #0f172a !important;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+    }
+    
+    /* Inputs de texto e senha com visual moderno */
+    .stTextInput input, .stTextInput input[type="password"], .stTextArea textarea {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 10px !important;
+    }
+    
+    /* Botões principais com destaque */
+    .stButton button[kind="primary"] {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        border: none !important;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+    }
+    
+    /* Sidebar customizada */
+    [data-testid="stSidebar"] {
+        background-color: #0f172a;
+        color: #ffffff;
+    }
+    [data-testid="stSidebar"] .stSelectbox label, [data-testid="stSidebar"] span {
+        color: #f8fafc !important;
+    }
+    
+    div.stMarkdown {
+        font-family: 'Inter', sans-serif;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -122,7 +158,7 @@ if not st.session_state.logged_in:
             st.rerun()
 
 # ==========================================
-# APLICATIVO PRINCIPAL (100% IA + MERCADO PAGO)
+# APLICATIVO PRINCIPAL (DESIGN ENTERPRISE + IA)
 # ==========================================
 else:
     user_email = st.session_state.current_user
@@ -155,12 +191,10 @@ else:
         
         nicho_usuario = st.selectbox("Selecione o seu setor:", ["E-commerce / Loja Física", "Infoprodutos / Produtor Digital", "Prestador de Serviços / Local"])
         
-        # Histórico do chat
         for message in st.session_state.chat_history:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        # Entrada de prompt do usuário
         if prompt := st.chat_input("Ex: Como posso dobrar minhas vendas no Instagram esta semana gastando pouco?"):
             st.session_state.chat_history.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
@@ -168,12 +202,11 @@ else:
 
             with st.chat_message("assistant"):
                 with st.spinner("Analisando dados do mercado e gerando estratégia..."):
-                    # Resposta inteligente automatizada baseada no nicho
                     resposta_ia = f"🤖 **Diagnóstico Neurax AI para {nicho_usuario}:**\n\nCom base no seu objetivo (*\"{prompt}\"*), estruturei o seguinte plano de ação imediato:\n\n1. **Ação de Curto Prazo:** Foque em campanhas de recuperação de clientes antigos via WhatsApp com escassez de 24 horas.\n2. **Precificação e Margem:** Certifique-se de que seu lucro líquido por unidade não esteja abaixo de 30% após taxas de anúncio.\n3. **Automação:** Utilize nossos funis prontos para acelerar a conversão.\n\n*Quer que eu gere os copies exatos para essa campanha agora?*"
                     st.markdown(resposta_ia)
                     st.session_state.chat_history.append({"role": "assistant", "content": resposta_ia})
 
-    # 2. ASSINATURA & PLANOS (Mercado Pago Direto + QR Code Visual)
+    # 2. ASSINATURA & PLANOS
     elif menu == "💳 Assinatura & Planos (Pix)":
         st.header("💳 Ativar Plano Pro (R$ 19,99)")
         
@@ -214,7 +247,6 @@ else:
                     except Exception as e:
                         st.error(f"Erro na conexão: {e}")
 
-            # Exibição do QR Code e Copia e Cola
             if st.session_state.pix_data:
                 st.subheader("📲 Realize o Pagamento")
                 
