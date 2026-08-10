@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import base64
+import uuid
 from io import BytesIO
 from PIL import Image
 
@@ -78,7 +79,7 @@ if 'users' not in st.session_state:
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-# Configuração segura do Token do Mercado Pago
+# Configuração segura do Token do Mercado Pago (via st.secrets ou padrão)
 try:
     ACCESS_TOKEN = st.secrets["MERCADO_PAGO_TOKEN"]
 except Exception:
@@ -217,10 +218,14 @@ else:
 
             if st.button("Gerar Pix Oficial no Mercado Pago", type="primary"):
                 url = "https://api.mercadopago.com/v1/payments"
+                
+                # Cabeçalhos corrigidos com X-Idempotency-Key gerado por uuid
                 headers = {
                     "Authorization": f"Bearer {ACCESS_TOKEN}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-Idempotency-Key": str(uuid.uuid4())
                 }
+                
                 payload = {
                     "transaction_amount": 19.99,
                     "description": "Assinatura Mensal - Neurax Pro",
