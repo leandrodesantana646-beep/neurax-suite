@@ -6,15 +6,86 @@ import pandas as pd
 import re
 
 # Configuração da página
-st.set_page_config(page_title="Neurax Master AI", page_icon="📈", layout="wide")
+st.set_page_config(
+    page_title="Neurax Master AI", 
+    page_icon="⚡", 
+    layout="wide"
+)
 
-# Estilização
+# Estilização Avançada e Moderna (UI/UX de Alto Padrão)
 st.markdown("""
     <style>
-    .main { background-color: #f1f5f9; }
-    h1, h2 { color: #1e293b; font-weight: 800; font-family: 'Inter', sans-serif; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-    [data-testid="stSidebar"] { background-color: #0f172a; color: #ffffff; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .main { 
+        background-color: #f8fafc; 
+    }
+    
+    h1, h2, h3 { 
+        color: #0f172a; 
+        font-weight: 800; 
+        letter-spacing: -0.025em; 
+    }
+    
+    /* Cartões Modernos com Sombra Suave */
+    .stMetric { 
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); 
+        padding: 20px; 
+        border-radius: 14px; 
+        border: 1px solid #e2e8f0; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02); 
+    }
+    
+    /* Menu Lateral Escuro e Elegante */
+    [data-testid="stSidebar"] { 
+        background-color: #0f172a; 
+        color: #ffffff; 
+        border-right: 1px solid #1e293b;
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #94a3b8;
+    }
+    
+    /* Botões Modernos com Gradiente */
+    .stButton>button {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border-radius: 10px;
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* Caixas de Texto Arredondadas */
+    .stTextInput>div>div>input {
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        padding: 10px;
+    }
+    
+    /* Cabeçalho Customizado */
+    .brand-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -71,31 +142,40 @@ if status_pagamento == "sucesso" and st.session_state.get('logged_in'):
         st.success("🎉 Pagamento confirmado com sucesso! Seu acesso PRO foi liberado automaticamente.")
 
 if not st.session_state.logged_in:
-    # --- LOGOTIPO CENTRALIZADO NA TELA DE LOGIN ---
-    if os.path.exists("logo.png"):
-        col_c1, col_c2, col_c3 = st.columns([1, 1, 1])
-        with col_c2:
+    # --- LOGOTIPO OU FALLBACK MODERNO NA TELA DE LOGIN ---
+    col_c1, col_c2, col_c3 = st.columns([1, 1, 1])
+    with col_c2:
+        if os.path.exists("logo.png"):
             st.image("logo.png", use_container_width=True)
+        else:
+            st.markdown("""
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 16px; color: white; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #38bdf8; font-size: 24px;">⚡ NEURAX</h2>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #94a3b8;">MASTER AI</p>
+                </div>
+            """, unsafe_allow_html=True)
             
-    st.subheader("🔑 Acesse o Motor de Lucros")
+    st.markdown("<h2 style='text-align: center; margin-bottom: 25px;'>🔑 Acesse o Motor de Lucros</h2>", unsafe_allow_html=True)
         
-    email = st.text_input("E-mail")
-    senha = st.text_input("Senha", type="password")
-    if st.button("Entrar"):
+    email = st.text_input("E-mail corporativo ou pessoal")
+    senha = st.text_input("Senha de acesso", type="password")
+    
+    if st.button("Entrar no Sistema", use_container_width=True):
         if email in users and users[email]["senha"] == senha:
             st.session_state.logged_in = True
             st.session_state.current_user = email
             st.rerun()
-        else: st.error("E-mail ou senha incorretos.")
+        else: 
+            st.error("E-mail ou senha incorretos.")
             
     st.markdown("---")
-    st.subheader("📝 Cadastre-se na Plataforma")
+    st.markdown("<h3 style='text-align: center;'>📝 Criar Conta Gratuita</h3>", unsafe_allow_html=True)
     nome_r = st.text_input("Nome Completo")
     email_r = st.text_input("E-mail para Cadastro")
     telefone_r = st.text_input("WhatsApp (com DDD, ex: 5511999999999)")
-    senha_r = st.text_input("Senha de Acesso", type="password")
+    senha_r = st.text_input("Crie uma Senha", type="password")
     
-    if st.button("Criar Conta Gratuita"):
+    if st.button("Cadastrar Gratuitamente", use_container_width=True):
         if email_r not in users:
             codigo = f"NRX-{nome_r[:3].upper()}{len(users)}"
             users[email_r] = {
@@ -129,8 +209,10 @@ else:
     is_admin = (user_email == "leandrodesantana646@gmail.com")
 
     # UI Lateral
-    if os.path.exists("logo.png"): st.sidebar.image("logo.png", use_container_width=True)
-    else: st.sidebar.markdown("### ⚡ NEURAX MASTER AI")
+    if os.path.exists("logo.png"): 
+        st.sidebar.image("logo.png", use_container_width=True)
+    else: 
+        st.sidebar.markdown("<h2 style='color: #38bdf8; text-align: center;'>⚡ NEURAX AI</h2>", unsafe_allow_html=True)
     
     st.sidebar.markdown(f"**Usuário:** {user_data['nome']}")
     
@@ -139,13 +221,18 @@ else:
     menu_options.append("🚪 Sair")
     if is_admin: menu_options.append("👑 Admin")
     
-    menu = st.sidebar.selectbox("Menu", menu_options)
+    menu = st.sidebar.selectbox("Menu Principal", menu_options)
 
-    # Cabeçalho Principal
-    header_c1, header_c2 = st.columns([1, 10])
-    with header_c1:
-        if os.path.exists("logo.png"): st.image("logo.png", width=50)
-    with header_c2: st.markdown("## Neurax Master AI")
+    # Cabeçalho Principal Moderno
+    if os.path.exists("logo.png"):
+        hc1, hc2 = st.columns([1, 12])
+        with hc1:
+            st.image("logo.png", width=45)
+        with hc2:
+            st.markdown("## Neurax Master AI")
+    else:
+        st.markdown("## ⚡ Neurax Master AI")
+    st.markdown("---")
 
     # Páginas
     if menu == "📊 Painel de Lucros":
@@ -174,8 +261,8 @@ else:
         
         **Valor:** R$ 49,99 / mês
         """)
-        st.link_button("Assinar R$ 49,99/mês", "https://mpago.la/2WjVnvA")
-        st.info("💡 Após concluir o pagamento no Mercado Pago, você retornará ao app e seu acesso PRO será liberado automaticamente.")
+        st.link_button("Assinar R$ 49,99/mês (PIX / Cartão)", "https://mpago.la/2WjVnvA", use_container_width=True)
+        st.info("💡 Após concluir o pagamento, você retornará ao app e seu acesso PRO será liberado automaticamente.")
 
     elif menu == "🎁 Indique e Ganhe":
         st.header("🎁 Programa de Embaixadores")
@@ -185,7 +272,7 @@ else:
 
     elif menu == "👑 Admin":
         st.header("👑 Painel de Gestão e Controle")
-        st.dataframe(pd.DataFrame(users).T)
+        st.dataframe(pd.DataFrame(users).T, use_container_width=True)
 
     elif menu == "🚪 Sair":
         st.session_state.logged_in = False
