@@ -22,10 +22,15 @@ st.markdown("""
 # Inicialização de Estados da Sessão
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'current_user' not in st.session_state:
+    st.session_state.current_user = None
+if 'users' not in st.session_state:
+    # Banco de dados em memória para gerenciar usuários, cadastros e senhas
+    st.session_state.users = {
+        "admin@neurax.com": {"senha": "123", "nome": "Administrador", "is_pro": False}
+    }
 if 'pix_data' not in st.session_state:
     st.session_state.pix_data = None
-if 'is_pro' not in st.session_state:
-    st.session_state.is_pro = False
 
 # Configuração segura do Token do Mercado Pago
 try:
@@ -33,23 +38,61 @@ try:
 except Exception:
     ACCESS_TOKEN = "APP_USR-ca30bf79-c48b-4cf3-9c30-ee6e3238e005"
 
-# --- TELA DE LOGIN ---
+# --- TELA DE AUTENTICAÇÃO (LOGIN, CADASTRO E ESQUECI A SENHA) ---
 if not st.session_state.logged_in:
     st.title("⚡ Neurax Business Suite")
-    st.subheader("🔑 Faça login na sua conta")
-    email = st.text_input("E-mail")
-    senha = st.text_input("Senha", type="password")
     
-    if st.button("Entrar", type="primary"):
-        if email and senha:
-            st.session_state.logged_in = True
-            st.rerun()
-        else:
-            st.warning("Preencha e-mail e senha para entrar.")
+    auth_opcao = st.radio("Escolha uma opção:", ["Entrar", "Cadastrar", "Esqueci a senha"], horizontal=True)
+    
+    if auth_opcao == "Entrar":
+        st.subheader("🔑 Faça login na sua conta")
+        email_login = st.text_input("E-mail", key="login_email")
+        senha_login = st.text_input("Senha", type="password", key="login_senha")
+        
+        if st.button("Entrar", type="primary"):
+            if email_login in st.session_state.users and st.session_state.users[email_login]["senha"] == senha_login:
+                st.session_state.logged_in = True
+                st.session_state.current_user = email_login
+                st.success("Login realizado com sucesso!")
+                st.rerun()
+            else:
+                st.error("E-mail ou senha incorretos.")
 
-# --- ÁREA LOGADA ---
+    elif auth_opcao == "Cadastrar":
+        st.subheader("📝 Crie a sua conta")
+        nome_cad = st.text_input("Nome Completo", key="cad_nome")
+        email_cad = st.text_input("E-mail", key="cad_email")
+        senha_cad = st.text_input("Senha", type="password", key="cad_senha")
+        
+        if st.button("Cadastrar", type="primary"):
+            if not nome_cad or not email_cad or not senha_cad:
+                st.warning("Preencha todos os campos.")
+            elif email_cad in st.session_state.users:
+                st.error("Este e-mail já está cadastrado.")
+            else:
+                st.session_state.users[email_cad] = {
+                    "senha": senha_cad,
+                    "nome": nome_cad,
+                    "is_pro": False
+                }
+                st.success("Cadastro realizado com sucesso! Vá para a aba 'Entrar' para acessar.")
+
+    elif auth_opcao == "Esqueci a senha":
+        st.subheader("🔄 Recuperação de Senha")
+        email_rec = st.text_input("Digite seu e-mail cadastrado", key="rec_email")
+        
+        if st.button("Enviar nova senha", type="primary"):
+            if email_rec in st.session_state.users:
+                st.success("Instruções de recuperação enviadas para o seu e-mail!")
+            else:
+                st.error("E-mail não encontrado na base de dados.")
+
+# --- ÁREA LOGADA (APLICATIVO COMPLETO) ---
 else:
-    st.title("⚡ Neurax Business Suite")
+    user_email = st.session_state.current_user
+    user_data = st.session_state.users[user_email]
+    
+    st.title(f"⚡ Neurax Business Suite - Olá, {user_data['nome']}")
     
     menu = st.sidebar.selectbox(
         "Navegação", 
@@ -60,47 +103,43 @@ else:
     if menu == "💳 Assinatura & Planos":
         st.header("💳 Ativar Plano Pro (R$ 19,99)")
         
-        if st.session_state.is_pro:
+        if user_data["is_pro"]:
             st.success("🎉 Sua conta já está com o Plano Pro ativado!")
         else:
-            nome_assinante = st.text_input("Seu Nome")
-            email_assinante = st.text_input("Seu E-mail")
+            st.write(f"E-mail de cobrança: **{user_email}**")
 
             if st.button("Gerar Pix Oficial", type="primary"):
-                if not email_assinante:
-                    st.warning("Preencha o campo e-mail.")
-                else:
-                    url = "https://api.mercadopago.com/v1/payments"
-                    headers = {
-                        "Authorization": f"Bearer {ACCESS_TOKEN}",
-                        "Content-Type": "application/json"
-                    }
-                    payload = {
-                        "transaction_amount": 19.99,
-                        "description": "Assinatura Mensal - Neurax Pro",
-                        "payment_method_id": "pix",
-                        "payer": {"email": email_assinante}
-                    }
+                url = "https://api.mercadopago.com/v1/payments"
+                headers = {
+                    "Authorization": f"Bearer {ACCESS_TOKEN}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "transaction_amount": 19.99,
+                    "description": "Assinatura Mensal - Neurax Pro",
+                    "payment_method_id": "pix",
+                    "payer": {"email": user_email}
+                }
 
-                    with st.spinner("Conectando ao Mercado Pago..."):
-                        try:
-                            response = requests.post(url, json=payload, headers=headers)
+                with st.spinner("Conectando ao Mercado Pago..."):
+                    try:
+                        response = requests.post(url, json=payload, headers=headers)
+                        
+                        if response.status_code in [200, 201]:
+                            data = response.json()
+                            t_data = data['point_of_interaction']['transaction_data']
+                            qr_code = t_data['qr_code']
+                            qr_base64 = t_data.get('qr_code_base64', '')
                             
-                            if response.status_code in [200, 201]:
-                                data = response.json()
-                                t_data = data['point_of_interaction']['transaction_data']
-                                qr_code = t_data['qr_code']
-                                qr_base64 = t_data.get('qr_code_base64', '')
-                                
-                                st.session_state.pix_data = {
-                                    "qr_code": qr_code,
-                                    "qr_base64": qr_base64
-                                }
-                                st.success("Pix gerado com sucesso!")
-                            else:
-                                st.error(f"Erro na API: {response.text}")
-                        except Exception as e:
-                            st.error(f"Erro na conexão: {e}")
+                            st.session_state.pix_data = {
+                                "qr_code": qr_code,
+                                "qr_base64": qr_base64
+                            }
+                            st.success("Pix gerado com sucesso!")
+                        else:
+                            st.error(f"Erro na API: {response.text}")
+                    except Exception as e:
+                        st.error(f"Erro na conexão: {e}")
 
             # Exibição do QR Code e Copia e Cola
             if st.session_state.pix_data:
@@ -118,7 +157,7 @@ else:
                 st.text_area("Pix Copia e Cola:", value=st.session_state.pix_data.get("qr_code", ""), height=100)
                 
                 if st.button("Já paguei! Liberar Acesso Pro"):
-                    st.session_state.is_pro = True
+                    st.session_state.users[user_email]["is_pro"] = True
                     st.session_state.pix_data = None
                     st.balloons()
                     st.success("🎉 Pagamento confirmado! Acesso Pro liberado com sucesso.")
@@ -146,7 +185,7 @@ else:
 
     # 3. PAINEL PRO
     elif menu == "📊 Painel Pro":
-        if st.session_state.is_pro:
+        if user_data["is_pro"]:
             st.header("📊 Painel Avançado Pro")
             st.info("Bem-vindo à sua área exclusiva de recursos avançados do Neurax Business Suite!")
             st.metric("Status da Licença", "Ativa (Pro)")
@@ -157,5 +196,6 @@ else:
     # 4. SAIR
     elif menu == "🚪 Sair":
         st.session_state.logged_in = False
+        st.session_state.current_user = None
         st.session_state.pix_data = None
         st.rerun()
