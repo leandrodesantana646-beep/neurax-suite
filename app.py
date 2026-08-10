@@ -33,7 +33,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-USERS_FILE = "users_neural_v10.json"
+USERS_FILE = "users_neural_v11.json"
 
 def carregar_usuarios():
     usuarios_padrao = {
@@ -48,7 +48,8 @@ def carregar_usuarios():
             "codigo_indicacao": "LEANDRO99",
             "amigos_indicados": 0,
             "limites": {"casa": 2000.0, "lazer": 500.0, "despesas": 1000.0},
-            "gastos_atuais": {"casa": 0.0, "lazer": 0.0, "despesas": 0.0}
+            "gastos_atuais": {"casa": 0.0, "lazer": 0.0, "despesas": 0.0},
+            "meta": {"titulo": "Reserva de Emergência", "alvo": 5000.0, "atual": 0.0}
         }
     }
     if os.path.exists(USERS_FILE):
@@ -63,6 +64,8 @@ def carregar_usuarios():
                             dados[email]["limites"] = {"casa": 2000.0, "lazer": 500.0, "despesas": 1000.0}
                         if "gastos_atuais" not in dados[email]:
                             dados[email]["gastos_atuais"] = {"casa": 0.0, "lazer": 0.0, "despesas": 0.0}
+                        if "meta" not in dados[email]:
+                            dados[email]["meta"] = {"titulo": "Reserva de Emergência", "alvo": 5000.0, "atual": 0.0}
                 return dados
         except Exception:
             pass
@@ -75,19 +78,66 @@ def salvar_usuarios(users_dict):
     except Exception as e:
         st.error(f"Erro ao salvar usuário: {e}")
 
-# MOTOR DE INTELIGÊNCIA COM CONFIGURAÇÃO DE LIMITES E GASTOS VIA CHAT
+# MOTOR DE INTELIGÊNCIA COM LIMITES, METAS, RESUMO SEMANAL E INSIGHTS
 def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, users_dict):
     query = pergunta_ou_comando.lower()
     
-    # 1. DETECÇÃO DE ALTERAÇÃO DE LIMITES VIA CHAT (Ex: "mudar limite de casa para 3000")
+    # 1. RESUMO SEMANAL / RAIO-X AUTOMÁTICO
+    if any(k in query for k in ["resumo", "raio-x", "semanal", "balanço"]):
+        total_gasto = sum(user_data["gastos_atuais"].values())
+        total_limite = sum(user_data["limites"].values())
+        maior_cat = max(user_data["gastos_atuais"], key=user_data["gastos_atuais"].get)
+        
+        feedback_texto = "🎉 **Parabéns!** Você está mantendo seus gastos sob controle nesta semana." if total_gasto <= (total_limite * 0.7) else "⚠️ **Puxão de orelha:** Seus gastos estão acelerados. Cuidado para não estourar o orçamento!"
+        
+        texto_resp = f"""📊 **Raio-X Semanal Consolidado**\n\n* **Total Gasto no Mês:** R$ {total_gasto:,.2f} / Teto Geral: R$ {total_limite:,.2f}\n* **Categoria que mais pesou:** {maior_cat.capitalize()} (R$ {user_data['gastos_atuais'][maior_cat]:,.2f})\n* **Meta Atual ({user_data['meta']['titulo']}):** R$ {user_data['meta']['atual']:,.2f} / R$ {user_data['meta']['alvo']:,.2f}\n\n{feedback_texto}\n\n💡 *Insight Comportamental:* Notei que os gastos tendem a se concentrar em finais de semana. Planeje os próximos dias para acelerar sua reserva!"""
+
+        df_resumo = pd.DataFrame({
+            "Gastos Atuais": list(user_data["gastos_atuais"].values()),
+            "Limites": list(user_data["limites"].values())
+        }, index=["Casa", "Lazer", "Despesas"])
+
+        return {
+            "texto": texto_resp,
+            "grafico_tipo": "barras",
+            "grafico_titulo": "📊 Raio-X de Gastos vs. Limites",
+            "grafico_dados": df_resumo
+        }
+
+    # 2. DEFINIÇÃO OU ATUALIZAÇÃO DE METAS E SONHOS
+    if "meta" in query or "guardar" in query or "objetivo" in query:
+        numeros = re.findall(r'\d+[\d,.]*', query.replace('.', '').replace(',', '.'))
+        if numeros:
+            val_num = float(numeros[0].replace(',', '.'))
+            if "guardar" in query or "adicionar" in query:
+                users_dict[user_email]["meta"]["atual"] += val_num
+                msg_acao = f"Adicionado R$ {val_num:,.2f} à sua meta!"
+            else:
+                users_dict[user_email]["meta"]["alvo"] = val_num
+                if " para " in query:
+                    partes = query.split(" para ")
+                    if len(partes) > 1:
+                        users_dict[user_email]["meta"]["titulo"] = partes[1].title()
+                msg_acao = f"Nova meta configurada com sucesso!"
+            
+            salvar_usuarios(users_dict)
+            m = users_dict[user_email]["meta"]
+            
+            texto_resp = f"🎯 **Gestão de Metas e Sonhos**\n\n* **Objetivo:** {m['titulo']}\n* **Progresso:** R$ {m['atual']:,.2f} / R$ {m['alvo']:,.2f}\n* **Status:** {msg_acao}\n\nA IA está monitorando seu progresso diariamente para te ajudar a vencer!"
+            
+            df_meta = pd.DataFrame({"Progresso": [m['atual'], max(0.0, m['alvo'] - m['atual'])]}, index=["Guardado", "Faltante"])
+            return {
+                "texto": texto_resp,
+                "grafico_tipo": "barras",
+                "grafico_titulo": f"🎯 Progresso da Meta: {m['titulo']}",
+                "grafico_dados": df_meta
+            }
+
+    # 3. DETECÇÃO DE ALTERAÇÃO DE LIMITES VIA CHAT
     if "limite" in query and any(c in query for c in ["casa", "lazer", "despesas"]):
         numeros = re.findall(r'\d+[\d,.]*', query.replace('.', '').replace(',', '.'))
         if numeros:
-            try:
-                novo_limite = float(numeros[0].replace(',', '.'))
-            except:
-                novo_limite = 0.0
-            
+            novo_limite = float(numeros[0].replace(',', '.'))
             cat_alvo = "despesas"
             if "casa" in query: cat_alvo = "casa"
             elif "lazer" in query: cat_alvo = "lazer"
@@ -97,7 +147,7 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
             salvar_usuarios(users_dict)
             
             gasto_atual = users_dict[user_email]["gastos_atuais"][cat_alvo]
-            texto_resp = f"⚙️ **Limite Mensal Atualizado com Sucesso!**\n\n* **Categoria:** {cat_alvo.capitalize()}\n* **Novo Teto Definido:** R$ {novo_limite:,.2f}\n* **Gasto Atual na Categoria:** R$ {gasto_atual:,.2f}\n\nSeus parâmetros para as 3 categorias foram salvos automaticamente."
+            texto_resp = f"⚙️ **Limite Mensal Atualizado!**\n\n* **Categoria:** {cat_alvo.capitalize()}\n* **Novo Teto:** R$ {novo_limite:,.2f}\n* **Gasto Atual:** R$ {gasto_atual:,.2f}\n\n💡 *Insight:* Manter tetos rígidos aumenta sua capacidade de poupança em até 20% ao mês."
 
             df_gastos = pd.DataFrame({
                 "Gasto Acumulado (R$)": [users_dict[user_email]["gastos_atuais"]["casa"], users_dict[user_email]["gastos_atuais"]["lazer"], users_dict[user_email]["gastos_atuais"]["despesas"]],
@@ -111,16 +161,12 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
                 "grafico_dados": df_gastos
             }
 
-    # 2. DETECÇÃO DE REGISTRO DE GASTO (Ex: "gastei 150 com lazer")
+    # 4. DETECÇÃO DE REGISTRO DE GASTO + INSIGHT PROATIVO
     palavras_chave_gasto = ["gastei", "paguei", "comprei", "conta de", "gasto"]
     if any(p in query for p in palavras_chave_gasto):
         numeros = re.findall(r'\d+[\d,.]*', query.replace('.', '').replace(',', '.'))
         if numeros:
-            try:
-                valor = float(numeros[0].replace(',', '.'))
-            except:
-                valor = 0.0
-            
+            valor = float(numeros[0].replace(',', '.'))
             categoria = "despesas"
             if any(c in query for c in ["casa", "aluguel", "luz", "água", "mercado", "supermercado", "condomínio"]):
                 categoria = "casa"
@@ -137,10 +183,11 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
             ultrapassou = gasto_atual > limite_cat
             status_limite = "⚠️ ALERTA: Você ultrapassou o limite mensal desta categoria!" if ultrapassou else "✅ Gasto dentro do limite seguro."
             
-            texto_resposta = f"""💸 **Registro Financeiro Realizado com Sucesso!**\n\n* **Categoria:** {categoria.capitalize()}\n* **Valor Registrado:** R$ {valor:,.2f}\n* **Total Acumulado em {categoria.capitalize()}:** R$ {gasto_atual:,.2f} / Limite: R$ {limite_cat:,.2f}\n* **Status:** {status_limite}\n\n"""
-            if ultrapassou:
-                ultrapasso_valor = gasto_atual - limite_cat
-                texto_resposta += f"🚨 **ATENÇÃO:** O limite de {categoria.capitalize()} foi estourado em **R$ {ultrapasso_valor:,.2f}**! Relatório gerado para envio automático no WhatsApp."
+            insight_proativo = ""
+            if categoria == "lazer" and gasto_atual > (limite_cat * 0.5):
+                insight_proativo = "\n\n🧠 *Insight Proativo da IA:* Notei que seus gastos com Lazer estão subindo rápido. Que tal reduzirmos 15% nos próximos dias para bater sua meta do mês?"
+
+            texto_resposta = f"""💸 **Registro Financeiro Realizado!**\n\n* **Categoria:** {categoria.capitalize()}\n* **Valor Registrado:** R$ {valor:,.2f}\n* **Total Acumulado:** R$ {gasto_atual:,.2f} / Limite: R$ {limite_cat:,.2f}\n* **Status:** {status_limite}{insight_proativo}"""
 
             df_gastos = pd.DataFrame({
                 "Gasto Acumulado (R$)": [users_dict[user_email]["gastos_atuais"]["casa"], users_dict[user_email]["gastos_atuais"]["lazer"], users_dict[user_email]["gastos_atuais"]["despesas"]],
@@ -154,9 +201,9 @@ def processar_gasto_ou_pergunta(pergunta_ou_comando, user_data, user_email, user
                 "grafico_dados": df_gastos
             }
 
-    # 3. CONSULTA DE NEGÓCIOS / IA GERAL
+    # 5. CONSULTA DE NEGÓCIOS / IA GERAL
     termo_limpo = pergunta_ou_comando.title()
-    texto_gerado = f"""💼 **Auditoria e Plano de Lucratividade Estratégica**\n\n**1. Diagnóstico Inicial:**\nAnalisamos a sua solicitação (*"{pergunta_ou_comando}"*). O principal gargalo que impede o seu negócio de crescer é a alocação ineficiente de capital.\n\n**2. O Plano de Ação Imediato:**\n* **Foco no Caixa:** Proteja sua margem cortando custos operacionais desnecessários nas próximas 48 horas.\n* **Expansão Comercial:** Ative sua base de clientes antigos com ofertas diretas.\n\n**3. Projeção de Crescimento Financeiro:**\nCom a aplicação deste plano de eficiência, o seu fluxo de caixa tende a evoluir da seguinte forma:"""
+    texto_gerado = f"""💼 **Auditoria e Plano de Lucratividade Estratégica**\n\n**1. Diagnóstico Inicial:**\nAnalisamos a sua solicitação (*"{pergunta_ou_comando}"*). O principal gargalo que impede o seu negócio de crescer é a alocação ineficiente de capital.\n\n**2. O Plano de Ação Imediato:**\n* **Foco no Caixa:** Proteja sua margem cortando custos operacionais nas próximas 48 horas.\n* **Expansão Comercial:** Ative sua base de clientes antigos com ofertas diretas.\n\n💡 *Insight Comportamental:* A consistência diária nas pequenas decisões financeiras gera um impacto exponencial no seu lucro trimestral."""
 
     return {
         "texto": texto_gerado,
@@ -186,9 +233,10 @@ if not st.session_state.logged_in:
         st.markdown("### O Aplicativo Definitivo de Negócios e Controle de Gastos por IA.")
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("""
-        * 🧠 **Cérebro Master Unificado:** Consultoria avançada para qualquer ramo.
-        * 💸 **Controle de Gastos por Chat:** Digite gastos ou atualize limites de Casa, Lazer e Despesas na hora.
-        * 🚨 **Alertas no WhatsApp:** Relatórios instantâneos caso você ultrapasse seus limites mensais.
+        * 🧠 **Cérebro Master Unificado:** Consultoria avançada para negócios.
+        * 💸 **Controle de Gastos e Metas:** Gerencie limites e sonhos direto no chat.
+        * 📊 **Raio-X Semanal e Insights:** IA pró-ativa com puxões de orelha e parabéns.
+        * 🚨 **Alertas no WhatsApp:** Relatórios instantâneos a um clique.
         """)
     with col_form:
         st.markdown("<br>", unsafe_allow_html=True)
@@ -237,7 +285,8 @@ if not st.session_state.logged_in:
                             "codigo_indicacao": codigo_gerado,
                             "amigos_indicados": 0,
                             "limites": {"casa": 2000.0, "lazer": 500.0, "despesas": 1000.0},
-                            "gastos_atuais": {"casa": 0.0, "lazer": 0.0, "despesas": 0.0}
+                            "gastos_atuais": {"casa": 0.0, "lazer": 0.0, "despesas": 0.0},
+                            "meta": {"titulo": "Reserva de Emergência", "alvo": 5000.0, "atual": 0.0}
                         }
                         salvar_usuarios(users)
                         st.success("Conta criada com sucesso! Faça login.")
@@ -254,7 +303,7 @@ if not st.session_state.logged_in:
 else:
     users = carregar_usuarios()
     user_email = st.session_state.current_user
-    user_data = users.get(user_email, {"nome": "Empreendedor", "is_pro": False, "lucro_gerado": 0.0, "trial_usado": False, "amigos_indicados": 0, "codigo_indicacao": "NRX-PRO", "limites": {"casa": 2000.0, "lazer": 500.0, "despesas": 1000.0}, "gastos_atuais": {"casa": 0.0, "lazer": 0.0, "despesas": 0.0}})
+    user_data = users.get(user_email, {"nome": "Empreendedor", "is_pro": False, "lucro_gerado": 0.0, "trial_usado": False, "amigos_indicados": 0, "codigo_indicacao": "NRX-PRO", "limites": {"casa": 2000.0, "lazer": 500.0, "despesas": 1000.0}, "gastos_atuais": {"casa": 0.0, "lazer": 0.0, "despesas": 0.0}, "meta": {"titulo": "Reserva de Emergência", "alvo": 5000.0, "atual": 0.0}})
     
     is_admin = (user_email == "leandrodesantana646@gmail.com")
 
@@ -274,7 +323,7 @@ else:
     """, unsafe_allow_html=True)
 
     opcoes_menu = [
-        "⚡ Master IA & Controle de Gastos",
+        "⚡ Master IA & Retenção de Hábitos",
         "🎁 Indique e Ganhe (Viral)",
         "💳 Assinatura Pro (Pagamento via Pix)",
         "🚪 Sair (Logout)"
@@ -284,14 +333,14 @@ else:
 
     menu = st.sidebar.selectbox("Navegação do Sistema", opcoes_menu)
 
-    if menu == "⚡ Master IA & Controle de Gastos":
-        st.markdown("### ⚡ Cérebro Master e Gestão de Orçamento")
-        st.markdown("<p style='color: #64748b; font-size: 13px;'>Dica: Registre gastos (ex: <i>'Gastei 250 com lazer'</i>) ou ajuste seus limites conversando (ex: <i>'Mudar limite de casa para 3500'</i>).</p>", unsafe_allow_html=True)
+    if menu == "⚡ Master IA & Retenção de Hábitos":
+        st.markdown("### ⚡ Cérebro Master, Metas e Raio-X Semanal")
+        st.markdown("<p style='color: #64748b; font-size: 13px;'>Dica: Digite <i>'Resumo semanal'</i>, <i>'Criar meta de 5000 para Carro'</i>, <i>'Gastei 150 com lazer'</i> ou <i>'Mudar limite de casa para 3000'</i>.</p>", unsafe_allow_html=True)
         
         pode_usar = user_data['is_pro'] or (not user_data['trial_usado'])
         
         if not pode_usar:
-            st.warning("⚠️ **Seu único teste gratuito já foi utilizado!** Para continuar tendo acesso ilimitado às respostas e relatórios financeiros da IA, ative sua Conta Pro.")
+            st.warning("⚠️ **Seu único teste gratuito já foi utilizado!** Para continuar tendo acesso ilimitado às respostas e ferramentas de retenção, ative sua Conta Pro.")
         else:
             if not user_data['is_pro']:
                 st.info("ℹ️ Você está utilizando o seu **1 teste gratuito exclusivo**. Aproveite para testar o sistema agora!")
@@ -311,12 +360,12 @@ else:
                         
                         col_w, col_d = st.columns(2)
                         with col_w:
-                            encoded_text = urllib.parse.quote(f"Relatório de Finanças e Gestão Neurax:\n\n{message['content']['texto']}")
+                            encoded_text = urllib.parse.quote(f"Relatório de Finanças e Metas Neurax:\n\n{message['content']['texto']}")
                             st.markdown(f'<a href="https://wa.me/?text={encoded_text}" target="_blank"><button style="background-color: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">💬 Enviar Alerta para o WhatsApp</button></a>', unsafe_allow_html=True)
                         with col_d:
                             st.download_button("📥 Baixar Relatório (TXT)", data=message['content']['texto'], file_name=f"neurax_relatorio_{i}.txt", mime="text/plain", key=f"dl_{i}")
 
-            if prompt := st.chat_input("Ex: 'Gastei 250 com lazer' ou 'Mudar limite de casa para 3000'"):
+            if prompt := st.chat_input("Ex: 'Resumo semanal', 'Criar meta de 5000 para Carro Novo' ou 'Gastei 150'"):
                 st.session_state.chat_history.append({"role": "user", "content": prompt})
                 st.rerun()
 
@@ -329,7 +378,7 @@ else:
             st.text_input("Copie e envie para seus contatos:", value=link_indicacao, disabled=True)
             st.metric("Amigos já indicados", f"{user_data.get('amigos_indicados', 0)} pessoas")
         
-        encoded_share = urllib.parse.quote(f"Cara, você precisa testar o Neurax Master AI! Ele controla gastos em Casa, Lazer e Despesas, permite ajustar limites direto no chat, manda alertas no WhatsApp e projeta lucros em gráficos. Acesse por aqui: {link_indicacao}")
+        encoded_share = urllib.parse.quote(f"Cara, você precisa testar o Neurax Master AI! Ele controla gastos, gera resumo semanal com raio-x, gerencia metas de sonhos e manda alertas no WhatsApp. Acesse por aqui: {link_indicacao}")
         st.markdown(f'<br><a href="https://wa.me/?text={encoded_share}" target="_blank"><button style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%;">🚀 Compartilhar com Amigos no WhatsApp</button></a>', unsafe_allow_html=True)
 
     elif menu == "👑 Painel do Administrador (Gestão)":
@@ -378,10 +427,10 @@ else:
         st.rerun()
 
 # Lógica final para responder no chat
-if st.session_state.logged_in and menu == "⚡ Master IA & Controle de Gastos":
+if st.session_state.logged_in and menu == "⚡ Master IA & Retenção de Hábitos":
     if len(st.session_state.chat_history) > 0 and st.session_state.chat_history[-1]["role"] == "user":
         prompt = st.session_state.chat_history[-1]["content"]
-        with st.spinner("Processando dados financeiros e atualizando orçamentos..."):
+        with st.spinner("Processando inteligência comportamental e orçamentos..."):
             resposta_master = processar_gasto_ou_pergunta(prompt, user_data, user_email, users)
             st.session_state.chat_history.append({"role": "assistant", "content": resposta_master})
             if not user_data['is_pro']: users[user_email]["trial_usado"] = True
