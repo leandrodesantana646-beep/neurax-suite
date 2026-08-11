@@ -328,4 +328,3 @@ else:
     elif menu == "🚪 Sair":
         st.session_state.logged_in = False
         st.rerun()
-68
