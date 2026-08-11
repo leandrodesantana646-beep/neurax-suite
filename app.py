@@ -8,12 +8,12 @@ import urllib.parse
 
 # Configuração da página
 st.set_page_config(
-    page_title="Neurax Master AI", 
+    page_title="Neurax IA", 
     page_icon="⚡", 
     layout="wide"
 )
 
-# Estilização Avançada e Moderna (UI/UX de Alto Padrão)
+# Estilização Avançada e Moderna
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -40,8 +40,9 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02); 
     }
     
+    /* Cor do fundo do menu lateral */
     [data-testid="stSidebar"] { 
-        background-color: #0f172a; 
+        background-color: #0d1322; 
         color: #ffffff; 
         border-right: 1px solid #1e293b;
     }
@@ -141,8 +142,7 @@ if not st.session_state.logged_in:
         else:
             st.markdown("""
                 <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 16px; color: white; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #38bdf8; font-size: 24px;">⚡ NEURAX</h2>
-                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #94a3b8;">MASTER AI</p>
+                    <h2 style="margin: 0; color: #38bdf8; font-size: 24px;">⚡ NEURAX IA</h2>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -185,7 +185,7 @@ else:
     if os.path.exists("logo.png"): 
         st.sidebar.image("logo.png", use_container_width=True)
     else: 
-        st.sidebar.markdown("<h2 style='color: #38bdf8; text-align: center;'>⚡ NEURAX AI</h2>", unsafe_allow_html=True)
+        st.sidebar.markdown("<h2 style='color: #38bdf8; text-align: center;'>⚡ NEURAX IA</h2>", unsafe_allow_html=True)
     
     st.sidebar.markdown(f"**Usuário:** {user_data['nome']}")
     
@@ -209,9 +209,9 @@ else:
         with hc1:
             st.image("logo.png", width=45)
         with hc2:
-            st.markdown("## Neurax Master AI")
+            st.markdown("## ⚡ NEURAX IA")
     else:
-        st.markdown("## ⚡ Neurax Master AI")
+        st.markdown("## ⚡ NEURAX IA")
     st.markdown("---")
 
     # PÁGINAS DO APP
@@ -263,7 +263,6 @@ else:
         if st.button("Gerar Análise de Mercado com IA", use_container_width=True):
             st.success(f"Análise de inteligência gerada com sucesso para o nicho: **{nicho}**!")
             
-            # Gráfico Comparativo de Desempenho e Custos (Ferramentas Tradicionais vs Neurax IA)
             comparativo_data = pd.DataFrame({
                 "Estratégia": ["Modelo Tradicional (Agências/Softwares Separados)", "Modelo com Neurax IA"],
                 "Custo Operacional (R$)": [4500, 1200],
@@ -279,7 +278,6 @@ else:
             )
             st.plotly_chart(fig_comparativa, use_container_width=True)
             
-            # Insights de Corte de Custos e Novas Receitas
             st.markdown("---")
             col_a, col_b = st.columns(2)
             
