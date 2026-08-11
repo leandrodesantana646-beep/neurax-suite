@@ -68,12 +68,24 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Estilo das barras de digitação com a mesma cor do botão */
+    /* Estilo das barras de digitação com borda azul e texto azul */
     .stTextInput>div>div>input {
         border-radius: 10px;
-        border: 2px solid #3b82f6;
-        background-color: #ffffff;
+        border: 2px solid #3b82f6 !important;
+        background-color: #ffffff !important;
+        color: #2563eb !important; /* COR DO TEXTO DIGITADO EM AZUL */
         padding: 10px;
+    }
+    
+    /* Garante que o texto continue azul quando você clica para digitar */
+    .stTextInput>div>div>input:focus {
+        color: #2563eb !important;
+        border-color: #1d4ed8 !important;
+    }
+    
+    /* Placeholder (texto de fundo antes de digitar) em cinza para não sumir */
+    .stTextInput>div>div>input::placeholder {
+        color: #94a3b8 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -316,3 +328,4 @@ else:
     elif menu == "🚪 Sair":
         st.session_state.logged_in = False
         st.rerun()
+68
