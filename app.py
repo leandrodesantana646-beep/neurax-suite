@@ -68,9 +68,10 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
+    /* Estilo das barras de digitação com a mesma cor do botão */
     .stTextInput>div>div>input {
         border-radius: 10px;
-        border: 1px solid #cbd5e1;
+        border: 2px solid #3b82f6;
         background-color: #ffffff;
         padding: 10px;
     }
