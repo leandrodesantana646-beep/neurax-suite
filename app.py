@@ -2,9 +2,11 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import plotly.express as px
-import datetime
+import plotly.graph_objects as go
 import os
 import urllib.parse
+import time
+import random
 
 # Configuração da página
 st.set_page_config(
@@ -22,9 +24,7 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    .main { 
-        background-color: #f8fafc; 
-    }
+    .main { background-color: #f8fafc; }
     
     h1, h2, h3 { 
         color: #0f172a; 
@@ -40,17 +40,16 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02); 
     }
     
-    /* Cor do fundo do menu lateral */
+    /* Menu Lateral */
     [data-testid="stSidebar"] { 
         background-color: #0d1322; 
         color: #ffffff; 
         border-right: 1px solid #1e293b;
     }
     
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #94a3b8;
-    }
+    [data-testid="stSidebar"] .stMarkdown { color: #94a3b8; }
     
+    /* Botões */
     .stButton>button {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
@@ -68,24 +67,31 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Estilo das barras de digitação com borda azul e texto azul */
-    .stTextInput>div>div>input {
+    /* Barras de digitação com borda azul e texto azul */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
         border-radius: 10px;
         border: 2px solid #3b82f6 !important;
         background-color: #ffffff !important;
-        color: #2563eb !important; /* COR DO TEXTO DIGITADO EM AZUL */
+        color: #2563eb !important;
         padding: 10px;
+        font-weight: 600;
     }
     
-    /* Garante que o texto continue azul quando você clica para digitar */
-    .stTextInput>div>div>input:focus {
+    .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus {
         color: #2563eb !important;
         border-color: #1d4ed8 !important;
     }
     
-    /* Placeholder (texto de fundo antes de digitar) em cinza para não sumir */
-    .stTextInput>div>div>input::placeholder {
-        color: #94a3b8 !important;
+    .stTextInput>div>div>input::placeholder { color: #94a3b8 !important; font-weight: 400; }
+    
+    /* Card Destacado */
+    .highlight-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 5px solid #3b82f6;
+        margin: 15px 0;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -128,40 +134,39 @@ def add_user(email, senha, nome):
     conn.close()
     return success
 
-def get_all_users():
-    conn = sqlite3.connect("neurax.db")
-    df = pd.read_sql("SELECT * FROM users", conn)
-    conn.close()
-    return df
+# --- FUNÇÕES SIMULADAS DE IA ---
+def gerar_consultoria_ia(nicho, produto):
+    # Simula uma chamada de API para o Gemini/OpenAI
+    return f"""
+    **Análise de Mercado Neurax IA:** O nicho de **{nicho}** está em expansão, mas a maioria dos concorrentes foca apenas em preço baixo. 
+    O seu produto, **{produto}**, tem potencial para se destacar se você focar na 'experiência do cliente'. 
+    Sugiro criar pacotes ou combos, melhorando a apresentação visual. Isso justifica a margem alta e atrai um público que não chora por desconto.
+    """
 
-# --- ESTADO E RETORNO DE PAGAMENTO ---
+def gerar_copy_vendas(produto):
+    return f"""
+    🔥 **Script para WhatsApp:** 
+    "Olá! Vi que você se interessou pelo nosso {produto}. Diferente do que tem no mercado, o nosso é focado em [Benefício Principal]. Tenho apenas mais 2 unidades com uma condição especial hoje. Posso reservar o seu?"
+    
+    📸 **Copy para Instagram:**
+    "Cansado de [Problema comum do nicho]? 😩 Nós também estávamos. Por isso desenvolvemos o {produto}. Com ele, você não apenas resolve isso, mas também ganha [Benefício extra]. Clique no link da bio e garanta antes que o estoque zere! 🚀"
+    """
+
+# --- TELA DE AUTENTICAÇÃO ---
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 
-query_params = st.query_params
-status_pagamento = query_params.get("status") or query_params.get("collection_status")
-if status_pagamento in ["sucesso", "approved"] and st.session_state.get('logged_in'):
-    user_email = st.session_state.get('user')
-    if user_email:
-        update_user(user_email, "is_pro", 1)
-        st.balloons()
-        st.success("🎉 Pagamento confirmado! Seu acesso PRO foi liberado automaticamente.")
-
-# --- TELA DE AUTENTICAÇÃO UNIFICADA ---
 if not st.session_state.logged_in:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if os.path.exists("logo.png"):
-            st.image("logo.png", use_container_width=True)
-        else:
-            st.markdown("""
-                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 16px; color: white; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #38bdf8; font-size: 24px;">⚡ NEURAX IA</h2>
-                </div>
-            """, unsafe_allow_html=True)
-            
+        st.markdown("""
+            <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 16px; color: white; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #38bdf8; font-size: 24px;">⚡ NEURAX IA</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         st.markdown("<h2 style='text-align: center; margin-bottom: 20px;'>🔑 Acesso ao Sistema</h2>", unsafe_allow_html=True)
         
-        tab_login, tab_cadastro, tab_recuperar = st.tabs(["🔑 Entrar", "📝 Cadastrar", "🔄 Recuperar"])
+        tab_login, tab_cadastro = st.tabs(["🔑 Entrar", "📝 Cadastrar"])
         
         with tab_login:
             email = st.text_input("E-mail", key="login_email")
@@ -177,153 +182,126 @@ if not st.session_state.logged_in:
         
         with tab_cadastro:
             nome = st.text_input("Nome Completo", key="cad_nome")
-            n_email = st.text_input("E-mail para cadastro", key="cad_email")
-            n_senha = st.text_input("Crie uma senha", type="password", key="cad_senha")
+            n_email = st.text_input("E-mail", key="cad_email")
+            n_senha = st.text_input("Senha", type="password", key="cad_senha")
             if st.button("Criar Conta", use_container_width=True):
                 if add_user(n_email, n_senha, nome):
-                    st.success("Conta criada com sucesso! Vá para a aba 'Entrar'.")
+                    st.success("Conta criada! Vá para a aba 'Entrar'.")
                 else: 
                     st.error("Erro: E-mail já cadastrado.")
-                
-        with tab_recuperar:
-            st.info("Esqueceu sua senha? Entre em contato com o suporte para redefinição manual.")
-            st.link_button("Falar com Suporte (WhatsApp)", "https://wa.me/5511999999999", use_container_width=True)
 
 else:
     # --- FLUXO PRINCIPAL LOGADO ---
     user_email = st.session_state.user
     user_data = get_user(user_email)
     
-    # UI Lateral
-    if os.path.exists("logo.png"): 
-        st.sidebar.image("logo.png", use_container_width=True)
-    else: 
-        st.sidebar.markdown("<h2 style='color: #38bdf8; text-align: center;'>⚡ NEURAX IA</h2>", unsafe_allow_html=True)
-    
+    st.sidebar.markdown("<h2 style='color: #38bdf8; text-align: center;'>⚡ NEURAX IA</h2>", unsafe_allow_html=True)
     st.sidebar.markdown(f"**Usuário:** {user_data['nome']}")
     
-    menu = st.sidebar.selectbox("Menu Principal", ["📊 Dashboard", "🚀 IA & Crescimento de Lucro", "👑 Assinar Pro", "🚪 Sair"])
+    menu = st.sidebar.selectbox("Menu Principal", ["📊 Dashboard", "🚀 IA & Escalador de Lucro", "👑 Assinar Pro", "🚪 Sair"])
     
-    # PAINEL ADMIN
-    if user_email == "leandrodesantana646@gmail.com":
-        if st.sidebar.checkbox("Painel Admin"):
-            st.sidebar.subheader("👑 Aprovação PRO")
-            df_users = get_all_users()
-            for idx, row in df_users.iterrows():
-                if not row['is_pro']:
-                    if st.sidebar.button(f"Liberar: {row['nome']}", key=f"lib_{row['email']}"):
-                        update_user(row['email'], "is_pro", 1)
-                        st.success(f"Usuário {row['nome']} liberado com sucesso!")
-                        st.rerun()
-
-    # Cabeçalho Principal Moderno
-    if os.path.exists("logo.png"):
-        hc1, hc2 = st.columns([1, 12])
-        with hc1:
-            st.image("logo.png", width=45)
-        with hc2:
-            st.markdown("## ⚡ NEURAX IA")
-    else:
-        st.markdown("## ⚡ NEURAX IA")
+    st.markdown("## ⚡ NEURAX IA")
     st.markdown("---")
 
-    # PÁGINAS DO APP
     if menu == "📊 Dashboard":
-        st.header("📈 Visão Financeira Corporativa")
-        
+        st.header("📈 Controle de Caixa")
+        # (Código original do dashboard mantido enxuto para focar na nova IA)
         gastos = {"Casa": user_data['casa'], "Lazer": user_data['lazer'], "Despesas": user_data['despesas']}
         df_gastos = pd.DataFrame(list(gastos.items()), columns=['Categoria', 'Valor'])
-        fig = px.pie(df_gastos, values='Valor', names='Categoria', hole=0.4, title="Distribuição de Gastos por Categoria")
+        fig = px.pie(df_gastos, values='Valor', names='Categoria', hole=0.4)
         st.plotly_chart(fig, use_container_width=True)
-        
-        limites = {"Casa": 1000.0, "Lazer": 300.0, "Despesas": 500.0}
-        
-        st.subheader("Registrar Novo Gasto")
-        cat = st.selectbox("Categoria", ["Casa", "Lazer", "Despesas"])
-        valor = st.number_input("Valor do Gasto", min_value=0.0)
-        
-        if st.button("Registrar Gasto", use_container_width=True):
-            cat_key = cat.lower()
-            novo_total = user_data[cat_key] + valor
-            update_user(user_email, cat_key, novo_total)
-            
-            limite_maximo = limites.get(cat, 1000.0)
-            
-            if novo_total > limite_maximo:
-                st.toast("🚨 Alerta: Limite de gastos ultrapassado!", icon="⚠️")
-                st.error(f"ATENÇÃO: O limite da categoria **{cat}** foi estourado!")
-                st.warning(f"Seu limite era R$ {limite_maximo:,.2f}, mas com este lançamento o total foi para **R$ {novo_total:,.2f}**.")
-                
-                texto_aviso = f"⚠️ Alerta Neurax: Meus gastos na categoria *{cat}* ultrapassaram o limite planejado. Atual: R$ {novo_total:,.2f} (Limite: R$ {limite_maximo:,.2f})."
-                link_wpp = f"https://wa.me/5511999999999?text={urllib.parse.quote(texto_aviso)}"
-                st.link_button("📲 Enviar Alerta via WhatsApp", link_wpp, use_container_width=True)
-            else:
-                st.toast("Gasto registrado com sucesso!", icon="✅")
-                st.success("✅ Gasto registrado dentro do orçamento planejado!")
-                st.rerun()
 
-    elif menu == "🚀 IA & Crescimento de Lucro":
-        st.header("🚀 Motor de Inteligência de Mercado e Escala")
-        st.markdown("Descubra como a IA do Neurax reduz seus custos operacionais em comparação a métodos tradicionais e dispara o seu lucro líquido.")
+    elif menu == "🚀 IA & Escalador de Lucro":
+        st.header("🧠 Neurax IA: Máquina de Vendas & Lucro")
+        st.markdown("Descubra seu posicionamento, corte custos inúteis, crie copies que vendem e simule o retorno dos seus anúncios antes mesmo de gastar 1 real.")
         
-        nicho = st.selectbox("Selecione o Nicho do seu Negócio:", [
-            "E-commerce / Loja Virtual", 
-            "Prestação de Serviços / Consultoria", 
-            "Negócio Local / Varejo", 
-            "Infoprodutos / Marketing Digital"
-        ])
+        col_inp1, col_inp2, col_inp3 = st.columns([2, 2, 1.5])
+        with col_inp1:
+            nicho_input = st.text_input("Nicho (Ex: Roupas, Consultoria):", key="nicho")
+        with col_inp2:
+            produto_input = st.text_input("Produto/Serviço Principal:", key="produto")
+        with col_inp3:
+            custo_unitario = st.number_input("Custo de Produção (R$):", min_value=1.0, value=30.0, step=5.0)
+            
+        margem_desejada = st.select_slider(
+            "Margem de Lucro desejada:",
+            options=[100, 150, 200, 300, 400, 500],
+            value=200,
+            format_func=lambda x: f"{x}%"
+        )
         
-        if st.button("Gerar Análise de Mercado com IA", use_container_width=True):
-            st.success(f"Análise de inteligência gerada com sucesso para o nicho: **{nicho}**!")
-            
-            comparativo_data = pd.DataFrame({
-                "Estratégia": ["Modelo Tradicional (Agências/Softwares Separados)", "Modelo com Neurax IA"],
-                "Custo Operacional (R$)": [4500, 1200],
-                "Lucro Estimado (R$)": [8000, 18500]
-            })
-            
-            fig_comparativa = px.bar(
-                comparativo_data, 
-                x="Estratégia", 
-                y=["Custo Operacional (R$)", "Lucro Estimado (R$)"], 
-                barmode="group",
-                title="📊 Comparativo Real: Custo vs. Lucro com IA"
-            )
-            st.plotly_chart(fig_comparativa, use_container_width=True)
-            
-            st.markdown("---")
-            col_a, col_b = st.columns(2)
-            
-            with col_a:
-                st.markdown("### ✂️ Otimização & Corte de Custos")
-                st.info("""
-                - **Automação de Processos:** Redução de 70% em tarefas repetitivas manuais.
-                - **Substituição de Ferramentas:** Eliminação de assinaturas desnecessárias de múltiplos softwares.
-                - **Gestão Preditiva:** Alertas automáticos que evitam desperdício de capital de giro.
-                """)
+        if st.button("⚡ Executar Inteligência Total", use_container_width=True):
+            if not nicho_input or not produto_input:
+                st.warning("Preencha o Nicho e o Produto para a IA funcionar.")
+            else:
+                with st.spinner('A IA está analisando o mercado, precificando e criando a estratégia...'):
+                    time.sleep(2) # Simula o delay de uma API de IA
                 
-            with col_b:
-                st.markdown("### 💰 Novas Fontes de Receita")
-                st.success("""
-                - **Escala de Vendas com IA:** Estratégias automatizadas de conversão direcionadas para o seu público.
-                - **Precificação Inteligente:** Ajuste dinâmico de margens com base na análise de mercado em tempo real.
-                - **Retenção de Clientes:** Campanhas personalizadas geradas por IA para aumentar o LTV.
-                """)
+                preco_sugerido = custo_unitario * (1 + (margem_desejada / 100))
+                lucro_bruto_unitario = preco_sugerido - custo_unitario
+                
+                # --- 1. CONSULTORIA DA IA ---
+                st.markdown("### 🤖 1. Consultoria Estratégica IA")
+                st.markdown(f"<div class='highlight-card'>{gerar_consultoria_ia(nicho_input, produto_input)}</div>", unsafe_allow_html=True)
+                
+                # --- 2. RAIO-X DE CUSTOS (EFEITO CHOQUE) ---
+                st.markdown("### 🔪 2. Raio-X de Custos: Por que você vai lucrar mais?")
+                df_corte = pd.DataFrame({
+                    "Profissional/Serviço": ["Gestor de Tráfego", "Social Media (Posts)", "Atendimento/Vendedor", "Softwares Soltos"],
+                    "Modelo Antigo (Mensal)": ["R$ 1.500", "R$ 1.200", "R$ 1.800", "R$ 350"],
+                    "Com Neurax IA": ["R$ 0 (Você faz)", "R$ 0 (IA Gera)", "R$ 0 (Automação)", "R$ 0 (Tudo em 1)"]
+                })
+                st.table(df_corte)
+                st.success("💰 **Economia Imediata Mensal: R$ 4.850,00.** Dinheiro que vai direto para o seu lucro líquido.")
+                
+                # --- 3. MÁQUINA DE VENDAS ---
+                st.markdown("### 📢 3. Sua Máquina de Vendas Pronta")
+                with st.expander("Ver Scripts de Vendas (WhatsApp e Instagram)"):
+                    st.write(gerar_copy_vendas(produto_input))
+                
+                # --- 4. SIMULADOR DE TRÁFEGO ---
+                st.markdown("### 🎯 4. Simulador de Tráfego Pago (ROI Seguro)")
+                st.info("Vamos simular quanto de lucro você tem se colocar dinheiro no Facebook/Google Ads hoje.")
+                
+                col_t1, col_t2 = st.columns(2)
+                with col_t1:
+                    verba_ads = st.number_input("Verba para Anúncios Hoje (R$):", value=50.0)
+                with col_t2:
+                    conversao_estimada = st.slider("Taxa de Conversão Esperada (%)", 1, 10, 2)
+                
+                cpc_estimado = 1.20 # Custo por clique fictício
+                cliques = int(verba_ads / cpc_estimado)
+                vendas_ads = int(cliques * (conversao_estimada / 100))
+                
+                if vendas_ads == 0: vendas_ads = 1 # Garante pelo menos 1 para não frustrar o simulador
+                
+                faturamento_ads = vendas_ads * preco_sugerido
+                lucro_ads = faturamento_ads - (vendas_ads * custo_unitario) - verba_ads
+                
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Pessoas no site", cliques)
+                m2.metric("Vendas Feitas", vendas_ads)
+                m3.metric("Faturamento", f"R$ {faturamento_ads:,.2f}")
+                m4.metric("Seu Lucro Limpo", f"R$ {lucro_ads:,.2f}", f"{margem_desejada}% de Margem")
+                
+        # --- 5. ROTA ANTI-FALÊNCIA GAMIFICADA ---
+        st.markdown("---")
+        st.markdown("### 🛡️ 5. Checklist Anti-Falência")
+        st.write("Marque as caixinhas conforme você aplica as estratégias no seu negócio. Blinde sua empresa contra a quebra!")
         
-        if not user_data['is_pro']:
-            st.warning("🔒 Desbloqueie o acesso completo a relatórios avançados de mercado e estratégias ilimitadas assinando o plano PRO.")
+        c1 = st.checkbox("Cortei custos fixos desnecessários com a tabela do Raio-X.")
+        c2 = st.checkbox("Ajustei o preço do meu produto com a margem recomendada.")
+        c3 = st.checkbox("Copiei os scripts de vendas gerados pela IA.")
+        c4 = st.checkbox("Fiz minha primeira simulação de tráfego pago sem medo.")
+        
+        if c1 and c2 and c3 and c4:
+            st.balloons()
+            st.success("🏆 PARABÉNS! Você garantiu o Selo de Negócio Blindado. Sua mentalidade agora é de um empresário focado em escala e lucro extremo!")
 
     elif menu == "👑 Assinar Pro":
-        st.header("👑 Desbloqueie o Potencial Máximo")
-        st.markdown("""
-        - 🤖 **Consultoria IA Ilimitada** e Análises de Mercado Avançadas.
-        - 📈 **Projeções de Crescimento** e relatórios de lucro.
-        - 🚀 **Suporte Prioritário** via plataforma.
-        
-        **Valor:** R$ 49,99 / mês
-        """)
-        st.link_button("Assinar R$ 49,99/mês (PIX / Cartão Automático)", "https://mpago.la/2WjVnvA", use_container_width=True)
-        st.info("💡 Após concluir o pagamento, você retornará ao app e seu acesso PRO será liberado instantaneamente de forma automática.")
+        st.header("👑 Assinatura PRO")
+        st.markdown("Acesse a IA sem limites e tenha a plataforma completa.")
+        st.link_button("Assinar por R$ 49,99/mês", "https://mpago.la/2WjVnvA")
 
     elif menu == "🚪 Sair":
         st.session_state.logged_in = False
