@@ -6,11 +6,10 @@ import plotly.graph_objects as go
 import os
 import urllib.parse
 import time
-import random
 
 # Configuração da página
 st.set_page_config(
-    page_title="Neurax IA", 
+    page_title="Neurax IA - Sócio de Lucros", 
     page_icon="⚡", 
     layout="wide"
 )
@@ -40,7 +39,6 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02); 
     }
     
-    /* Menu Lateral */
     [data-testid="stSidebar"] { 
         background-color: #0d1322; 
         color: #ffffff; 
@@ -49,7 +47,6 @@ st.markdown("""
     
     [data-testid="stSidebar"] .stMarkdown { color: #94a3b8; }
     
-    /* Botões */
     .stButton>button {
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
@@ -67,7 +64,6 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Barras de digitação com borda azul e texto azul */
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
         border-radius: 10px;
         border: 2px solid #3b82f6 !important;
@@ -82,9 +78,6 @@ st.markdown("""
         border-color: #1d4ed8 !important;
     }
     
-    .stTextInput>div>div>input::placeholder { color: #94a3b8 !important; font-weight: 400; }
-    
-    /* Card Destacado */
     .highlight-card {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         color: white;
@@ -134,23 +127,49 @@ def add_user(email, senha, nome):
     conn.close()
     return success
 
-# --- FUNÇÕES SIMULADAS DE IA ---
+# --- FUNÇÕES DE IA ---
 def gerar_consultoria_ia(nicho, produto):
-    # Simula uma chamada de API para o Gemini/OpenAI
     return f"""
-    **Análise de Mercado Neurax IA:** O nicho de **{nicho}** está em expansão, mas a maioria dos concorrentes foca apenas em preço baixo. 
-    O seu produto, **{produto}**, tem potencial para se destacar se você focar na 'experiência do cliente'. 
-    Sugiro criar pacotes ou combos, melhorando a apresentação visual. Isso justifica a margem alta e atrai um público que não chora por desconto.
+    **Análise de Mercado Neurax IA:** O nicho de **{nicho}** está em franca expansão. A maioria dos concorrentes falha ao focar apenas em briga de preços. 
+    Seu produto, **{produto}**, tem alto potencial se você criar uma oferta de 'alto valor percebido'. 
+    Recomendação: Melhore a embalagem ou adicione um bônus digital (ex: um guia em PDF rápido). Isso justifica uma precificação premium e elimina os clientes que só pedem desconto.
     """
 
 def gerar_copy_vendas(produto):
+    return f"Olá! Vi que você se interessou pelo nosso {produto}. Diferente do que tem no mercado, o nosso é focado em qualidade extrema e durabilidade. Tenho apenas mais 2 unidades com uma condição especial hoje. Posso reservar o seu?"
+
+def gerar_pitch_deck(nicho, produto, margem, faturamento):
     return f"""
-    🔥 **Script para WhatsApp:** 
-    "Olá! Vi que você se interessou pelo nosso {produto}. Diferente do que tem no mercado, o nosso é focado em [Benefício Principal]. Tenho apenas mais 2 unidades com uma condição especial hoje. Posso reservar o seu?"
-    
-    📸 **Copy para Instagram:**
-    "Cansado de [Problema comum do nicho]? 😩 Nós também estávamos. Por isso desenvolvemos o {produto}. Com ele, você não apenas resolve isso, mas também ganha [Benefício extra]. Clique no link da bio e garanta antes que o estoque zere! 🚀"
+    **1. O Problema:** O mercado de {nicho} está saturado de soluções amadoras e sem padrão de qualidade.
+    **2. A Solução:** Criamos o(a) {produto}, unindo qualidade superior com uma experiência de compra premium.
+    **3. Modelo de Negócio:** Operamos com uma margem de segurança agressiva de {margem}%, garantindo caixa livre para reinvestimento imediato.
+    **4. Tração & Escala:** Com uma injeção de capital focada em tráfego pago, nossa projeção é escalar o faturamento rapidamente para R$ {faturamento:,.2f}/mês, mantendo o custo de aquisição (CAC) baixo.
     """
+
+def gerar_relatorio_txt(nicho, produto, preco, lucro, custo, margem):
+    texto = f"""========================================
+RELATÓRIO EXECUTIVO - NEURAX IA
+========================================
+Nicho: {nicho}
+Produto Principal: {produto}
+
+-- PRECIFICAÇÃO PREDITIVA --
+Custo Unitário: R$ {custo:.2f}
+Margem de Lucro Alvo: {margem}%
+Preço Final Sugerido: R$ {preco:.2f}
+Lucro Líquido por Unidade: R$ {lucro:.2f}
+
+-- ECONOMIA DE CUSTOS (RAIO-X) --
+Tráfego, Social Media e Softwares: R$ 4.850,00 economizados usando a IA.
+
+-- ROTA ANTI-FALÊNCIA --
+1. Mantenha os custos fixos próximos de zero.
+2. Não dispute preço, dispute valor.
+3. Reinvista lucros em automação e tráfego.
+
+Gerado por Neurax IA - O seu Sócio de Lucros
+========================================"""
+    return texto
 
 # --- TELA DE AUTENTICAÇÃO ---
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
@@ -198,14 +217,25 @@ else:
     st.sidebar.markdown("<h2 style='color: #38bdf8; text-align: center;'>⚡ NEURAX IA</h2>", unsafe_allow_html=True)
     st.sidebar.markdown(f"**Usuário:** {user_data['nome']}")
     
-    menu = st.sidebar.selectbox("Menu Principal", ["📊 Dashboard", "🚀 IA & Escalador de Lucro", "👑 Assinar Pro", "🚪 Sair"])
+    menu = st.sidebar.selectbox("Menu Principal", ["📊 Dashboard Integrado", "🚀 IA & Escalador de Lucro", "👑 Assinar Pro", "🚪 Sair"])
     
     st.markdown("## ⚡ NEURAX IA")
     st.markdown("---")
 
-    if menu == "📊 Dashboard":
-        st.header("📈 Controle de Caixa")
-        # (Código original do dashboard mantido enxuto para focar na nova IA)
+    if menu == "📊 Dashboard Integrado":
+        st.header("📈 Dashboard & Auditoria Financeira")
+        
+        gastos_totais = user_data['casa'] + user_data['lazer'] + user_data['despesas']
+        
+        # Auditoria Financeira Inteligente
+        st.markdown("### 🔍 Auditoria em Tempo Real")
+        if gastos_totais > 1500:
+            st.error(f"⚠️ **Alerta Preditivo:** Identificamos um vazamento financeiro. Seus custos chegaram a R$ {gastos_totais:,.2f}. Recomendamos travar os gastos de 'Lazer' imediatamente para manter o capital de giro seguro e evitar desestabilização do caixa no próximo ciclo.")
+        elif gastos_totais > 0:
+            st.success(f"✅ **Saúde Financeira:** Seus custos estão em R$ {gastos_totais:,.2f}. O fluxo de caixa está otimizado e saudável para escalar tráfego pago este mês.")
+        else:
+            st.info("💡 **Dica do Sócio:** Você ainda não registrou gastos. Mantenha os custos operacionais baixos para potencializar seu lucro máximo.")
+            
         gastos = {"Casa": user_data['casa'], "Lazer": user_data['lazer'], "Despesas": user_data['despesas']}
         df_gastos = pd.DataFrame(list(gastos.items()), columns=['Categoria', 'Valor'])
         fig = px.pie(df_gastos, values='Valor', names='Categoria', hole=0.4)
@@ -213,7 +243,7 @@ else:
 
     elif menu == "🚀 IA & Escalador de Lucro":
         st.header("🧠 Neurax IA: Máquina de Vendas & Lucro")
-        st.markdown("Descubra seu posicionamento, corte custos inúteis, crie copies que vendem e simule o retorno dos seus anúncios antes mesmo de gastar 1 real.")
+        st.markdown("Descubra seu posicionamento, corte custos, gerencie demanda e tenha o controle total do mercado na palma da sua mão.")
         
         col_inp1, col_inp2, col_inp3 = st.columns([2, 2, 1.5])
         with col_inp1:
@@ -234,69 +264,87 @@ else:
             if not nicho_input or not produto_input:
                 st.warning("Preencha o Nicho e o Produto para a IA funcionar.")
             else:
-                with st.spinner('A IA está analisando o mercado, precificando e criando a estratégia...'):
-                    time.sleep(2) # Simula o delay de uma API de IA
+                # Efeito de Processamento Neural UI
+                status_text = st.empty()
+                progress_bar = st.progress(0)
+                passos = ["Iniciando redes neurais...", "Mapeando concorrência oculta...", "Calculando projeções de lucro extremo...", "Gerando relatórios e scripts executivos..."]
                 
+                for i, passo in enumerate(passos):
+                    status_text.markdown(f"**🧠 {passo}**")
+                    progress_bar.progress((i + 1) * 25)
+                    time.sleep(0.7)
+                
+                status_text.empty()
+                progress_bar.empty()
+                
+                # Cálculos
                 preco_sugerido = custo_unitario * (1 + (margem_desejada / 100))
                 lucro_bruto_unitario = preco_sugerido - custo_unitario
                 
-                # --- 1. CONSULTORIA DA IA ---
+                # Botão de Download do PDF/TXT
+                relatorio = gerar_relatorio_txt(nicho_input, produto_input, preco_sugerido, lucro_bruto_unitario, custo_unitario, margem_desejada)
+                st.download_button(
+                    label="📄 Baixar Relatório Executivo Completo",
+                    data=relatorio,
+                    file_name="Relatorio_Neurax_IA.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+                
+                st.markdown("---")
+                # --- 1. CONSULTORIA ---
                 st.markdown("### 🤖 1. Consultoria Estratégica IA")
                 st.markdown(f"<div class='highlight-card'>{gerar_consultoria_ia(nicho_input, produto_input)}</div>", unsafe_allow_html=True)
                 
-                # --- 2. RAIO-X DE CUSTOS (EFEITO CHOQUE) ---
+                # --- 2. RAIO-X DE CUSTOS ---
                 st.markdown("### 🔪 2. Raio-X de Custos: Por que você vai lucrar mais?")
                 df_corte = pd.DataFrame({
-                    "Profissional/Serviço": ["Gestor de Tráfego", "Social Media (Posts)", "Atendimento/Vendedor", "Softwares Soltos"],
+                    "Profissional/Serviço": ["Gestor de Tráfego", "Social Media", "Vendedor", "Softwares Soltos"],
                     "Modelo Antigo (Mensal)": ["R$ 1.500", "R$ 1.200", "R$ 1.800", "R$ 350"],
-                    "Com Neurax IA": ["R$ 0 (Você faz)", "R$ 0 (IA Gera)", "R$ 0 (Automação)", "R$ 0 (Tudo em 1)"]
+                    "Com Neurax IA": ["R$ 0", "R$ 0", "R$ 0", "R$ 0"]
                 })
                 st.table(df_corte)
-                st.success("💰 **Economia Imediata Mensal: R$ 4.850,00.** Dinheiro que vai direto para o seu lucro líquido.")
+                st.success("💰 **Economia Imediata: R$ 4.850,00.** Dinheiro que vai direto para o seu bolso.")
                 
-                # --- 3. MÁQUINA DE VENDAS ---
-                st.markdown("### 📢 3. Sua Máquina de Vendas Pronta")
-                with st.expander("Ver Scripts de Vendas (WhatsApp e Instagram)"):
-                    st.write(gerar_copy_vendas(produto_input))
+                # --- 3. MÁQUINA DE VENDAS 1-CLICK ---
+                st.markdown("### 📢 3. Sua Máquina de Vendas (Envio 1-Clique)")
+                copy_pronta = gerar_copy_vendas(produto_input)
+                st.info(f"**Script Validado:**\n\n{copy_pronta}")
                 
-                # --- 4. SIMULADOR DE TRÁFEGO ---
-                st.markdown("### 🎯 4. Simulador de Tráfego Pago (ROI Seguro)")
-                st.info("Vamos simular quanto de lucro você tem se colocar dinheiro no Facebook/Google Ads hoje.")
+                link_whatsapp = f"https://wa.me/?text={urllib.parse.quote(copy_pronta)}"
+                st.link_button("📲 Abrir WhatsApp e Disparar para Cliente", link_whatsapp)
                 
+                # --- 4. SIMULADOR E GESTÃO PREDITIVA DE ESTOQUE ---
+                st.markdown("### 🎯 4. Simulador de Tráfego & Projeção de Demanda")
                 col_t1, col_t2 = st.columns(2)
                 with col_t1:
                     verba_ads = st.number_input("Verba para Anúncios Hoje (R$):", value=50.0)
                 with col_t2:
                     conversao_estimada = st.slider("Taxa de Conversão Esperada (%)", 1, 10, 2)
                 
-                cpc_estimado = 1.20 # Custo por clique fictício
+                cpc_estimado = 1.20
                 cliques = int(verba_ads / cpc_estimado)
-                vendas_ads = int(cliques * (conversao_estimada / 100))
-                
-                if vendas_ads == 0: vendas_ads = 1 # Garante pelo menos 1 para não frustrar o simulador
+                vendas_ads = max(int(cliques * (conversao_estimada / 100)), 1)
                 
                 faturamento_ads = vendas_ads * preco_sugerido
                 lucro_ads = faturamento_ads - (vendas_ads * custo_unitario) - verba_ads
                 
                 m1, m2, m3, m4 = st.columns(4)
-                m1.metric("Pessoas no site", cliques)
-                m2.metric("Vendas Feitas", vendas_ads)
-                m3.metric("Faturamento", f"R$ {faturamento_ads:,.2f}")
-                m4.metric("Seu Lucro Limpo", f"R$ {lucro_ads:,.2f}", f"{margem_desejada}% de Margem")
+                m1.metric("Vendas Feitas", vendas_ads)
+                m2.metric("Faturamento", f"R$ {faturamento_ads:,.2f}")
+                m3.metric("Lucro Limpo", f"R$ {lucro_ads:,.2f}")
                 
-        # --- 5. ROTA ANTI-FALÊNCIA GAMIFICADA ---
-        st.markdown("---")
-        st.markdown("### 🛡️ 5. Checklist Anti-Falência")
-        st.write("Marque as caixinhas conforme você aplica as estratégias no seu negócio. Blinde sua empresa contra a quebra!")
-        
-        c1 = st.checkbox("Cortei custos fixos desnecessários com a tabela do Raio-X.")
-        c2 = st.checkbox("Ajustei o preço do meu produto com a margem recomendada.")
-        c3 = st.checkbox("Copiei os scripts de vendas gerados pela IA.")
-        c4 = st.checkbox("Fiz minha primeira simulação de tráfego pago sem medo.")
-        
-        if c1 and c2 and c3 and c4:
-            st.balloons()
-            st.success("🏆 PARABÉNS! Você garantiu o Selo de Negócio Blindado. Sua mentalidade agora é de um empresário focado em escala e lucro extremo!")
+                # Inteligência de Estoque
+                estoque_necessario = vendas_ads * 30 # Projeção para o mês
+                custo_estoque = estoque_necessario * custo_unitario
+                m4.metric("Estoque Mês", f"{estoque_necessario} unid.", f"R$ {custo_estoque:,.2f} Custo")
+                st.warning(f"📦 **Gestão Preditiva:** Se mantiver essa verba diária, você venderá cerca de {estoque_necessario} unidades por mês. Separe **R$ {custo_estoque:,.2f}** do caixa para garantir a recompra sem quebrar o giro.")
+                
+                # --- 5. PITCH DECK DE INVESTIDORES ---
+                st.markdown("### 💼 5. Pitch Deck Executivo (Captação de Investimento)")
+                with st.expander("Ver Apresentação Oficial Pronta"):
+                    st.write(gerar_pitch_deck(nicho_input, produto_input, margem_desejada, faturamento_ads * 30))
+                    st.info("💡 Copie este texto e cole nos seus slides para apresentar em rodadas de negócios ou captação de sócios.")
 
     elif menu == "👑 Assinar Pro":
         st.header("👑 Assinatura PRO")
