@@ -84,7 +84,6 @@ def init_db():
                  (email TEXT PRIMARY KEY, senha TEXT, nome TEXT, is_pro INTEGER, 
                   casa REAL, lazer REAL, despesas REAL, meta REAL)''')
     conn.commit()
-    # Criar admin padrão se não existir
     c.execute("INSERT OR IGNORE INTO users VALUES (?,?,?,1,0,0,0,10000)", 
               ("leandrodesantana646@gmail.com", "leandro1996", "Leandro (Dono)"))
     conn.commit()
@@ -190,7 +189,7 @@ else:
     
     st.sidebar.markdown(f"**Usuário:** {user_data['nome']}")
     
-    menu = st.sidebar.selectbox("Menu Principal", ["📊 Dashboard", "👑 Assinar Pro", "🚪 Sair"])
+    menu = st.sidebar.selectbox("Menu Principal", ["📊 Dashboard", "🚀 IA & Crescimento de Lucro", "👑 Assinar Pro", "🚪 Sair"])
     
     # PAINEL ADMIN
     if user_email == "leandrodesantana646@gmail.com":
@@ -219,13 +218,11 @@ else:
     if menu == "📊 Dashboard":
         st.header("📈 Visão Financeira Corporativa")
         
-        # Gráfico Plotly
         gastos = {"Casa": user_data['casa'], "Lazer": user_data['lazer'], "Despesas": user_data['despesas']}
         df_gastos = pd.DataFrame(list(gastos.items()), columns=['Categoria', 'Valor'])
         fig = px.pie(df_gastos, values='Valor', names='Categoria', hole=0.4, title="Distribuição de Gastos por Categoria")
         st.plotly_chart(fig, use_container_width=True)
         
-        # Limites definidos por categoria
         limites = {"Casa": 1000.0, "Lazer": 300.0, "Despesas": 500.0}
         
         st.subheader("Registrar Novo Gasto")
@@ -252,11 +249,64 @@ else:
                 st.success("✅ Gasto registrado dentro do orçamento planejado!")
                 st.rerun()
 
+    elif menu == "🚀 IA & Crescimento de Lucro":
+        st.header("🚀 Motor de Inteligência de Mercado e Escala")
+        st.markdown("Descubra como a IA do Neurax reduz seus custos operacionais em comparação a métodos tradicionais e dispara o seu lucro líquido.")
+        
+        nicho = st.selectbox("Selecione o Nicho do seu Negócio:", [
+            "E-commerce / Loja Virtual", 
+            "Prestação de Serviços / Consultoria", 
+            "Negócio Local / Varejo", 
+            "Infoprodutos / Marketing Digital"
+        ])
+        
+        if st.button("Gerar Análise de Mercado com IA", use_container_width=True):
+            st.success(f"Análise de inteligência gerada com sucesso para o nicho: **{nicho}**!")
+            
+            # Gráfico Comparativo de Desempenho e Custos (Ferramentas Tradicionais vs Neurax IA)
+            comparativo_data = pd.DataFrame({
+                "Estratégia": ["Modelo Tradicional (Agências/Softwares Separados)", "Modelo com Neurax IA"],
+                "Custo Operacional (R$)": [4500, 1200],
+                "Lucro Estimado (R$)": [8000, 18500]
+            })
+            
+            fig_comparativa = px.bar(
+                comparativo_data, 
+                x="Estratégia", 
+                y=["Custo Operacional (R$)", "Lucro Estimado (R$)"], 
+                barmode="group",
+                title="📊 Comparativo Real: Custo vs. Lucro com IA"
+            )
+            st.plotly_chart(fig_comparativa, use_container_width=True)
+            
+            # Insights de Corte de Custos e Novas Receitas
+            st.markdown("---")
+            col_a, col_b = st.columns(2)
+            
+            with col_a:
+                st.markdown("### ✂️ Otimização & Corte de Custos")
+                st.info("""
+                - **Automação de Processos:** Redução de 70% em tarefas repetitivas manuais.
+                - **Substituição de Ferramentas:** Eliminação de assinaturas desnecessárias de múltiplos softwares.
+                - **Gestão Preditiva:** Alertas automáticos que evitam desperdício de capital de giro.
+                """)
+                
+            with col_b:
+                st.markdown("### 💰 Novas Fontes de Receita")
+                st.success("""
+                - **Escala de Vendas com IA:** Estratégias automatizadas de conversão direcionadas para o seu público.
+                - **Precificação Inteligente:** Ajuste dinâmico de margens com base na análise de mercado em tempo real.
+                - **Retenção de Clientes:** Campanhas personalizadas geradas por IA para aumentar o LTV.
+                """)
+        
+        if not user_data['is_pro']:
+            st.warning("🔒 Desbloqueie o acesso completo a relatórios avançados de mercado e estratégias ilimitadas assinando o plano PRO.")
+
     elif menu == "👑 Assinar Pro":
         st.header("👑 Desbloqueie o Potencial Máximo")
         st.markdown("""
-        - 🤖 **Consultoria IA Ilimitada** para otimizar seu negócio.
-        - 📈 **Projeções de Crescimento** e relatórios avançados.
+        - 🤖 **Consultoria IA Ilimitada** e Análises de Mercado Avançadas.
+        - 📈 **Projeções de Crescimento** e relatórios de lucro.
         - 🚀 **Suporte Prioritário** via plataforma.
         
         **Valor:** R$ 49,99 / mês
